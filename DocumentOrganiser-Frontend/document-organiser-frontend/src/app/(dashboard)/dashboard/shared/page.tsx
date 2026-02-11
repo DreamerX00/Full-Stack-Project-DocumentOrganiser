@@ -1,58 +1,30 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { sharesApi } from '@/lib/api/shares';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useSharedWithMe, useSharedByMe, useRevokeDocumentShare } from '@/lib/hooks/useShares';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileText, Folder, ExternalLink, Trash2, Users } from 'lucide-react';
+import { FileText, Trash2, Users } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/utils/format';
-import { toast } from 'sonner';
-import Link from 'next/link';
 import type { SharedItemResponse } from '@/lib/types';
 
 export default function SharedPage() {
-  const [sharedWithMe, setSharedWithMe] = useState<SharedItemResponse[]>([]);
-  const [sharedByMe, setSharedByMe] = useState<SharedItemResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: withMeData, isLoading: loadingWithMe } = useSharedWithMe();
+  const { data: byMeData, isLoading: loadingByMe } = useSharedByMe();
+  const revokeShare = useRevokeDocumentShare();
 
-  const fetchShares = async () => {
-    setIsLoading(true);
-    try {
-      const [withMe, byMe] = await Promise.all([
-        sharesApi.getSharedWithMe(),
-        sharesApi.getSharedByMe(),
-      ]);
-      setSharedWithMe(withMe.content);
-      setSharedByMe(byMe.content);
-    } catch {
-      toast.error('Failed to load shared items');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchShares();
-  }, []);
-
-  const handleRevoke = async (shareId: string) => {
-    try {
-      await sharesApi.revokeDocumentShare(shareId);
-      toast.success('Share revoked');
-      fetchShares();
-    } catch {
-      toast.error('Failed to revoke share');
-    }
-  };
+  const sharedWithMe = withMeData?.content ?? [];
+  const sharedByMe = byMeData?.content ?? [];
 
   const ShareList = ({
     items,
+    isLoading,
     showRevoke = false,
   }: {
     items: SharedItemResponse[];
+    isLoading: boolean;
     showRevoke?: boolean;
   }) => {
     if (isLoading) {
@@ -99,7 +71,7 @@ export default function SharedPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handleRevoke(share.id)}
+                    onClick={() => revokeShare.mutate(share.id)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -125,10 +97,10 @@ export default function SharedPage() {
           <TabsTrigger value="by-me">Shared by me</TabsTrigger>
         </TabsList>
         <TabsContent value="with-me" className="mt-4">
-          <ShareList items={sharedWithMe} />
+          <ShareList items={sharedWithMe} isLoading={loadingWithMe} />
         </TabsContent>
         <TabsContent value="by-me" className="mt-4">
-          <ShareList items={sharedByMe} showRevoke />
+          <ShareList items={sharedByMe} isLoading={loadingByMe} showRevoke />
         </TabsContent>
       </Tabs>
     </div>

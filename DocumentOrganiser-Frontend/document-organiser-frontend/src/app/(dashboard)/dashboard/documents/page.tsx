@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FolderPlus, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,109 +12,53 @@ import { BulkActionsBar } from '@/components/features/files/BulkActionsBar';
 import { CreateFolderDialog } from '@/components/features/folders/CreateFolderDialog';
 import { FileUploadDialog } from '@/components/features/files/FileUploadDialog';
 import { ShareDialog } from '@/components/features/share/ShareDialog';
+import { RenameDialog } from '@/components/features/files/RenameDialog';
 import { AppBreadcrumb } from '@/components/layout/Breadcrumb';
 import { useNavigationStore } from '@/lib/store/navigationStore';
 import { useFileStore } from '@/lib/store/fileStore';
-import { documentsApi } from '@/lib/api/documents';
-import { foldersApi } from '@/lib/api/folders';
-import { sharesApi } from '@/lib/api/shares';
-import { toast } from 'sonner';
-import { downloadBlob } from '@/lib/utils/format';
+import {
+  useDocumentsByFolder,
+  useDeleteDocument,
+  useToggleFavorite,
+  useDownloadDocument,
+  useRenameDocument,
+} from '@/lib/hooks/useDocuments';
+import { useRootFolders, useCreateFolder, useDeleteFolder } from '@/lib/hooks/useFolders';
+import { useShareDocumentWithUser, useCreateDocumentShareLink } from '@/lib/hooks/useShares';
 import type { DocumentResponse, FolderResponse } from '@/lib/types';
 
 export default function DocumentsPage() {
   const router = useRouter();
   const { viewMode } = useNavigationStore();
-  const { documents, folders, isLoading, setDocuments, setFolders, setLoading, clearSelection } =
-    useFileStore();
+  const { clearSelection } = useFileStore();
 
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [shareDoc, setShareDoc] = useState<DocumentResponse | null>(null);
   const [shareLink, setShareLink] = useState<string | undefined>();
+  const [renameDoc, setRenameDoc] = useState<DocumentResponse | null>(null);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [docsData, foldersData] = await Promise.all([
-        documentsApi.listByFolder(undefined),
-        foldersApi.listRootFolders(),
-      ]);
-      setDocuments(docsData.content);
-      setFolders(foldersData);
-    } catch (error) {
-      console.error('Failed to fetch documents:', error);
-      toast.error('Failed to load documents');
-    } finally {
-      setLoading(false);
-    }
-  }, [setDocuments, setFolders, setLoading]);
+  // React Query
+  const { data: docsData, isLoading: docsLoading } = useDocumentsByFolder(undefined);
+  const { data: foldersData, isLoading: foldersLoading } = useRootFolders();
+  const deleteDoc = useDeleteDocument();
+  const toggleFavorite = useToggleFavorite();
+  const downloadDoc = useDownloadDocument();
+  const renameDocument = useRenameDocument();
+  const createFolder = useCreateFolder();
+  const deleteFolder = useDeleteFolder();
+  const shareWithUser = useShareDocumentWithUser();
+  const createShareLink = useCreateDocumentShareLink();
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const documents = docsData?.content ?? [];
+  const folders = foldersData ?? [];
+  const isLoading = docsLoading || foldersLoading;
 
   const handleCreateFolder = async (data: { name: string; description?: string; color?: string }) => {
-    try {
-      await foldersApi.create({ ...data, parentFolderId: null });
-      toast.success('Folder created');
-      setCreateFolderOpen(false);
-      fetchData();
-    } catch {
-      toast.error('Failed to create folder');
-    }
-  };
-
-  const handleDeleteDoc = async (doc: DocumentResponse) => {
-    try {
-      await documentsApi.delete(doc.id);
-      toast.success('Moved to trash');
-      fetchData();
-    } catch {
-      toast.error('Failed to delete');
-    }
-  };
-
-  const handleDeleteFolder = async (folder: FolderResponse) => {
-    try {
-      await foldersApi.delete(folder.id);
-      toast.success('Folder deleted');
-      fetchData();
-    } catch {
-      toast.error('Failed to delete folder');
-    }
-  };
-
-  const handleToggleFavorite = async (doc: DocumentResponse) => {
-    try {
-      await documentsApi.toggleFavorite(doc.id);
-      toast.success(doc.favorite ? 'Removed from favorites' : 'Added to favorites');
-      fetchData();
-    } catch {
-      toast.error('Failed to update favorite');
-    }
-  };
-
-  const handleDownload = async (doc: DocumentResponse) => {
-    try {
-      const blob = await documentsApi.download(doc.id);
-      downloadBlob(blob, doc.originalName || doc.name);
-    } catch {
-      toast.error('Failed to download');
-    }
-  };
-
-  const handleRename = async (doc: DocumentResponse) => {
-    const newName = prompt('Enter new name:', doc.name);
-    if (newName && newName !== doc.name) {
-      try {
-        await documentsApi.rename(doc.id, { newName });
-        toast.success('Renamed');
-        fetchData();
-      } catch {
-        toast.error('Failed to rename');
-      }
-    }
+    createFolder.mutate(
+      { ...data, parentFolderId: null },
+      { onSuccess: () => setCreateFolderOpen(false) }
+    );
   };
 
   const isEmpty = !isLoading && documents.length === 0 && folders.length === 0;
@@ -139,7 +83,7 @@ export default function DocumentsPage() {
 
       {/* Bulk Actions */}
       <BulkActionsBar
-        onDelete={() => { clearSelection(); fetchData(); }}
+        onDelete={() => clearSelection()}
       />
 
       {/* Content */}
@@ -160,7 +104,7 @@ export default function DocumentsPage() {
                   <FolderCard
                     key={folder.id}
                     folder={folder}
-                    onDelete={handleDeleteFolder}
+                    onDelete={(f) => deleteFolder.mutate(f.id)}
                   />
                 ))}
               </div>
@@ -175,20 +119,20 @@ export default function DocumentsPage() {
                 <FileGrid
                   documents={documents}
                   isLoading={isLoading}
-                  onDelete={handleDeleteDoc}
-                  onToggleFavorite={handleToggleFavorite}
-                  onDownload={handleDownload}
-                  onRename={handleRename}
+                  onDelete={(doc) => deleteDoc.mutate(doc.id)}
+                  onToggleFavorite={(doc) => toggleFavorite.mutate(doc.id)}
+                  onDownload={(doc) => downloadDoc.mutate(doc)}
+                  onRename={(doc) => setRenameDoc(doc)}
                   onShare={(doc) => setShareDoc(doc)}
                 />
               ) : (
                 <FileList
                   documents={documents}
                   isLoading={isLoading}
-                  onDelete={handleDeleteDoc}
-                  onToggleFavorite={handleToggleFavorite}
-                  onDownload={handleDownload}
-                  onRename={handleRename}
+                  onDelete={(doc) => deleteDoc.mutate(doc.id)}
+                  onToggleFavorite={(doc) => toggleFavorite.mutate(doc.id)}
+                  onDownload={(doc) => downloadDoc.mutate(doc)}
+                  onRename={(doc) => setRenameDoc(doc)}
                   onShare={(doc) => setShareDoc(doc)}
                 />
               )}
@@ -211,24 +155,38 @@ export default function DocumentsPage() {
         shareLink={shareLink}
         onShareWithUser={async (email, permission) => {
           if (shareDoc) {
-            try {
-              await sharesApi.shareDocumentWithUser(shareDoc.id, { email, permission });
-              toast.success(`Shared with ${email}`);
-            } catch {
-              toast.error('Failed to share');
-            }
+            shareWithUser.mutate({
+              documentId: shareDoc.id,
+              data: { email, permission },
+            });
           }
         }}
         onCreateLink={async (permission) => {
           if (shareDoc) {
-            try {
-              const link = await sharesApi.createDocumentShareLink(shareDoc.id, { permission });
-              setShareLink(`${window.location.origin}/share/${link.token}`);
-            } catch {
-              toast.error('Failed to generate link');
-            }
+            createShareLink.mutate(
+              { documentId: shareDoc.id, data: { permission } },
+              {
+                onSuccess: (link) => {
+                  setShareLink(`${window.location.origin}/share/${link.token}`);
+                },
+              }
+            );
           }
         }}
+      />
+      <RenameDialog
+        open={!!renameDoc}
+        onOpenChange={() => setRenameDoc(null)}
+        currentName={renameDoc?.name ?? ''}
+        onRename={(newName) => {
+          if (renameDoc) {
+            renameDocument.mutate(
+              { id: renameDoc.id, data: { newName } },
+              { onSuccess: () => setRenameDoc(null) }
+            );
+          }
+        }}
+        isLoading={renameDocument.isPending}
       />
     </div>
   );

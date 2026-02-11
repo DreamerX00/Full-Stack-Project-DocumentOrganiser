@@ -35,3 +35,13 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Secrets & Environment Files ###
+application-secrets.properties
+**/application-secrets.properties
+.env
+*.env
+.env.*
+secrets.properties
+**/secrets.properties
+

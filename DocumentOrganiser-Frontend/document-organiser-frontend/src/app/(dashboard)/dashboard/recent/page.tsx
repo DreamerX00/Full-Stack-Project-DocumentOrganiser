@@ -1,51 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { documentsApi } from '@/lib/api/documents';
+import { useRecentDocuments, useToggleFavorite, useDownloadDocument } from '@/lib/hooks/useDocuments';
 import { FileGrid } from '@/components/features/files/FileGrid';
 import { FileList } from '@/components/features/files/FileList';
 import { EmptyState } from '@/components/features/files/EmptyState';
 import { useNavigationStore } from '@/lib/store/navigationStore';
 import type { DocumentResponse } from '@/lib/types';
-import { toast } from 'sonner';
-import { downloadBlob } from '@/lib/utils/format';
 
 export default function RecentPage() {
   const { viewMode } = useNavigationStore();
-  const [documents, setDocuments] = useState<DocumentResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data, isLoading } = useRecentDocuments();
+  const toggleFavorite = useToggleFavorite();
+  const downloadDoc = useDownloadDocument();
 
-  useEffect(() => {
-    const fetchRecent = async () => {
-      try {
-        const data = await documentsApi.listRecent();
-        setDocuments(data.content);
-      } catch {
-        toast.error('Failed to load recent documents');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchRecent();
-  }, []);
+  const documents = data?.content ?? [];
 
-  const handleDownload = async (doc: DocumentResponse) => {
-    try {
-      const blob = await documentsApi.download(doc.id);
-      downloadBlob(blob, doc.originalName || doc.name);
-    } catch {
-      toast.error('Failed to download');
-    }
-  };
-
-  const handleToggleFavorite = async (doc: DocumentResponse) => {
-    try {
-      const updated = await documentsApi.toggleFavorite(doc.id);
-      setDocuments((prev) => prev.map((d) => (d.id === doc.id ? updated : d)));
-    } catch {
-      toast.error('Failed to update');
-    }
-  };
+  const handleDownload = (doc: DocumentResponse) => downloadDoc.mutate(doc);
+  const handleToggleFavorite = (doc: DocumentResponse) => toggleFavorite.mutate(doc.id);
 
   return (
     <div className="space-y-4 p-6">

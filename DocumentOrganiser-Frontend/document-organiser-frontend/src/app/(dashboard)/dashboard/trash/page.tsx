@@ -1,10 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { trashApi } from '@/lib/api/trash';
+import { useState } from 'react';
+import {
+  useTrashItems,
+  useRestoreTrashItem,
+  useDeleteTrashItemPermanently,
+  useEmptyTrash,
+} from '@/lib/hooks/useTrash';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/features/files/EmptyState';
 import {
@@ -18,60 +23,23 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Trash2, RotateCcw, AlertTriangle } from 'lucide-react';
+import { Trash2, RotateCcw, AlertTriangle, Search } from 'lucide-react';
 import { formatRelativeTime, formatFileSize, getFileIcon } from '@/lib/utils/format';
-import { toast } from 'sonner';
 import type { TrashItemResponse } from '@/lib/types';
 
 export default function TrashPage() {
-  const [items, setItems] = useState<TrashItemResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data, isLoading } = useTrashItems();
+  const restoreItem = useRestoreTrashItem();
+  const deleteItem = useDeleteTrashItemPermanently();
+  const emptyTrash = useEmptyTrash();
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const fetchTrash = async () => {
-    setIsLoading(true);
-    try {
-      const data = await trashApi.list();
-      setItems(data.content);
-    } catch {
-      toast.error('Failed to load trash');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchTrash();
-  }, []);
-
-  const handleRestore = async (id: string) => {
-    try {
-      await trashApi.restore(id);
-      toast.success('Item restored');
-      fetchTrash();
-    } catch {
-      toast.error('Failed to restore');
-    }
-  };
-
-  const handleDeletePermanently = async (id: string) => {
-    try {
-      await trashApi.deletePermanently(id);
-      toast.success('Permanently deleted');
-      fetchTrash();
-    } catch {
-      toast.error('Failed to delete');
-    }
-  };
-
-  const handleEmptyTrash = async () => {
-    try {
-      await trashApi.emptyTrash();
-      toast.success('Trash emptied');
-      setItems([]);
-    } catch {
-      toast.error('Failed to empty trash');
-    }
-  };
+  const allItems = data?.content ?? [];
+  const items = searchQuery
+    ? allItems.filter((item) =>
+        item.itemName.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : allItems;
 
   return (
     <div className="space-y-6 p-6">
@@ -96,13 +64,13 @@ export default function TrashPage() {
                   Empty Trash
                 </AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will permanently delete all {items.length} items in the trash. This action
+                  This will permanently delete all {allItems.length} items in the trash. This action
                   cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleEmptyTrash} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                <AlertDialogAction onClick={() => emptyTrash.mutate()} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                   Delete All
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -110,6 +78,19 @@ export default function TrashPage() {
           </AlertDialog>
         )}
       </div>
+
+      {/* Search bar */}
+      {allItems.length > 0 && (
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Filter trash items..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+      )}
 
       {isLoading ? (
         <div className="space-y-3">
@@ -140,7 +121,7 @@ export default function TrashPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleRestore(item.id)}
+                      onClick={() => restoreItem.mutate(item.id)}
                       className="gap-1"
                     >
                       <RotateCcw className="h-3.5 w-3.5" /> Restore
@@ -162,7 +143,7 @@ export default function TrashPage() {
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={() => handleDeletePermanently(item.id)}
+                            onClick={() => deleteItem.mutate(item.id)}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                           >
                             Delete Forever

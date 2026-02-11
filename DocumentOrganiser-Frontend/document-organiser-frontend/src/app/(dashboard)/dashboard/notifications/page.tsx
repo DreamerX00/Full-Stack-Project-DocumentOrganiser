@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { notificationsApi } from '@/lib/api/notifications';
+import {
+  useNotifications,
+  useMarkNotificationAsRead,
+  useMarkAllNotificationsAsRead,
+  useDeleteNotification,
+} from '@/lib/hooks/useNotifications';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Separator } from '@/components/ui/separator';
 import {
   Bell,
   BellOff,
@@ -19,8 +21,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/utils/format';
-import { toast } from 'sonner';
-import type { NotificationResponse, NotificationType } from '@/lib/types';
+import type { NotificationResponse } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 const notificationIcons: Record<string, React.ElementType> = {
@@ -31,56 +32,12 @@ const notificationIcons: Record<string, React.ElementType> = {
 };
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data, isLoading } = useNotifications();
+  const markAsRead = useMarkNotificationAsRead();
+  const markAllAsRead = useMarkAllNotificationsAsRead();
+  const deleteNotification = useDeleteNotification();
 
-  const fetchNotifications = async () => {
-    setIsLoading(true);
-    try {
-      const data = await notificationsApi.list();
-      setNotifications(data.content);
-    } catch {
-      toast.error('Failed to load notifications');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
-
-  const handleMarkAsRead = async (id: string) => {
-    try {
-      await notificationsApi.markAsRead(id);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-      );
-    } catch {
-      toast.error('Failed to mark as read');
-    }
-  };
-
-  const handleMarkAllAsRead = async () => {
-    try {
-      await notificationsApi.markAllAsRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-      toast.success('All marked as read');
-    } catch {
-      toast.error('Failed to mark all as read');
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    try {
-      await notificationsApi.delete(id);
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
-      toast.success('Notification deleted');
-    } catch {
-      toast.error('Failed to delete');
-    }
-  };
-
+  const notifications = data?.content ?? [];
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
@@ -93,7 +50,7 @@ export default function NotificationsPage() {
           </p>
         </div>
         {unreadCount > 0 && (
-          <Button variant="outline" onClick={handleMarkAllAsRead} className="gap-2">
+          <Button variant="outline" onClick={() => markAllAsRead.mutate()} className="gap-2">
             <CheckCheck className="h-4 w-4" /> Mark all read
           </Button>
         )}
@@ -158,7 +115,7 @@ export default function NotificationsPage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => handleMarkAsRead(notification.id)}
+                        onClick={() => markAsRead.mutate(notification.id)}
                         title="Mark as read"
                       >
                         <Check className="h-4 w-4" />
@@ -168,7 +125,7 @@ export default function NotificationsPage() {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 text-muted-foreground"
-                      onClick={() => handleDelete(notification.id)}
+                      onClick={() => deleteNotification.mutate(notification.id)}
                       title="Delete"
                     >
                       <Trash2 className="h-4 w-4" />

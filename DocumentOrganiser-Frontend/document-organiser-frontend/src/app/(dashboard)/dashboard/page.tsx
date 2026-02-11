@@ -1,35 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { dashboardApi } from '@/lib/api/dashboard';
+import { useDashboardStats } from '@/lib/hooks/useDashboard';
 import { StatsCards } from '@/components/features/dashboard/StatsCards';
 import { StorageWidget } from '@/components/features/dashboard/StorageWidget';
 import { RecentFiles } from '@/components/features/dashboard/RecentFiles';
 import { FileTypeChart } from '@/components/features/dashboard/FileTypeChart';
 import { ActivityFeed } from '@/components/features/dashboard/ActivityFeed';
-import type { DashboardStatsResponse } from '@/lib/types';
 import { Upload, FolderPlus, Star, Clock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<DashboardStatsResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const data = await dashboardApi.getStats();
-        setStats(data);
-      } catch (error) {
-        console.error('Failed to fetch dashboard stats:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchStats();
-  }, []);
+  const { data: stats, isLoading } = useDashboardStats();
 
   return (
     <div className="space-y-6 p-6">
@@ -42,7 +24,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <StatsCards stats={stats} isLoading={isLoading} />
+      <StatsCards stats={stats ?? null} isLoading={isLoading} />
 
       {/* Quick Actions */}
       <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
