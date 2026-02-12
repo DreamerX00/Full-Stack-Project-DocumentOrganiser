@@ -1,7 +1,12 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { ApiResponse } from '@/lib/types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+// In the browser, use the Next.js rewrite proxy (/api/backend → Internal ALB).
+// On the server (SSR), call the Internal ALB directly.
+const API_BASE_URL =
+  typeof window !== 'undefined'
+    ? '/api/backend'
+    : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api');
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
