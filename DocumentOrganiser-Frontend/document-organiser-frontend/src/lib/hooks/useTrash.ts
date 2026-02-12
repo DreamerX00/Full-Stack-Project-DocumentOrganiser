@@ -5,6 +5,7 @@ import { trashApi } from '@/lib/api/trash';
 import { toast } from 'sonner';
 import { documentKeys } from './useDocuments';
 import { folderKeys } from './useFolders';
+import { dashboardKeys } from './useDashboard';
 
 // ── Query Keys ──────────────────────────────────────────────
 export const trashKeys = {
@@ -41,6 +42,8 @@ export function useDeleteTrashItemPermanently() {
     mutationFn: (id: string) => trashApi.deletePermanently(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: trashKeys.all });
+      qc.invalidateQueries({ queryKey: documentKeys.lists() });
+      qc.invalidateQueries({ queryKey: dashboardKeys.stats() });
       toast.success('Permanently deleted');
     },
     onError: () => toast.error('Failed to delete'),
@@ -53,6 +56,9 @@ export function useEmptyTrash() {
     mutationFn: () => trashApi.emptyTrash(),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: trashKeys.all });
+      qc.invalidateQueries({ queryKey: documentKeys.lists() });
+      qc.invalidateQueries({ queryKey: folderKeys.lists() });
+      qc.invalidateQueries({ queryKey: dashboardKeys.stats() });
       toast.success('Trash emptied');
     },
     onError: () => toast.error('Failed to empty trash'),

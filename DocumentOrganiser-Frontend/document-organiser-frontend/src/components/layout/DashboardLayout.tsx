@@ -23,10 +23,22 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { uploadFiles } = useFileUpload();
   const currentFolderId = useFileStore((s) => s.currentFolderId);
 
-  // Hooks must be called before any conditional returns
+  // All hooks MUST be called before any conditional returns (Rules of Hooks)
   useKeyboardShortcuts();
 
-  // Client-side auth guard
+  const handleUploadClick = useCallback(() => {
+    setUploadDialogOpen(true);
+  }, []);
+
+  const handleFilesDropped = useCallback(
+    (files: File[]) => {
+      uploadFiles(files, currentFolderId || undefined);
+      setUploadDialogOpen(true);
+    },
+    [uploadFiles, currentFolderId],
+  );
+
+  // Client-side auth guard (after all hooks)
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -43,18 +55,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-
-  const handleUploadClick = useCallback(() => {
-    setUploadDialogOpen(true);
-  }, []);
-
-  const handleFilesDropped = useCallback(
-    (files: File[]) => {
-      uploadFiles(files, currentFolderId || undefined);
-      setUploadDialogOpen(true);
-    },
-    [uploadFiles, currentFolderId],
-  );
 
   return (
     <DragDropZone onFilesDropped={handleFilesDropped}>

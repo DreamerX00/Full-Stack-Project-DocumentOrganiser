@@ -29,7 +29,8 @@ import { useTheme } from 'next-themes';
 import { signOut } from 'next-auth/react';
 
 export default function SettingsPage() {
-  const { user } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const updateUser = useAuthStore((s) => s.updateUser);
   const { theme, setTheme } = useTheme();
 
   const [name, setName] = useState(user?.name ?? '');
@@ -49,6 +50,7 @@ export default function SettingsPage() {
     setIsSaving(true);
     try {
       await usersApi.updateProfile({ name });
+      updateUser({ name });
       toast.success('Profile updated');
     } catch {
       toast.error('Failed to update profile');

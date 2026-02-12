@@ -1,12 +1,17 @@
 'use client';
 
 import { useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useUploadStore } from '@/lib/store/uploadStore';
 import { documentsApi } from '@/lib/api/documents';
+import { documentKeys } from './useDocuments';
+import { folderKeys } from './useFolders';
+import { dashboardKeys } from './useDashboard';
 import { toast } from 'sonner';
 
 export function useFileUpload() {
   const uploadStore = useUploadStore();
+  const queryClient = useQueryClient();
 
   const uploadFiles = useCallback(
     async (files: File[], folderId?: string) => {
@@ -33,9 +38,14 @@ export function useFileUpload() {
         }
       }
 
+      // Refresh all relevant caches so new files appear immediately
+      queryClient.invalidateQueries({ queryKey: documentKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: folderKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.stats() });
+
       uploadStore.setUploading(false);
     },
-    [] // eslint-disable-line react-hooks/exhaustive-deps
+    [queryClient] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   return {

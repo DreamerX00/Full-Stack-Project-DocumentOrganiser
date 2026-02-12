@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-query';
 import { foldersApi } from '@/lib/api/folders';
 import { toast } from 'sonner';
+import { dashboardKeys } from './useDashboard';
 import type {
   CreateFolderRequest,
   UpdateFolderRequest,
@@ -64,6 +65,7 @@ export function useCreateFolder() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: folderKeys.lists() });
       qc.invalidateQueries({ queryKey: folderKeys.tree() });
+      qc.invalidateQueries({ queryKey: dashboardKeys.stats() });
       toast.success('Folder created');
     },
     onError: () => toast.error('Failed to create folder'),
@@ -91,6 +93,7 @@ export function useDeleteFolder() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: folderKeys.lists() });
       qc.invalidateQueries({ queryKey: folderKeys.tree() });
+      qc.invalidateQueries({ queryKey: dashboardKeys.stats() });
       toast.success('Folder deleted');
     },
     onError: () => toast.error('Failed to delete folder'),

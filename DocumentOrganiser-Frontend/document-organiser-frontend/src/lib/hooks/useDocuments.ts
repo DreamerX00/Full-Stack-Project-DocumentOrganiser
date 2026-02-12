@@ -10,6 +10,8 @@ import {
 import { documentsApi } from '@/lib/api/documents';
 import { toast } from 'sonner';
 import { downloadBlob } from '@/lib/utils/format';
+import { dashboardKeys } from './useDashboard';
+import { trashKeys } from './useTrash';
 import type {
   DocumentResponse,
   PagedResponse,
@@ -98,6 +100,7 @@ export function useRenameDocument() {
       documentsApi.rename(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: documentKeys.lists() });
+      qc.invalidateQueries({ queryKey: dashboardKeys.stats() });
       toast.success('Document renamed');
     },
     onError: () => toast.error('Failed to rename document'),
@@ -110,6 +113,8 @@ export function useDeleteDocument() {
     mutationFn: (id: string) => documentsApi.delete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: documentKeys.lists() });
+      qc.invalidateQueries({ queryKey: dashboardKeys.stats() });
+      qc.invalidateQueries({ queryKey: trashKeys.all });
       toast.success('Moved to trash');
     },
     onError: () => toast.error('Failed to delete'),
@@ -123,6 +128,7 @@ export function useMoveDocument() {
       documentsApi.move(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: documentKeys.lists() });
+      qc.invalidateQueries({ queryKey: dashboardKeys.stats() });
       toast.success('Document moved');
     },
     onError: () => toast.error('Failed to move document'),
@@ -141,6 +147,7 @@ export function useCopyDocument() {
     }) => documentsApi.copy(id, targetFolderId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: documentKeys.lists() });
+      qc.invalidateQueries({ queryKey: dashboardKeys.stats() });
       toast.success('Document copied');
     },
     onError: () => toast.error('Failed to copy document'),
@@ -157,6 +164,7 @@ export function useToggleFavorite() {
     },
     onSuccess: (updated) => {
       qc.invalidateQueries({ queryKey: documentKeys.lists() });
+      qc.invalidateQueries({ queryKey: dashboardKeys.stats() });
       toast.success(
         updated.isFavorite ? 'Added to favorites' : 'Removed from favorites'
       );
