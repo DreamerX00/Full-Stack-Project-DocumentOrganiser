@@ -1,11 +1,13 @@
 package com.alphadocuments.documentorganiserbackend.service.impl;
 
+import com.alphadocuments.documentorganiserbackend.dto.response.ActivityResponse;
 import com.alphadocuments.documentorganiserbackend.dto.response.DashboardStatsResponse;
 import com.alphadocuments.documentorganiserbackend.dto.response.DocumentResponse;
 import com.alphadocuments.documentorganiserbackend.entity.User;
 import com.alphadocuments.documentorganiserbackend.entity.enums.DocumentCategory;
 import com.alphadocuments.documentorganiserbackend.exception.ResourceNotFoundException;
 import com.alphadocuments.documentorganiserbackend.repository.*;
+import com.alphadocuments.documentorganiserbackend.service.ActivityService;
 import com.alphadocuments.documentorganiserbackend.service.DashboardService;
 import com.alphadocuments.documentorganiserbackend.service.DocumentService;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final FolderRepository folderRepository;
     private final SharedDocumentRepository sharedDocumentRepository;
     private final DocumentService documentService;
+    private final ActivityService activityService;
 
     @Override
     @Transactional(readOnly = true)
@@ -74,6 +77,10 @@ public class DashboardServiceImpl implements DashboardService {
         long sharedByMeCount = sharedDocumentRepository.findBySharedById(
                 userId, PageRequest.of(0, 1)).getTotalElements();
 
+        // Get recent activity
+        List<ActivityResponse> recentActivity = activityService.getActivities(
+                userId, PageRequest.of(0, 10)).getContent();
+
         return DashboardStatsResponse.builder()
                 .totalDocuments(totalDocuments)
                 .totalFolders(totalFolders)
@@ -85,6 +92,7 @@ public class DashboardServiceImpl implements DashboardService {
                 .sharedByMeCount(sharedByMeCount)
                 .documentsByCategory(documentsByCategory)
                 .recentDocuments(recentDocuments)
+                .recentActivity(recentActivity)
                 .build();
     }
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { Folder, MoreVertical, Pencil, Trash2, Move, Share2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -23,17 +24,45 @@ interface FolderCardProps {
   onDelete?: (folder: FolderResponse) => void;
   onMove?: (folder: FolderResponse) => void;
   onShare?: (folder: FolderResponse) => void;
+  onDocumentDrop?: (documentId: string, targetFolderId: string) => void;
 }
 
-export function FolderCard({ folder, onRename, onDelete, onMove, onShare }: FolderCardProps) {
+export function FolderCard({ folder, onRename, onDelete, onMove, onShare, onDocumentDrop }: FolderCardProps) {
   const { selectedFolders, toggleFolderSelection } = useFileStore();
   const isSelected = selectedFolders.includes(folder.id);
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('application/document-id')) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      setIsDragOver(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const documentId = e.dataTransfer.getData('application/document-id');
+    if (documentId && onDocumentDrop) {
+      onDocumentDrop(documentId, folder.id);
+    }
+  };
 
   return (
     <Card
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
       className={cn(
         'group relative transition-all hover:shadow-md',
-        isSelected && 'ring-2 ring-primary'
+        isSelected && 'ring-2 ring-primary',
+        isDragOver && 'ring-2 ring-primary bg-primary/5 scale-[1.02]'
       )}
     >
       <div className="absolute left-2 top-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">

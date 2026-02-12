@@ -25,7 +25,11 @@ public interface DocumentRepository extends JpaRepository<Document, UUID>, JpaSp
 
     List<Document> findByUserIdAndFolderIdAndIsDeletedFalse(UUID userId, UUID folderId);
 
+    Page<Document> findByUserIdAndFolderIdAndIsDeletedFalse(UUID userId, UUID folderId, Pageable pageable);
+
     List<Document> findByUserIdAndFolderIsNullAndIsDeletedFalse(UUID userId);
+
+    Page<Document> findByUserIdAndFolderIsNullAndIsDeletedFalse(UUID userId, Pageable pageable);
 
     Optional<Document> findByIdAndUserIdAndIsDeletedFalse(UUID id, UUID userId);
 

@@ -4,18 +4,22 @@ import com.alphadocuments.documentorganiserbackend.dto.request.MoveDocumentReque
 import com.alphadocuments.documentorganiserbackend.dto.request.RenameDocumentRequest;
 import com.alphadocuments.documentorganiserbackend.dto.response.DocumentResponse;
 import com.alphadocuments.documentorganiserbackend.entity.Document;
+import com.alphadocuments.documentorganiserbackend.entity.DeletedItem;
 import com.alphadocuments.documentorganiserbackend.entity.DocumentTag;
 import com.alphadocuments.documentorganiserbackend.entity.Folder;
 import com.alphadocuments.documentorganiserbackend.entity.User;
 import com.alphadocuments.documentorganiserbackend.entity.enums.DocumentCategory;
 import com.alphadocuments.documentorganiserbackend.exception.*;
+import com.alphadocuments.documentorganiserbackend.repository.DeletedItemRepository;
 import com.alphadocuments.documentorganiserbackend.repository.DocumentRepository;
 import com.alphadocuments.documentorganiserbackend.repository.DocumentTagRepository;
 import com.alphadocuments.documentorganiserbackend.repository.FolderRepository;
 import com.alphadocuments.documentorganiserbackend.repository.UserRepository;
+import com.alphadocuments.documentorganiserbackend.service.ActivityService;
 import com.alphadocuments.documentorganiserbackend.service.DocumentService;
 import com.alphadocuments.documentorganiserbackend.service.StorageService;
 import com.alphadocuments.documentorganiserbackend.service.UserService;
+import com.alphadocuments.documentorganiserbackend.entity.enums.ActivityType;
 import com.alphadocuments.documentorganiserbackend.util.FileTypeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,8 +36,10 @@ import java.io.InputStream;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -49,8 +55,10 @@ public class DocumentServiceImpl implements DocumentService {
     private final FolderRepository folderRepository;
     private final UserRepository userRepository;
     private final DocumentTagRepository documentTagRepository;
+    private final DeletedItemRepository deletedItemRepository;
     private final StorageService storageService;
     private final UserService userService;
+    private final ActivityService activityService;
     private final FileTypeUtil fileTypeUtil;
 
     @Override
@@ -113,6 +121,12 @@ public class DocumentServiceImpl implements DocumentService {
             // Update user storage
             userService.updateStorageUsed(userId, file.getSize());
 
+            // Log activity
+            activityService.logActivity(userId, ActivityType.DOCUMENT_UPLOADED, "DOCUMENT",
+                    document.getId(), originalName, "Uploaded document: " + originalName,
+                    Map.of("fileSize", file.getSize(), "category", category.name()),
+                    null, null);
+
             log.info("Uploaded document '{}' for user {}", originalName, userId);
             return mapToDocumentResponse(document);
 
@@ -148,13 +162,19 @@ public class DocumentServiceImpl implements DocumentService {
     public DocumentResponse renameDocument(UUID userId, UUID documentId, RenameDocumentRequest request) {
         Document document = getDocumentForUser(userId, documentId);
 
-        if (request.getName() != null && !request.getName().isBlank()) {
-            document.setName(request.getName());
+        String newName = request.getNewName() != null ? request.getNewName() : request.getName();
+        if (newName != null && !newName.isBlank()) {
+            String oldName = document.getName();
+            document.setName(newName);
+            document = documentRepository.save(document);
+
+            // Log activity
+            activityService.logActivity(userId, ActivityType.DOCUMENT_RENAMED, "DOCUMENT",
+                    documentId, newName, "Renamed document from '" + oldName + "' to '" + newName + "'",
+                    Map.of("oldName", oldName, "newName", newName), null, null);
         }
 
-        document = documentRepository.save(document);
         log.info("Renamed document {} for user {}", documentId, userId);
-
         return mapToDocumentResponse(document);
     }
 
@@ -167,6 +187,25 @@ public class DocumentServiceImpl implements DocumentService {
         document.setIsDeleted(true);
         document.setDeletedAt(Instant.now());
         documentRepository.save(document);
+
+        // Create DeletedItem record for trash
+        DeletedItem deletedItem = DeletedItem.builder()
+                .user(document.getUser())
+                .itemType("DOCUMENT")
+                .itemId(document.getId())
+                .itemName(document.getOriginalName() != null ? document.getOriginalName() : document.getName())
+                .originalPath(document.getFolder() != null ? document.getFolder().getPath() : "/")
+                .parentFolderId(document.getFolder() != null ? document.getFolder().getId() : null)
+                .deletedAt(Instant.now())
+                .expiresAt(Instant.now().plus(30, ChronoUnit.DAYS))
+                .fileSize(document.getFileSize())
+                .build();
+        deletedItemRepository.save(deletedItem);
+
+        // Log activity
+        activityService.logActivity(userId, ActivityType.DOCUMENT_DELETED, "DOCUMENT",
+                documentId, document.getName(), "Deleted document: " + document.getName(),
+                null, null, null);
 
         log.info("Deleted document {} for user {}", documentId, userId);
     }
@@ -190,6 +229,12 @@ public class DocumentServiceImpl implements DocumentService {
 
         document.setFolder(targetFolder);
         document = documentRepository.save(document);
+
+        // Log activity
+        activityService.logActivity(userId, ActivityType.DOCUMENT_MOVED, "DOCUMENT",
+                documentId, document.getName(),
+                "Moved document '" + document.getName() + "' to " + (targetFolder != null ? targetFolder.getName() : "root"),
+                null, null, null);
 
         log.info("Moved document {} to folder {} for user {}", documentId, request.getTargetFolderId(), userId);
         return mapToDocumentResponse(document);
@@ -239,6 +284,12 @@ public class DocumentServiceImpl implements DocumentService {
         // Update user storage
         userService.updateStorageUsed(userId, original.getFileSize());
 
+        // Log activity
+        activityService.logActivity(userId, ActivityType.DOCUMENT_COPIED, "DOCUMENT",
+                copy.getId(), copy.getName(),
+                "Copied document '" + original.getName() + "'",
+                null, null, null);
+
         log.info("Copied document {} to {} for user {}", documentId, targetFolderId, userId);
         return mapToDocumentResponse(copy);
     }
@@ -247,12 +298,13 @@ public class DocumentServiceImpl implements DocumentService {
     @Transactional(readOnly = true)
     public Page<DocumentResponse> getDocumentsByFolder(UUID userId, UUID folderId, Pageable pageable) {
         if (folderId == null) {
-            // Get documents without folder
-            return documentRepository.findByUserIdAndIsDeletedFalse(userId, pageable)
+            // Get documents without a folder (root-level documents)
+            return documentRepository.findByUserIdAndFolderIsNullAndIsDeletedFalse(userId, pageable)
                     .map(this::mapToDocumentResponse);
         }
 
-        return documentRepository.findByUserIdAndIsDeletedFalse(userId, pageable)
+        // Get documents in the specific folder
+        return documentRepository.findByUserIdAndFolderIdAndIsDeletedFalse(userId, folderId, pageable)
                 .map(this::mapToDocumentResponse);
     }
 
@@ -283,6 +335,13 @@ public class DocumentServiceImpl implements DocumentService {
         Document document = getDocumentForUser(userId, documentId);
         document.setIsFavorite(!document.getIsFavorite());
         document = documentRepository.save(document);
+
+        // Log activity
+        ActivityType favType = document.getIsFavorite() ? ActivityType.DOCUMENT_FAVORITED : ActivityType.DOCUMENT_UNFAVORITED;
+        activityService.logActivity(userId, favType, "DOCUMENT",
+                documentId, document.getName(),
+                (document.getIsFavorite() ? "Added to favorites: " : "Removed from favorites: ") + document.getName(),
+                null, null, null);
 
         log.info("Toggled favorite for document {} (now: {})", documentId, document.getIsFavorite());
         return mapToDocumentResponse(document);

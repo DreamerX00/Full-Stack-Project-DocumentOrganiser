@@ -4,14 +4,19 @@ import com.alphadocuments.documentorganiserbackend.dto.request.CreateFolderReque
 import com.alphadocuments.documentorganiserbackend.dto.request.UpdateFolderRequest;
 import com.alphadocuments.documentorganiserbackend.dto.response.FolderResponse;
 import com.alphadocuments.documentorganiserbackend.dto.response.FolderTreeResponse;
+import com.alphadocuments.documentorganiserbackend.entity.DeletedItem;
+import com.alphadocuments.documentorganiserbackend.entity.Document;
 import com.alphadocuments.documentorganiserbackend.entity.Folder;
 import com.alphadocuments.documentorganiserbackend.entity.User;
+import com.alphadocuments.documentorganiserbackend.entity.enums.ActivityType;
 import com.alphadocuments.documentorganiserbackend.exception.DuplicateResourceException;
 import com.alphadocuments.documentorganiserbackend.exception.ForbiddenException;
 import com.alphadocuments.documentorganiserbackend.exception.ResourceNotFoundException;
 import com.alphadocuments.documentorganiserbackend.exception.ValidationException;
+import com.alphadocuments.documentorganiserbackend.repository.DeletedItemRepository;
 import com.alphadocuments.documentorganiserbackend.repository.FolderRepository;
 import com.alphadocuments.documentorganiserbackend.repository.UserRepository;
+import com.alphadocuments.documentorganiserbackend.service.ActivityService;
 import com.alphadocuments.documentorganiserbackend.service.FolderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -36,6 +42,8 @@ public class FolderServiceImpl implements FolderService {
 
     private final FolderRepository folderRepository;
     private final UserRepository userRepository;
+    private final DeletedItemRepository deletedItemRepository;
+    private final ActivityService activityService;
 
     @Override
     @Transactional
@@ -67,6 +75,11 @@ public class FolderServiceImpl implements FolderService {
 
         folder.updatePath();
         folder = folderRepository.save(folder);
+
+        // Log activity
+        activityService.logActivity(userId, ActivityType.FOLDER_CREATED, "FOLDER",
+                folder.getId(), folder.getName(), "Created folder: " + folder.getName(),
+                null, null, null);
 
         log.info("Created folder '{}' for user {}", request.getName(), userId);
         return mapToFolderResponse(folder);
@@ -128,8 +141,29 @@ public class FolderServiceImpl implements FolderService {
             throw new ForbiddenException("Cannot delete root folder");
         }
 
+        // Create DeletedItem record for trash
+        long totalSize = calculateFolderSize(folder);
+        DeletedItem deletedItem = DeletedItem.builder()
+                .user(folder.getUser())
+                .itemType("FOLDER")
+                .itemId(folder.getId())
+                .itemName(folder.getName())
+                .originalPath(folder.getPath())
+                .parentFolderId(folder.getParentFolder() != null ? folder.getParentFolder().getId() : null)
+                .deletedAt(Instant.now())
+                .expiresAt(Instant.now().plus(30, ChronoUnit.DAYS))
+                .fileSize(totalSize)
+                .build();
+        deletedItemRepository.save(deletedItem);
+
         // Soft delete the folder and all subfolders/documents
         softDeleteFolder(folder);
+
+        // Log activity
+        activityService.logActivity(userId, ActivityType.FOLDER_DELETED, "FOLDER",
+                folderId, folder.getName(), "Deleted folder: " + folder.getName(),
+                null, null, null);
+
         log.info("Deleted folder {} for user {}", folderId, userId);
     }
 
@@ -165,6 +199,13 @@ public class FolderServiceImpl implements FolderService {
         updateSubfolderPaths(folder);
 
         folder = folderRepository.save(folder);
+
+        // Log activity
+        activityService.logActivity(userId, ActivityType.FOLDER_MOVED, "FOLDER",
+                folderId, folder.getName(),
+                "Moved folder '" + folder.getName() + "' to " + (targetFolder != null ? targetFolder.getName() : "root"),
+                null, null, null);
+
         log.info("Moved folder {} to {} for user {}", folderId, targetFolderId, userId);
 
         return mapToFolderResponse(folder);
@@ -266,10 +307,37 @@ public class FolderServiceImpl implements FolderService {
         folder.setDeletedAt(Instant.now());
         folderRepository.save(folder);
 
+        // Also soft-delete all documents in this folder
+        if (folder.getDocuments() != null) {
+            for (Document doc : folder.getDocuments()) {
+                if (!doc.getIsDeleted()) {
+                    doc.setIsDeleted(true);
+                    doc.setDeletedAt(Instant.now());
+                }
+            }
+        }
+
         // Recursively soft delete subfolders
         for (Folder subFolder : folder.getSubFolders()) {
             softDeleteFolder(subFolder);
         }
+    }
+
+    private long calculateFolderSize(Folder folder) {
+        long size = 0;
+        if (folder.getDocuments() != null) {
+            for (Document doc : folder.getDocuments()) {
+                if (!doc.getIsDeleted()) {
+                    size += doc.getFileSize();
+                }
+            }
+        }
+        if (folder.getSubFolders() != null) {
+            for (Folder sub : folder.getSubFolders()) {
+                size += calculateFolderSize(sub);
+            }
+        }
+        return size;
     }
 
     private void updateSubfolderPaths(Folder parentFolder) {

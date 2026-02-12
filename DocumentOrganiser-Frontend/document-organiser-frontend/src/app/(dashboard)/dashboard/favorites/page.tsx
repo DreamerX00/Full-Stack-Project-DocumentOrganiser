@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useFavoriteDocuments, useToggleFavorite, useDownloadDocument, useDeleteDocument, useRenameDocument } from '@/lib/hooks/useDocuments';
+import { useFavoriteDocuments, useToggleFavorite, useDownloadDocument, useDeleteDocument, useRenameDocument, useMoveDocument, useCopyDocument } from '@/lib/hooks/useDocuments';
 import { useShareDocumentWithUser, useCreateDocumentShareLink } from '@/lib/hooks/useShares';
 import { FileGrid } from '@/components/features/files/FileGrid';
 import { FileList } from '@/components/features/files/FileList';
@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/features/files/EmptyState';
 import { FilePreview } from '@/components/features/files/FilePreview';
 import { ShareDialog } from '@/components/features/share/ShareDialog';
 import { RenameDialog } from '@/components/features/files/RenameDialog';
+import { MoveDialog } from '@/components/features/files/MoveDialog';
 import { useNavigationStore } from '@/lib/store/navigationStore';
 import type { DocumentResponse } from '@/lib/types';
 
@@ -26,6 +27,11 @@ export default function FavoritesPage() {
   const [shareDoc, setShareDoc] = useState<DocumentResponse | null>(null);
   const [shareLink, setShareLink] = useState<string | undefined>();
   const [renameDoc, setRenameDoc] = useState<DocumentResponse | null>(null);
+  const [moveDoc, setMoveDoc] = useState<DocumentResponse | null>(null);
+  const [copyDoc, setCopyDoc] = useState<DocumentResponse | null>(null);
+
+  const moveDocument = useMoveDocument();
+  const copyDocument = useCopyDocument();
 
   const documents = data?.content ?? [];
 
@@ -51,6 +57,8 @@ export default function FavoritesPage() {
           onDelete={(doc) => deleteDoc.mutate(doc.id)}
           onRename={(doc) => setRenameDoc(doc)}
           onShare={(doc) => setShareDoc(doc)}
+          onMove={(doc) => setMoveDoc(doc)}
+          onCopy={(doc) => setCopyDoc(doc)}
         />
       ) : (
         <FileList
@@ -62,6 +70,8 @@ export default function FavoritesPage() {
           onDelete={(doc) => deleteDoc.mutate(doc.id)}
           onRename={(doc) => setRenameDoc(doc)}
           onShare={(doc) => setShareDoc(doc)}
+          onMove={(doc) => setMoveDoc(doc)}
+          onCopy={(doc) => setCopyDoc(doc)}
         />
       )}
 
@@ -105,6 +115,38 @@ export default function FavoritesPage() {
           }
         }}
         isLoading={renameDocument.isPending}
+      />
+      <MoveDialog
+        open={!!moveDoc}
+        onOpenChange={() => setMoveDoc(null)}
+        itemName={moveDoc?.name ?? ''}
+        mode="move"
+        currentFolderId={moveDoc?.folderId ?? undefined}
+        onConfirm={(targetFolderId) => {
+          if (moveDoc) {
+            moveDocument.mutate(
+              { id: moveDoc.id, data: { targetFolderId: targetFolderId ?? null } },
+              { onSuccess: () => setMoveDoc(null) }
+            );
+          }
+        }}
+        isLoading={moveDocument.isPending}
+      />
+      <MoveDialog
+        open={!!copyDoc}
+        onOpenChange={() => setCopyDoc(null)}
+        itemName={copyDoc?.name ?? ''}
+        mode="copy"
+        currentFolderId={copyDoc?.folderId ?? undefined}
+        onConfirm={(targetFolderId) => {
+          if (copyDoc) {
+            copyDocument.mutate(
+              { id: copyDoc.id, targetFolderId: targetFolderId ?? undefined },
+              { onSuccess: () => setCopyDoc(null) }
+            );
+          }
+        }}
+        isLoading={copyDocument.isPending}
       />
     </div>
   );

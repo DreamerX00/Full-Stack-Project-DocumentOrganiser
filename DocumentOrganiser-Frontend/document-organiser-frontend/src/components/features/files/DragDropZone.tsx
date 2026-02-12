@@ -16,6 +16,8 @@ export function DragDropZone({ onFilesDropped, children }: DragDropZoneProps) {
   const handleDragEnter = useCallback((e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    // Only show upload overlay for external file drags, not internal document moves
+    if (e.dataTransfer?.types.includes('application/document-id')) return;
     setDragCounter((prev) => {
       if (prev === 0) setIsDragging(true);
       return prev + 1;

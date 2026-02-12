@@ -13,6 +13,8 @@ public enum ActivityType {
     DOCUMENT_COPIED,
     DOCUMENT_RENAMED,
     DOCUMENT_RESTORED,
+    DOCUMENT_FAVORITED,
+    DOCUMENT_UNFAVORITED,
 
     // Folder activities
     FOLDER_CREATED,

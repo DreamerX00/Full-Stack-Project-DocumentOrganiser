@@ -158,6 +158,12 @@ export function FileList({
           return (
             <TableRow
               key={doc.id}
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData('application/document-id', doc.id);
+                e.dataTransfer.setData('application/document-name', doc.name);
+                e.dataTransfer.effectAllowed = 'move';
+              }}
               className={cn('cursor-pointer', isSelected && 'bg-accent')}
               onClick={() => onPreview?.(doc)}
             >

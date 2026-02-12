@@ -45,8 +45,16 @@ export function FileCard({
   const categoryInfo = getCategoryInfo(doc.category);
   const CategoryIcon = categoryInfo.icon;
 
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData('application/document-id', doc.id);
+    e.dataTransfer.setData('application/document-name', doc.name);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
   return (
     <Card
+      draggable
+      onDragStart={handleDragStart}
       className={cn(
         'group relative cursor-pointer transition-all hover:shadow-md',
         isSelected && 'ring-2 ring-primary'

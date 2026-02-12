@@ -1,2 +1,3 @@
 DocumentOrganiser-Backend/src/main/resources/application-dev.properties
 DocumentOrganiser-Backend/src/main/resources/application-prod.properties
+AWS-DEPLOYMENT-GUIDE.md

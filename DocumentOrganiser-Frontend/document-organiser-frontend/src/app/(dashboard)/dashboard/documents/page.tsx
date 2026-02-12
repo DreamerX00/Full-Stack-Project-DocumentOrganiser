@@ -14,6 +14,7 @@ import { FileUploadDialog } from '@/components/features/files/FileUploadDialog';
 import { ShareDialog } from '@/components/features/share/ShareDialog';
 import { RenameDialog } from '@/components/features/files/RenameDialog';
 import { FilePreview } from '@/components/features/files/FilePreview';
+import { MoveDialog } from '@/components/features/files/MoveDialog';
 import { AppBreadcrumb } from '@/components/layout/Breadcrumb';
 import { useNavigationStore } from '@/lib/store/navigationStore';
 import { useFileStore } from '@/lib/store/fileStore';
@@ -23,6 +24,8 @@ import {
   useToggleFavorite,
   useDownloadDocument,
   useRenameDocument,
+  useMoveDocument,
+  useCopyDocument,
 } from '@/lib/hooks/useDocuments';
 import { useRootFolders, useCreateFolder, useDeleteFolder } from '@/lib/hooks/useFolders';
 import { useShareDocumentWithUser, useCreateDocumentShareLink } from '@/lib/hooks/useShares';
@@ -40,6 +43,9 @@ export default function DocumentsPage() {
   const [renameDoc, setRenameDoc] = useState<DocumentResponse | null>(null);
   const [previewDoc, setPreviewDoc] = useState<DocumentResponse | null>(null);
 
+  const [moveDoc, setMoveDoc] = useState<DocumentResponse | null>(null);
+  const [copyDoc, setCopyDoc] = useState<DocumentResponse | null>(null);
+
   // React Query
   const { data: docsData, isLoading: docsLoading } = useDocumentsByFolder(undefined);
   const { data: foldersData, isLoading: foldersLoading } = useRootFolders();
@@ -51,6 +57,8 @@ export default function DocumentsPage() {
   const deleteFolder = useDeleteFolder();
   const shareWithUser = useShareDocumentWithUser();
   const createShareLink = useCreateDocumentShareLink();
+  const moveDocument = useMoveDocument();
+  const copyDocument = useCopyDocument();
 
   const documents = docsData?.content ?? [];
   const folders = foldersData ?? [];
@@ -118,6 +126,12 @@ export default function DocumentsPage() {
                     key={folder.id}
                     folder={folder}
                     onDelete={(f) => deleteFolder.mutate(f.id)}
+                    onDocumentDrop={(documentId, targetFolderId) => {
+                      moveDocument.mutate({
+                        id: documentId,
+                        data: { targetFolderId },
+                      });
+                    }}
                   />
                 ))}
               </div>
@@ -138,6 +152,8 @@ export default function DocumentsPage() {
                   onDownload={(doc) => downloadDoc.mutate(doc)}
                   onRename={(doc) => setRenameDoc(doc)}
                   onShare={(doc) => setShareDoc(doc)}
+                  onMove={(doc) => setMoveDoc(doc)}
+                  onCopy={(doc) => setCopyDoc(doc)}
                 />
               ) : (
                 <FileList
@@ -149,6 +165,8 @@ export default function DocumentsPage() {
                   onDownload={(doc) => downloadDoc.mutate(doc)}
                   onRename={(doc) => setRenameDoc(doc)}
                   onShare={(doc) => setShareDoc(doc)}
+                  onMove={(doc) => setMoveDoc(doc)}
+                  onCopy={(doc) => setCopyDoc(doc)}
                 />
               )}
             </div>
@@ -210,6 +228,38 @@ export default function DocumentsPage() {
         onDownload={(doc) => downloadDoc.mutate(doc)}
         onShare={(doc) => { setPreviewDoc(null); setShareDoc(doc); }}
         onToggleFavorite={(doc) => toggleFavorite.mutate(doc.id)}
+      />
+      <MoveDialog
+        open={!!moveDoc}
+        onOpenChange={() => setMoveDoc(null)}
+        itemName={moveDoc?.name ?? ''}
+        mode="move"
+        currentFolderId={moveDoc?.folderId ?? undefined}
+        onConfirm={(targetFolderId) => {
+          if (moveDoc) {
+            moveDocument.mutate(
+              { id: moveDoc.id, data: { targetFolderId: targetFolderId ?? null } },
+              { onSuccess: () => setMoveDoc(null) }
+            );
+          }
+        }}
+        isLoading={moveDocument.isPending}
+      />
+      <MoveDialog
+        open={!!copyDoc}
+        onOpenChange={() => setCopyDoc(null)}
+        itemName={copyDoc?.name ?? ''}
+        mode="copy"
+        currentFolderId={copyDoc?.folderId ?? undefined}
+        onConfirm={(targetFolderId) => {
+          if (copyDoc) {
+            copyDocument.mutate(
+              { id: copyDoc.id, targetFolderId: targetFolderId ?? undefined },
+              { onSuccess: () => setCopyDoc(null) }
+            );
+          }
+        }}
+        isLoading={copyDocument.isPending}
       />
     </div>
   );

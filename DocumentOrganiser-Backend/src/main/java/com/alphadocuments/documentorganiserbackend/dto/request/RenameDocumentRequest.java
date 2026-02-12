@@ -17,4 +17,7 @@ public class RenameDocumentRequest {
 
     @Size(min = 1, max = 255, message = "Name must be between 1 and 255 characters")
     private String name;
+
+    @Size(min = 1, max = 255, message = "Name must be between 1 and 255 characters")
+    private String newName;
 }

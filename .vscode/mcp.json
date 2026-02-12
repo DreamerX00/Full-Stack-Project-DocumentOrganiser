@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "Full-Stack-Project-DocumentOrganiser Docs": {
+      "type": "sse",
+      "url": "https://gitmcp.io/DreamerX00/Full-Stack-Project-DocumentOrganiser"
+    }
+  }
+}
