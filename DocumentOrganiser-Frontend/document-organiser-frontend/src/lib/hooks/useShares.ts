@@ -3,41 +3,45 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { sharesApi } from '@/lib/api/shares';
 import { toast } from 'sonner';
-import type { ShareWithUserRequest, CreateShareLinkRequest, SharePermission } from '@/lib/types';
+import type { ShareWithUserRequest, CreateShareLinkRequest } from '@/lib/types';
 
 // ── Query Keys ──────────────────────────────────────────────
 export const shareKeys = {
   all: ['shares'] as const,
-  withMe: (page?: number) => [...shareKeys.all, 'with-me', { page }] as const,
-  byMe: (page?: number) => [...shareKeys.all, 'by-me', { page }] as const,
-  documentShares: (docId: string) =>
-    [...shareKeys.all, 'doc', docId] as const,
-  folderShares: (folderId: string) =>
-    [...shareKeys.all, 'folder', folderId] as const,
+  docsWithMe: (page?: number) => [...shareKeys.all, 'docs-with-me', { page }] as const,
+  foldersWithMe: (page?: number) => [...shareKeys.all, 'folders-with-me', { page }] as const,
+  docsByMe: (page?: number) => [...shareKeys.all, 'docs-by-me', { page }] as const,
+  foldersByMe: (page?: number) => [...shareKeys.all, 'folders-by-me', { page }] as const,
   links: (page?: number) => [...shareKeys.all, 'links', { page }] as const,
   publicShare: (token: string) => [...shareKeys.all, 'public', token] as const,
 };
 
 // ── Queries ─────────────────────────────────────────────────
-export function useSharedWithMe(page = 0, size = 20) {
+export function useDocumentsSharedWithMe(page = 0, size = 20) {
   return useQuery({
-    queryKey: shareKeys.withMe(page),
-    queryFn: () => sharesApi.getSharedWithMe(page, size),
+    queryKey: shareKeys.docsWithMe(page),
+    queryFn: () => sharesApi.getDocumentsSharedWithMe(page, size),
   });
 }
 
-export function useSharedByMe(page = 0, size = 20) {
+export function useFoldersSharedWithMe(page = 0, size = 20) {
   return useQuery({
-    queryKey: shareKeys.byMe(page),
-    queryFn: () => sharesApi.getSharedByMe(page, size),
+    queryKey: shareKeys.foldersWithMe(page),
+    queryFn: () => sharesApi.getFoldersSharedWithMe(page, size),
   });
 }
 
-export function useDocumentShares(documentId: string) {
+export function useDocumentsSharedByMe(page = 0, size = 20) {
   return useQuery({
-    queryKey: shareKeys.documentShares(documentId),
-    queryFn: () => sharesApi.getDocumentShares(documentId),
-    enabled: !!documentId,
+    queryKey: shareKeys.docsByMe(page),
+    queryFn: () => sharesApi.getDocumentsSharedByMe(page, size),
+  });
+}
+
+export function useFoldersSharedByMe(page = 0, size = 20) {
+  return useQuery({
+    queryKey: shareKeys.foldersByMe(page),
+    queryFn: () => sharesApi.getFoldersSharedByMe(page, size),
   });
 }
 
@@ -68,10 +72,7 @@ export function useShareDocumentWithUser() {
       data: ShareWithUserRequest;
     }) => sharesApi.shareDocumentWithUser(documentId, data),
     onSuccess: (_, variables) => {
-      qc.invalidateQueries({ queryKey: shareKeys.byMe() });
-      qc.invalidateQueries({
-        queryKey: shareKeys.documentShares(variables.documentId),
-      });
+      qc.invalidateQueries({ queryKey: shareKeys.all });
       toast.success(`Shared with ${variables.data.email}`);
     },
     onError: () => toast.error('Failed to share'),

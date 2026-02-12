@@ -1,48 +1,41 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
-import { documentsApi } from '@/lib/api/documents';
+import { use, useState } from 'react';
 import { FileGrid } from '@/components/features/files/FileGrid';
 import { FileList } from '@/components/features/files/FileList';
 import { EmptyState } from '@/components/features/files/EmptyState';
+import { FilePreview } from '@/components/features/files/FilePreview';
+import { ShareDialog } from '@/components/features/share/ShareDialog';
+import { RenameDialog } from '@/components/features/files/RenameDialog';
 import { AppBreadcrumb } from '@/components/layout/Breadcrumb';
 import { useNavigationStore } from '@/lib/store/navigationStore';
 import { DocumentCategory } from '@/lib/types';
 import type { DocumentResponse } from '@/lib/types';
-import { getCategoryInfo, downloadBlob } from '@/lib/utils/format';
-import { toast } from 'sonner';
+import { getCategoryInfo } from '@/lib/utils/format';
+import { useDocumentsByCategory, useToggleFavorite, useDownloadDocument, useDeleteDocument, useRenameDocument } from '@/lib/hooks/useDocuments';
+import { useShareDocumentWithUser, useCreateDocumentShareLink } from '@/lib/hooks/useShares';
 
 export default function CategoryPage({ params }: { params: Promise<{ type: string }> }) {
   const { type } = use(params);
   const { viewMode } = useNavigationStore();
-  const [documents, setDocuments] = useState<DocumentResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   const category = type.toUpperCase() as DocumentCategory;
   const info = getCategoryInfo(category);
 
-  useEffect(() => {
-    const fetchDocs = async () => {
-      try {
-        const data = await documentsApi.listByCategory(category);
-        setDocuments(data.content);
-      } catch {
-        toast.error('Failed to load documents');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchDocs();
-  }, [category]);
+  const { data, isLoading } = useDocumentsByCategory(category);
+  const toggleFavorite = useToggleFavorite();
+  const downloadDoc = useDownloadDocument();
+  const deleteDoc = useDeleteDocument();
+  const renameDocument = useRenameDocument();
+  const shareWithUser = useShareDocumentWithUser();
+  const createShareLink = useCreateDocumentShareLink();
 
-  const handleDownload = async (doc: DocumentResponse) => {
-    try {
-      const blob = await documentsApi.download(doc.id);
-      downloadBlob(blob, doc.originalName || doc.name);
-    } catch {
-      toast.error('Failed to download');
-    }
-  };
+  const [previewDoc, setPreviewDoc] = useState<DocumentResponse | null>(null);
+  const [shareDoc, setShareDoc] = useState<DocumentResponse | null>(null);
+  const [shareLink, setShareLink] = useState<string | undefined>();
+  const [renameDoc, setRenameDoc] = useState<DocumentResponse | null>(null);
+
+  const documents = data?.content ?? [];
 
   return (
     <div className="space-y-4 p-6">
@@ -63,15 +56,67 @@ export default function CategoryPage({ params }: { params: Promise<{ type: strin
         <FileGrid
           documents={documents}
           isLoading={isLoading}
-          onDownload={handleDownload}
+          onPreview={(doc) => setPreviewDoc(doc)}
+          onDownload={(doc) => downloadDoc.mutate(doc)}
+          onToggleFavorite={(doc) => toggleFavorite.mutate(doc.id)}
+          onDelete={(doc) => deleteDoc.mutate(doc.id)}
+          onRename={(doc) => setRenameDoc(doc)}
+          onShare={(doc) => setShareDoc(doc)}
         />
       ) : (
         <FileList
           documents={documents}
           isLoading={isLoading}
-          onDownload={handleDownload}
+          onPreview={(doc) => setPreviewDoc(doc)}
+          onDownload={(doc) => downloadDoc.mutate(doc)}
+          onToggleFavorite={(doc) => toggleFavorite.mutate(doc.id)}
+          onDelete={(doc) => deleteDoc.mutate(doc.id)}
+          onRename={(doc) => setRenameDoc(doc)}
+          onShare={(doc) => setShareDoc(doc)}
         />
       )}
+
+      <FilePreview
+        document={previewDoc}
+        open={!!previewDoc}
+        onOpenChange={() => setPreviewDoc(null)}
+        onDownload={(doc) => downloadDoc.mutate(doc)}
+        onShare={(doc) => { setPreviewDoc(null); setShareDoc(doc); }}
+        onToggleFavorite={(doc) => toggleFavorite.mutate(doc.id)}
+      />
+      <ShareDialog
+        open={!!shareDoc}
+        onOpenChange={() => { setShareDoc(null); setShareLink(undefined); }}
+        itemName={shareDoc?.name ?? ''}
+        shareLink={shareLink}
+        onShareWithUser={async (email, permission) => {
+          if (shareDoc) {
+            shareWithUser.mutate({ documentId: shareDoc.id, data: { email, permission } });
+          }
+        }}
+        onCreateLink={async (permission) => {
+          if (shareDoc) {
+            createShareLink.mutate(
+              { documentId: shareDoc.id, data: { permission } },
+              { onSuccess: (link) => setShareLink(`${window.location.origin}/share/${link.token}`) }
+            );
+          }
+        }}
+      />
+      <RenameDialog
+        open={!!renameDoc}
+        onOpenChange={() => setRenameDoc(null)}
+        currentName={renameDoc?.name ?? ''}
+        onRename={(newName) => {
+          if (renameDoc) {
+            renameDocument.mutate(
+              { id: renameDoc.id, data: { newName } },
+              { onSuccess: () => setRenameDoc(null) }
+            );
+          }
+        }}
+        isLoading={renameDocument.isPending}
+      />
     </div>
   );
 }

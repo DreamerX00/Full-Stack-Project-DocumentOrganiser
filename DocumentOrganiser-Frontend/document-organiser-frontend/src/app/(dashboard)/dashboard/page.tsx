@@ -58,12 +58,12 @@ export default function DashboardPage() {
         <div className="space-y-6">
           {/* Storage Widget */}
           <StorageWidget
-            used={stats?.storageUsed ?? 0}
-            quota={stats?.storageQuota ?? 104857600}
+            used={stats?.storageUsedBytes ?? 0}
+            quota={stats?.storageLimitBytes ?? 104857600}
           />
 
           {/* Activity Feed */}
-          <ActivityFeed activities={stats?.recentActivities ?? []} />
+          <ActivityFeed activities={stats?.recentActivity ?? []} />
         </div>
       </div>
     </div>

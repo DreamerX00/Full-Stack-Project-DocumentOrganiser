@@ -22,6 +22,7 @@ import com.google.api.client.json.gson.GsonFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -80,7 +81,21 @@ public class AuthServiceImpl implements AuthService {
                 }
                 user = userRepository.save(user);
             } else {
-                user = createNewUser(email, name, pictureUrl, googleId, emailVerified);
+                try {
+                    user = createNewUser(email, name, pictureUrl, googleId, emailVerified);
+                } catch (DataIntegrityViolationException e) {
+                    // Race condition: another request created the user concurrently
+                    log.warn("Concurrent user creation detected for email {}, fetching existing user", email);
+                    user = userRepository.findByEmail(email)
+                            .orElseThrow(() -> new UnauthorizedException("User creation failed"));
+                    user.setName(name);
+                    user.setProfilePicture(pictureUrl);
+                    user.setEmailVerified(emailVerified);
+                    if (user.getGoogleId() == null) {
+                        user.setGoogleId(googleId);
+                    }
+                    user = userRepository.save(user);
+                }
             }
 
             return generateAuthResponse(user, userAgent, ipAddress);
@@ -146,7 +161,7 @@ public class AuthServiceImpl implements AuthService {
                 .build();
 
         user.setUserSettings(settings);
-        return userRepository.save(user);
+        return userRepository.saveAndFlush(user);
     }
 
     private AuthResponse generateAuthResponse(User user, String userAgent, String ipAddress) {

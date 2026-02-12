@@ -9,13 +9,19 @@ import type {
 } from '@/lib/types';
 
 export const documentsApi = {
-  upload: async (file: File, folderId?: string) => {
+  upload: async (file: File, folderId?: string, onProgress?: (percent: number) => void) => {
     const formData = new FormData();
     formData.append('file', file);
     if (folderId) formData.append('folderId', folderId);
 
     const res = await apiClient.post<ApiResponse<DocumentResponse>>('/documents', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (progressEvent) => {
+        if (onProgress && progressEvent.total) {
+          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(percent);
+        }
+      },
     });
     return res.data.data;
   },
@@ -117,12 +123,12 @@ export const documentsApi = {
   },
 
   addTag: async (id: string, tag: string) => {
-    const res = await apiClient.post<ApiResponse<DocumentResponse>>(
+    const res = await apiClient.post<ApiResponse<null>>(
       `/documents/${id}/tags`,
       null,
       { params: { tag } }
     );
-    return res.data.data;
+    return res.data;
   },
 
   removeTag: async (id: string, tag: string) => {

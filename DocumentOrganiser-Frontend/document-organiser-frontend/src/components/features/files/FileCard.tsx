@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { Star, MoreVertical, Download, Pencil, Trash2, Share2, Move, Copy } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -73,7 +72,7 @@ export function FileCard({
         <Star
           className={cn(
             'h-4 w-4',
-            doc.favorite
+            doc.isFavorite
               ? 'fill-yellow-400 text-yellow-400'
               : 'text-muted-foreground hover:text-yellow-400'
           )}
@@ -107,7 +106,7 @@ export function FileCard({
         {/* Meta */}
         <div className="mt-1 flex items-center justify-between">
           <p className="text-xs text-muted-foreground">
-            {formatFileSize(doc.size)}
+            {formatFileSize(doc.fileSize)}
           </p>
           <p className="text-xs text-muted-foreground">
             {formatRelativeTime(doc.updatedAt)}

@@ -16,19 +16,23 @@ import {
   CheckCheck,
   Trash2,
   Share2,
-  Upload,
+  AlertTriangle,
+  HardDrive,
   MessageSquare,
-  FileText,
+  Megaphone,
 } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/utils/format';
 import type { NotificationResponse } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 const notificationIcons: Record<string, React.ElementType> = {
-  SHARE: Share2,
-  UPLOAD: Upload,
-  COMMENT: MessageSquare,
-  DOCUMENT: FileText,
+  DOCUMENT_SHARED: Share2,
+  FOLDER_SHARED: Share2,
+  SHARE_LINK_ACCESSED: Share2,
+  STORAGE_WARNING: AlertTriangle,
+  STORAGE_FULL: HardDrive,
+  DOCUMENT_COMMENT: MessageSquare,
+  SYSTEM_ANNOUNCEMENT: Megaphone,
 };
 
 export default function NotificationsPage() {
@@ -38,7 +42,7 @@ export default function NotificationsPage() {
   const deleteNotification = useDeleteNotification();
 
   const notifications = data?.content ?? [];
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
     <div className="space-y-6 p-6">
@@ -73,13 +77,13 @@ export default function NotificationsPage() {
       ) : (
         <div className="space-y-2">
           {notifications.map((notification) => {
-            const Icon = notificationIcons[notification.type] || Bell;
+            const Icon = notificationIcons[notification.notificationType] || Bell;
             return (
               <Card
                 key={notification.id}
                 className={cn(
                   'transition-colors',
-                  !notification.read && 'border-primary/30 bg-primary/5'
+                  !notification.isRead && 'border-primary/30 bg-primary/5'
                 )}
               >
                 <CardContent className="flex items-start justify-between p-4">
@@ -87,18 +91,18 @@ export default function NotificationsPage() {
                     <div
                       className={cn(
                         'rounded-full p-2',
-                        notification.read ? 'bg-muted' : 'bg-primary/10'
+                        notification.isRead ? 'bg-muted' : 'bg-primary/10'
                       )}
                     >
                       <Icon
                         className={cn(
                           'h-4 w-4',
-                          notification.read ? 'text-muted-foreground' : 'text-primary'
+                          notification.isRead ? 'text-muted-foreground' : 'text-primary'
                         )}
                       />
                     </div>
                     <div>
-                      <p className={cn('text-sm', !notification.read && 'font-medium')}>
+                      <p className={cn('text-sm', !notification.isRead && 'font-medium')}>
                         {notification.title}
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
@@ -110,7 +114,7 @@ export default function NotificationsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
-                    {!notification.read && (
+                    {!notification.isRead && (
                       <Button
                         variant="ghost"
                         size="icon"

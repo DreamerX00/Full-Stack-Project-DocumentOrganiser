@@ -28,6 +28,7 @@ import { useNavigationStore } from '@/lib/store/navigationStore';
 import { useAuthStore } from '@/lib/store/authStore';
 import { formatFileSize } from '@/lib/utils/format';
 import { UserDropdown } from '@/components/features/auth/UserDropdown';
+import { FolderTree } from '@/components/features/folders/FolderTree';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Home },
@@ -58,8 +59,8 @@ export function AppSidebar({ className }: SidebarProps) {
   const { sidebarCollapsed, setSidebarCollapsed } = useNavigationStore();
   const user = useAuthStore((s) => s.user);
 
-  const storageUsed = user?.storageUsed ?? 0;
-  const storageQuota = user?.storageQuota ?? 104857600; // 100MB default
+  const storageUsed = user?.storageUsedBytes ?? 0;
+  const storageQuota = user?.storageLimitBytes ?? 104857600; // 100MB default
   const storagePercent = Math.round((storageUsed / storageQuota) * 100);
 
   const NavLink = ({
@@ -147,6 +148,17 @@ export function AppSidebar({ className }: SidebarProps) {
           {navItems.map((item) => (
             <NavLink key={item.href} {...item} />
           ))}
+
+          {/* Folder Tree */}
+          {!sidebarCollapsed && (
+            <>
+              <Separator className="my-2" />
+              <p className="px-3 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Folders
+              </p>
+              <FolderTree />
+            </>
+          )}
 
           <Separator className="my-2" />
 

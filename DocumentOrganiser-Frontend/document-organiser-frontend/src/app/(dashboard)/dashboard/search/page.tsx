@@ -1,9 +1,7 @@
 'use client';
 
-import { Suspense, useEffect, useState, useCallback } from 'react';
+import { Suspense, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { searchApi } from '@/lib/api/search';
-import { documentsApi } from '@/lib/api/documents';
 import { FileGrid } from '@/components/features/files/FileGrid';
 import { FileList } from '@/components/features/files/FileList';
 import { EmptyState } from '@/components/features/files/EmptyState';
@@ -12,12 +10,17 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search as SearchIcon, X, Tag, Clock } from 'lucide-react';
+import { Search as SearchIcon, X } from 'lucide-react';
 import { DocumentCategory } from '@/lib/types';
-import type { DocumentResponse, SearchResultResponse } from '@/lib/types';
-import { downloadBlob, getCategoryInfo } from '@/lib/utils/format';
-import { toast } from 'sonner';
+import type { DocumentResponse } from '@/lib/types';
+import { getCategoryInfo } from '@/lib/utils/format';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  useSearchDocuments,
+  useSearchSuggestions,
+  useDebouncedValue,
+} from '@/lib/hooks/useSearch';
+import { useAllTags, useToggleFavorite, useDownloadDocument } from '@/lib/hooks/useDocuments';
 
 export default function SearchPage() {
   return (
@@ -41,98 +44,38 @@ function SearchContent() {
   const { viewMode } = useNavigationStore();
 
   const [query, setQuery] = useState(searchParams.get('q') ?? '');
+  const [submittedQuery, setSubmittedQuery] = useState(searchParams.get('q') ?? '');
   const [category, setCategory] = useState<string>('all');
-  const [documents, setDocuments] = useState<DocumentResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [suggestions, setSuggestions] = useState<SearchResultResponse[]>([]);
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const [activeTags, setActiveTags] = useState<string[]>([]);
-  const [allTags, setAllTags] = useState<string[]>([]);
 
-  useEffect(() => {
-    const loadInitial = async () => {
-      try {
-        const [recent, tags] = await Promise.all([
-          searchApi.recentSearches(),
-          documentsApi.getAllTags(),
-        ]);
-        setRecentSearches(recent);
-        setAllTags(tags);
-      } catch {
-        // Silently fail
-      }
-    };
-    loadInitial();
-  }, []);
+  const debouncedQuery = useDebouncedValue(query, 300);
 
-  const doSearch = useCallback(async (q: string) => {
-    if (!q.trim() && activeTags.length === 0) return;
-    setIsLoading(true);
-    try {
-      let data;
-      if (activeTags.length > 0) {
-        data = await searchApi.searchByTags(activeTags.join(','));
-      } else {
-        data = await searchApi.search(
-          q,
-          category !== 'all' ? (category as DocumentCategory) : undefined
-        );
-      }
-      setDocuments(data.content);
-    } catch {
-      toast.error('Search failed');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [category, activeTags]);
+  // React Query hooks
+  const { data: searchData, isLoading: searchLoading } = useSearchDocuments(
+    submittedQuery,
+    category !== 'all' ? (category as DocumentCategory) : undefined,
+    undefined,
+    0,
+    20,
+    submittedQuery.trim().length > 0,
+  );
+  const { data: suggestions } = useSearchSuggestions(debouncedQuery);
+  const { data: allTags } = useAllTags();
+  const toggleFavorite = useToggleFavorite();
+  const downloadDoc = useDownloadDocument();
 
-  useEffect(() => {
-    const q = searchParams.get('q');
-    if (q) {
-      setQuery(q);
-      doSearch(q);
-    }
-  }, [searchParams, doSearch]);
+  const isLoading = searchLoading;
+  const documents = searchData?.content ?? [];
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
-      router.push(`/dashboard/search?q=${encodeURIComponent(query)}`);
-      doSearch(query);
-    }
-  };
-
-  const handleSuggest = async (value: string) => {
-    setQuery(value);
-    if (value.length >= 2) {
-      try {
-        const results = await searchApi.suggest(value);
-        setSuggestions(results);
-      } catch {
-        setSuggestions([]);
-      }
-    } else {
-      setSuggestions([]);
-    }
-  };
-
-  const toggleTag = (tag: string) => {
-    setActiveTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
-  };
-
-  const handleDownload = async (doc: DocumentResponse) => {
-    try {
-      const blob = await documentsApi.download(doc.id);
-      downloadBlob(blob, doc.originalName || doc.name);
-    } catch {
-      toast.error('Failed to download');
+      setSubmittedQuery(query.trim());
+      router.push(`/dashboard/search?q=${encodeURIComponent(query.trim())}`);
     }
   };
 
   const hasResults = documents.length > 0;
-  const hasQuery = query.trim().length > 0 || activeTags.length > 0;
+  const hasQuery = submittedQuery.trim().length > 0;
 
   return (
     <div className="space-y-6 p-6">
@@ -147,14 +90,17 @@ function SearchContent() {
           <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
-            onChange={(e) => handleSuggest(e.target.value)}
+            onChange={(e) => setQuery(e.target.value)}
             placeholder="Search documents..."
             className="pl-10"
           />
           {query && (
             <button
               type="button"
-              onClick={() => { setQuery(''); setSuggestions([]); }}
+              onClick={() => {
+                setQuery('');
+                setSubmittedQuery('');
+              }}
               className="absolute right-3 top-1/2 -translate-y-1/2"
             >
               <X className="h-4 w-4 text-muted-foreground" />
@@ -180,67 +126,36 @@ function SearchContent() {
       </form>
 
       {/* Suggestions */}
-      {suggestions.length > 0 && (
+      {suggestions && suggestions.length > 0 && !submittedQuery && (
         <div className="flex flex-wrap gap-2">
           {suggestions.map((s) => (
             <Badge
-              key={s.id}
+              key={s}
               variant="outline"
               className="cursor-pointer"
               onClick={() => {
-                setQuery(s.name);
-                setSuggestions([]);
-                doSearch(s.name);
+                setQuery(s);
+                setSubmittedQuery(s);
               }}
             >
-              {s.name}
+              {s}
             </Badge>
           ))}
         </div>
       )}
 
       {/* Tag Filters */}
-      {allTags.length > 0 && (
-        <div>
-          <h3 className="text-sm font-medium mb-2 flex items-center gap-1.5">
-            <Tag className="h-4 w-4" /> Filter by tags
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {allTags.map((tag) => (
-              <Badge
-                key={tag}
-                variant={activeTags.includes(tag) ? 'default' : 'outline'}
-                className="cursor-pointer"
-                onClick={() => toggleTag(tag)}
-              >
-                {tag}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Recent Searches */}
-      {!hasQuery && recentSearches.length > 0 && (
-        <div>
-          <h3 className="text-sm font-medium mb-2 flex items-center gap-1.5">
-            <Clock className="h-4 w-4" /> Recent searches
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {recentSearches.map((s) => (
-              <Badge
-                key={s}
-                variant="secondary"
-                className="cursor-pointer"
-                onClick={() => {
-                  setQuery(s);
-                  doSearch(s);
-                }}
-              >
-                {s}
-              </Badge>
-            ))}
-          </div>
+      {allTags && allTags.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {allTags.map((tag) => (
+            <Badge
+              key={tag}
+              variant="outline"
+              className="text-xs"
+            >
+              {tag}
+            </Badge>
+          ))}
         </div>
       )}
 
@@ -249,11 +164,21 @@ function SearchContent() {
         <EmptyState type="search" />
       ) : hasResults ? (
         <div>
-          <p className="text-sm text-muted-foreground mb-4">{documents.length} result(s)</p>
+          <p className="text-sm text-muted-foreground mb-4">{searchData?.totalElements ?? documents.length} result(s)</p>
           {viewMode === 'grid' ? (
-            <FileGrid documents={documents} isLoading={isLoading} onDownload={handleDownload} />
+            <FileGrid
+              documents={documents}
+              isLoading={isLoading}
+              onDownload={(doc) => downloadDoc.mutate(doc)}
+              onToggleFavorite={(doc) => toggleFavorite.mutate(doc.id)}
+            />
           ) : (
-            <FileList documents={documents} isLoading={isLoading} onDownload={handleDownload} />
+            <FileList
+              documents={documents}
+              isLoading={isLoading}
+              onDownload={(doc) => downloadDoc.mutate(doc)}
+              onToggleFavorite={(doc) => toggleFavorite.mutate(doc.id)}
+            />
           )}
         </div>
       ) : null}

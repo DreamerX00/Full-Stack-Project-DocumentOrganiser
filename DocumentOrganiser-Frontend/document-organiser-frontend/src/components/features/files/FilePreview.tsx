@@ -59,16 +59,16 @@ export function FilePreview({
 
   const categoryInfo = getCategoryInfo(doc.category);
   const CategoryIcon = categoryInfo.icon;
-  const isImage = doc.contentType.startsWith('image/');
-  const isPdf = doc.contentType === 'application/pdf';
-  const isVideo = doc.contentType.startsWith('video/');
-  const isAudio = doc.contentType.startsWith('audio/');
+  const isImage = doc.mimeType.startsWith('image/');
+  const isPdf = doc.mimeType === 'application/pdf';
+  const isVideo = doc.mimeType.startsWith('video/');
+  const isAudio = doc.mimeType.startsWith('audio/');
   const isText =
-    doc.contentType.startsWith('text/') ||
-    doc.contentType.includes('json') ||
-    doc.contentType.includes('xml') ||
-    doc.contentType.includes('javascript') ||
-    doc.contentType.includes('typescript');
+    doc.mimeType.startsWith('text/') ||
+    doc.mimeType.includes('json') ||
+    doc.mimeType.includes('xml') ||
+    doc.mimeType.includes('javascript') ||
+    doc.mimeType.includes('typescript');
 
   const renderPreview = () => {
     if (!previewUrl) {
@@ -133,6 +133,17 @@ export function FilePreview({
       );
     }
 
+    if (isText) {
+      return (
+        <iframe
+          src={previewUrl}
+          className="w-full h-[60vh] rounded-lg border bg-white dark:bg-gray-900"
+          title={doc.name}
+          sandbox=""
+        />
+      );
+    }
+
     // Fallback: show download
     return (
       <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
@@ -189,12 +200,12 @@ export function FilePreview({
             <Star
               className={cn(
                 'h-3.5 w-3.5',
-                doc.favorite
+                doc.isFavorite
                   ? 'fill-yellow-400 text-yellow-400'
                   : 'text-muted-foreground'
               )}
             />
-            {doc.favorite ? 'Unfavorite' : 'Favorite'}
+            {doc.isFavorite ? 'Unfavorite' : 'Favorite'}
           </Button>
           <Button
             variant="ghost"
@@ -228,13 +239,13 @@ export function FilePreview({
                 <p className="text-xs font-medium text-muted-foreground uppercase">
                   Size
                 </p>
-                <p className="text-sm">{formatFileSize(doc.size)}</p>
+                <p className="text-sm">{formatFileSize(doc.fileSize)}</p>
               </div>
               <div>
                 <p className="text-xs font-medium text-muted-foreground uppercase">
                   Content Type
                 </p>
-                <p className="text-sm break-all">{doc.contentType}</p>
+                <p className="text-sm break-all">{doc.mimeType}</p>
               </div>
               <div>
                 <p className="text-xs font-medium text-muted-foreground uppercase">
@@ -248,12 +259,12 @@ export function FilePreview({
                 </p>
                 <p className="text-sm">{formatDate(doc.updatedAt)}</p>
               </div>
-              {doc.folderName && (
+              {doc.folderPath && (
                 <div>
                   <p className="text-xs font-medium text-muted-foreground uppercase">
                     Folder
                   </p>
-                  <p className="text-sm">{doc.folderName}</p>
+                  <p className="text-sm">{doc.folderPath}</p>
                 </div>
               )}
               {doc.tags.length > 0 && (
@@ -274,7 +285,7 @@ export function FilePreview({
                 <p className="text-xs font-medium text-muted-foreground uppercase">
                   Version
                 </p>
-                <p className="text-sm">v{doc.currentVersion}</p>
+                <p className="text-sm">v{doc.version}</p>
               </div>
             </div>
           )}

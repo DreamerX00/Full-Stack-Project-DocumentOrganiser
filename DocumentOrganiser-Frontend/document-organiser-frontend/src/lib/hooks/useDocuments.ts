@@ -158,7 +158,7 @@ export function useToggleFavorite() {
     onSuccess: (updated) => {
       qc.invalidateQueries({ queryKey: documentKeys.lists() });
       toast.success(
-        updated.favorite ? 'Added to favorites' : 'Removed from favorites'
+        updated.isFavorite ? 'Added to favorites' : 'Removed from favorites'
       );
     },
     onError: () => toast.error('Failed to update favorite'),

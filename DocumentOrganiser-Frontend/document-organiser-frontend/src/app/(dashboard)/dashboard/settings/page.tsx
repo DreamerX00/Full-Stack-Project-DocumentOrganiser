@@ -35,11 +35,15 @@ export default function SettingsPage() {
   const [name, setName] = useState(user?.name ?? '');
   const [email] = useState(user?.email ?? '');
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingNotifications, setIsSavingNotifications] = useState(false);
 
-  // Notification settings
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [shareNotifications, setShareNotifications] = useState(true);
-  const [activityNotifications, setActivityNotifications] = useState(true);
+  // Notification settings — initialized from user profile
+  const [emailNotifications, setEmailNotifications] = useState(
+    user?.settings?.emailNotificationsEnabled ?? true
+  );
+  const [notificationsEnabled, setNotificationsEnabled] = useState(
+    user?.settings?.notificationsEnabled ?? true
+  );
 
   const handleSaveProfile = async () => {
     setIsSaving(true);
@@ -60,6 +64,21 @@ export default function SettingsPage() {
       signOut({ callbackUrl: '/' });
     } catch {
       toast.error('Failed to delete account');
+    }
+  };
+
+  const handleSaveNotifications = async () => {
+    setIsSavingNotifications(true);
+    try {
+      await usersApi.updateSettings({
+        notificationsEnabled: notificationsEnabled,
+        emailNotificationsEnabled: emailNotifications,
+      });
+      toast.success('Notification preferences saved');
+    } catch {
+      toast.error('Failed to save notification preferences');
+    } finally {
+      setIsSavingNotifications(false);
     }
   };
 
@@ -164,6 +183,19 @@ export default function SettingsPage() {
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
+                  <p className="font-medium">Push Notifications</p>
+                  <p className="text-sm text-muted-foreground">
+                    Receive in-app notifications for important updates
+                  </p>
+                </div>
+                <Switch
+                  checked={notificationsEnabled}
+                  onCheckedChange={setNotificationsEnabled}
+                />
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div>
                   <p className="font-medium">Email Notifications</p>
                   <p className="text-sm text-muted-foreground">
                     Receive email notifications for important updates
@@ -174,32 +206,10 @@ export default function SettingsPage() {
                   onCheckedChange={setEmailNotifications}
                 />
               </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Share Notifications</p>
-                  <p className="text-sm text-muted-foreground">
-                    Get notified when someone shares a document with you
-                  </p>
-                </div>
-                <Switch
-                  checked={shareNotifications}
-                  onCheckedChange={setShareNotifications}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Activity Notifications</p>
-                  <p className="text-sm text-muted-foreground">
-                    Get notified about activity on your shared documents
-                  </p>
-                </div>
-                <Switch
-                  checked={activityNotifications}
-                  onCheckedChange={setActivityNotifications}
-                />
-              </div>
+
+              <Button onClick={handleSaveNotifications} disabled={isSavingNotifications}>
+                {isSavingNotifications ? 'Saving...' : 'Save Preferences'}
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>

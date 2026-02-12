@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { dashboardApi } from '@/lib/api/dashboard';
+import { useDashboardStats } from '@/lib/hooks/useDashboard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -15,13 +14,10 @@ import {
   Pie,
   Cell,
   Legend,
-  LineChart,
-  Line,
   CartesianGrid,
 } from 'recharts';
 import { formatFileSize } from '@/lib/utils/format';
 import { FileText, HardDrive, TrendingUp, Users } from 'lucide-react';
-import type { DashboardStatsResponse } from '@/lib/types';
 
 const CATEGORY_COLORS = [
   '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
@@ -29,22 +25,7 @@ const CATEGORY_COLORS = [
 ];
 
 export default function AnalyticsPage() {
-  const [stats, setStats] = useState<DashboardStatsResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const data = await dashboardApi.getStats();
-        setStats(data);
-      } catch {
-        console.error('Failed to fetch analytics');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchStats();
-  }, []);
+  const { data: stats, isLoading } = useDashboardStats();
 
   const categoryData = stats?.documentsByCategory
     ? Object.entries(stats.documentsByCategory).map(([name, value]) => ({
@@ -53,8 +34,8 @@ export default function AnalyticsPage() {
       }))
     : [];
 
-  const storagePercent = stats
-    ? Math.round((stats.storageUsed / stats.storageQuota) * 100)
+  const storagePercent = stats && stats.storageLimitBytes > 0
+    ? Math.round((stats.storageUsedBytes / stats.storageLimitBytes) * 100)
     : 0;
 
   if (isLoading) {
@@ -104,7 +85,7 @@ export default function AnalyticsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold">
-                  {formatFileSize(stats?.storageUsed ?? 0)}
+                  {formatFileSize(stats?.storageUsedBytes ?? 0)}
                 </p>
                 <p className="text-xs text-muted-foreground">Storage Used ({storagePercent}%)</p>
               </div>
@@ -215,8 +196,8 @@ export default function AnalyticsPage() {
         <CardContent>
           <div className="space-y-4">
             <div className="flex justify-between text-sm">
-              <span>Used: {formatFileSize(stats?.storageUsed ?? 0)}</span>
-              <span>Quota: {formatFileSize(stats?.storageQuota ?? 0)}</span>
+              <span>Used: {formatFileSize(stats?.storageUsedBytes ?? 0)}</span>
+              <span>Quota: {formatFileSize(stats?.storageLimitBytes ?? 0)}</span>
             </div>
             <div className="h-4 rounded-full bg-muted overflow-hidden">
               <div

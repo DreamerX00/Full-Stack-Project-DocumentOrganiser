@@ -3,7 +3,7 @@
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { HardDrive } from 'lucide-react';
-import { formatFileSize, getStorageColor, getStorageProgressColor } from '@/lib/utils/format';
+import { formatFileSize, getStorageColor } from '@/lib/utils/format';
 import { cn } from '@/lib/utils';
 
 interface StorageWidgetProps {
@@ -12,7 +12,7 @@ interface StorageWidgetProps {
 }
 
 export function StorageWidget({ used, quota }: StorageWidgetProps) {
-  const percentage = Math.round((used / quota) * 100);
+  const percentage = quota > 0 ? Math.round((used / quota) * 100) : 0;
 
   return (
     <Card>

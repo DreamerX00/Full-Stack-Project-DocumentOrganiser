@@ -60,7 +60,7 @@ export function NotificationBell({
                 key={notification.id}
                 className={cn(
                   'flex flex-col items-start gap-1 px-3 py-2',
-                  !notification.read && 'bg-accent/50'
+                  !notification.isRead && 'bg-accent/50'
                 )}
                 onClick={() => onMarkAsRead?.(notification.id)}
               >

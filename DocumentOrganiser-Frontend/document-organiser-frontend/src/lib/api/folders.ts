@@ -7,7 +7,6 @@ import type {
   CreateFolderRequest,
   UpdateFolderRequest,
   MoveFolderRequest,
-  DocumentResponse,
 } from '@/lib/types';
 
 export const foldersApi = {
@@ -43,28 +42,21 @@ export const foldersApi = {
 
   listSubfolders: async (parentId: string) => {
     const res = await apiClient.get<ApiResponse<FolderResponse[]>>(
-      `/folders/${parentId}/subfolders`
+      `/folders/${parentId}/children`
     );
     return res.data.data;
   },
 
   getFolderTree: async () => {
-    const res = await apiClient.get<ApiResponse<FolderTreeResponse[]>>('/folders/tree');
+    const res = await apiClient.get<ApiResponse<FolderTreeResponse>>('/folders/tree');
     return res.data.data;
   },
 
-  getContents: async (
-    folderId: string,
-    page = 0,
-    size = 20,
-    sortBy = 'updatedAt',
-    sortDir = 'desc'
-  ) => {
-    const res = await apiClient.get<
-      ApiResponse<PagedResponse<DocumentResponse>>
-    >(`/folders/${folderId}/contents`, {
-      params: { page, size, sort: `${sortBy},${sortDir}` },
-    });
+  searchFolders: async (query: string, page = 0, size = 20) => {
+    const res = await apiClient.get<ApiResponse<PagedResponse<FolderResponse>>>(
+      '/folders/search',
+      { params: { query, page, size } }
+    );
     return res.data.data;
   },
 };

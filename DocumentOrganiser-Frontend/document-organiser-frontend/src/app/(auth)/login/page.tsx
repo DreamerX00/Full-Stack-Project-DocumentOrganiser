@@ -1,12 +1,36 @@
 'use client';
 
+import { Suspense, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { FileText } from 'lucide-react';
+import { FileText, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { GoogleLoginButton } from '@/components/features/auth/GoogleLoginButton';
+import { useAuth } from '@/lib/hooks/useAuth';
 import Link from 'next/link';
 
-export default function LoginPage() {
+function LoginContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { session, isLoading } = useAuth();
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+
+  // If user already has a session (returned from Google OAuth), redirect
+  useEffect(() => {
+    if (session && !isLoading) {
+      router.replace(callbackUrl);
+    }
+  }, [session, isLoading, callbackUrl, router]);
+
+  // Show loading while session is being checked or token is being exchanged
+  if (isLoading || session) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted/30 px-4">
       <motion.div
@@ -41,5 +65,19 @@ export default function LoginPage() {
         </Card>
       </motion.div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }

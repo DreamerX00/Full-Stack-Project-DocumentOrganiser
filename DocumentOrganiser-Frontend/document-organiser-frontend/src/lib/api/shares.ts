@@ -6,7 +6,7 @@ import type {
   PagedResponse,
   ShareWithUserRequest,
   CreateShareLinkRequest,
-  PublicShareResponse,
+  DocumentResponse,
 } from '@/lib/types';
 
 export const sharesApi = {
@@ -28,7 +28,7 @@ export const sharesApi = {
 
   createDocumentShareLink: async (documentId: string, data: CreateShareLinkRequest) => {
     const res = await apiClient.post<ApiResponse<ShareLinkResponse>>(
-      `/documents/${documentId}/share-link`,
+      `/documents/${documentId}/share/link`,
       data
     );
     return res.data.data;
@@ -36,29 +36,13 @@ export const sharesApi = {
 
   createFolderShareLink: async (folderId: string, data: CreateShareLinkRequest) => {
     const res = await apiClient.post<ApiResponse<ShareLinkResponse>>(
-      `/folders/${folderId}/share-link`,
+      `/folders/${folderId}/share/link`,
       data
     );
     return res.data.data;
   },
 
-  getDocumentShares: async (documentId: string, page = 0, size = 20) => {
-    const res = await apiClient.get<ApiResponse<PagedResponse<SharedItemResponse>>>(
-      `/documents/${documentId}/shares`,
-      { params: { page, size } }
-    );
-    return res.data.data;
-  },
-
-  getFolderShares: async (folderId: string, page = 0, size = 20) => {
-    const res = await apiClient.get<ApiResponse<PagedResponse<SharedItemResponse>>>(
-      `/folders/${folderId}/shares`,
-      { params: { page, size } }
-    );
-    return res.data.data;
-  },
-
-  getSharedWithMe: async (page = 0, size = 20) => {
+  getDocumentsSharedWithMe: async (page = 0, size = 20) => {
     const res = await apiClient.get<ApiResponse<PagedResponse<SharedItemResponse>>>(
       '/documents/shared-with-me',
       { params: { page, size } }
@@ -66,7 +50,15 @@ export const sharesApi = {
     return res.data.data;
   },
 
-  getSharedByMe: async (page = 0, size = 20) => {
+  getFoldersSharedWithMe: async (page = 0, size = 20) => {
+    const res = await apiClient.get<ApiResponse<PagedResponse<SharedItemResponse>>>(
+      '/folders/shared-with-me',
+      { params: { page, size } }
+    );
+    return res.data.data;
+  },
+
+  getDocumentsSharedByMe: async (page = 0, size = 20) => {
     const res = await apiClient.get<ApiResponse<PagedResponse<SharedItemResponse>>>(
       '/documents/shared-by-me',
       { params: { page, size } }
@@ -74,13 +66,21 @@ export const sharesApi = {
     return res.data.data;
   },
 
+  getFoldersSharedByMe: async (page = 0, size = 20) => {
+    const res = await apiClient.get<ApiResponse<PagedResponse<SharedItemResponse>>>(
+      '/folders/shared-by-me',
+      { params: { page, size } }
+    );
+    return res.data.data;
+  },
+
   revokeDocumentShare: async (shareId: string) => {
-    const res = await apiClient.delete<ApiResponse<null>>(`/documents/shares/${shareId}`);
+    const res = await apiClient.delete<ApiResponse<null>>(`/shares/documents/${shareId}`);
     return res.data;
   },
 
   revokeFolderShare: async (shareId: string) => {
-    const res = await apiClient.delete<ApiResponse<null>>(`/folders/shares/${shareId}`);
+    const res = await apiClient.delete<ApiResponse<null>>(`/shares/folders/${shareId}`);
     return res.data;
   },
 
@@ -97,9 +97,9 @@ export const sharesApi = {
     return res.data;
   },
 
-  // Public share (no auth)
+  // Public share (no auth) — backend returns DocumentResponse
   getPublicShare: async (token: string, password?: string) => {
-    const res = await apiClient.get<ApiResponse<PublicShareResponse>>(`/share/${token}`, {
+    const res = await apiClient.get<ApiResponse<DocumentResponse>>(`/share/${token}`, {
       params: { password },
     });
     return res.data.data;

@@ -3,12 +3,16 @@
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { useAuthStore } from '@/lib/store/authStore';
 import { authApi } from '@/lib/api/auth';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
+// Module-level flag prevents duplicate calls across StrictMode re-mounts
+let isExchanging = false;
 
 export function useAuth() {
   const { data: session, status } = useSession();
   const store = useAuthStore();
-  const hasExchangedRef = useRef(false);
+  const router = useRouter();
 
   // Exchange Google ID token for backend JWT on first sign-in
   useEffect(() => {
@@ -16,9 +20,9 @@ export function useAuth() {
       if (
         session?.idToken &&
         !store.isAuthenticated &&
-        !hasExchangedRef.current
+        !isExchanging
       ) {
-        hasExchangedRef.current = true;
+        isExchanging = true;
         try {
           const authResponse = await authApi.loginWithGoogle({
             idToken: session.idToken,
@@ -28,9 +32,11 @@ export function useAuth() {
             authResponse.accessToken,
             authResponse.refreshToken
           );
+          // Redirect to dashboard after successful token exchange
+          router.replace('/dashboard');
         } catch (error) {
           console.error('Failed to exchange token with backend:', error);
-          hasExchangedRef.current = false;
+          isExchanging = false;
         }
       }
     };

@@ -13,6 +13,7 @@ import { CreateFolderDialog } from '@/components/features/folders/CreateFolderDi
 import { FileUploadDialog } from '@/components/features/files/FileUploadDialog';
 import { ShareDialog } from '@/components/features/share/ShareDialog';
 import { RenameDialog } from '@/components/features/files/RenameDialog';
+import { FilePreview } from '@/components/features/files/FilePreview';
 import { AppBreadcrumb } from '@/components/layout/Breadcrumb';
 import { useNavigationStore } from '@/lib/store/navigationStore';
 import { useFileStore } from '@/lib/store/fileStore';
@@ -37,6 +38,7 @@ export default function DocumentsPage() {
   const [shareDoc, setShareDoc] = useState<DocumentResponse | null>(null);
   const [shareLink, setShareLink] = useState<string | undefined>();
   const [renameDoc, setRenameDoc] = useState<DocumentResponse | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<DocumentResponse | null>(null);
 
   // React Query
   const { data: docsData, isLoading: docsLoading } = useDocumentsByFolder(undefined);
@@ -83,7 +85,18 @@ export default function DocumentsPage() {
 
       {/* Bulk Actions */}
       <BulkActionsBar
-        onDelete={() => clearSelection()}
+        onDelete={() => {
+          const { selectedFiles } = useFileStore.getState();
+          selectedFiles.forEach((id) => deleteDoc.mutate(id));
+          clearSelection();
+        }}
+        onDownload={() => {
+          const { selectedFiles } = useFileStore.getState();
+          selectedFiles.forEach((id) => {
+            const doc = documents.find((d) => d.id === id);
+            if (doc) downloadDoc.mutate(doc);
+          });
+        }}
       />
 
       {/* Content */}
@@ -119,6 +132,7 @@ export default function DocumentsPage() {
                 <FileGrid
                   documents={documents}
                   isLoading={isLoading}
+                  onPreview={(doc) => setPreviewDoc(doc)}
                   onDelete={(doc) => deleteDoc.mutate(doc.id)}
                   onToggleFavorite={(doc) => toggleFavorite.mutate(doc.id)}
                   onDownload={(doc) => downloadDoc.mutate(doc)}
@@ -129,6 +143,7 @@ export default function DocumentsPage() {
                 <FileList
                   documents={documents}
                   isLoading={isLoading}
+                  onPreview={(doc) => setPreviewDoc(doc)}
                   onDelete={(doc) => deleteDoc.mutate(doc.id)}
                   onToggleFavorite={(doc) => toggleFavorite.mutate(doc.id)}
                   onDownload={(doc) => downloadDoc.mutate(doc)}
@@ -187,6 +202,14 @@ export default function DocumentsPage() {
           }
         }}
         isLoading={renameDocument.isPending}
+      />
+      <FilePreview
+        document={previewDoc}
+        open={!!previewDoc}
+        onOpenChange={() => setPreviewDoc(null)}
+        onDownload={(doc) => downloadDoc.mutate(doc)}
+        onShare={(doc) => { setPreviewDoc(null); setShareDoc(doc); }}
+        onToggleFavorite={(doc) => toggleFavorite.mutate(doc.id)}
       />
     </div>
   );

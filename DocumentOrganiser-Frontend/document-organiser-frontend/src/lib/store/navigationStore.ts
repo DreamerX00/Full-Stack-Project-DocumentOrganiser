@@ -19,6 +19,7 @@ interface NavigationState {
   setViewMode: (mode: ViewMode) => void;
   setSortBy: (field: SortField) => void;
   setSortDirection: (direction: SortDirection) => void;
+  toggleSortDirection: () => void;
 }
 
 export const useNavigationStore = create<NavigationState>()(
@@ -42,6 +43,10 @@ export const useNavigationStore = create<NavigationState>()(
       setViewMode: (viewMode) => set({ viewMode }),
       setSortBy: (sortBy) => set({ sortBy }),
       setSortDirection: (sortDirection) => set({ sortDirection }),
+      toggleSortDirection: () =>
+        set((state) => ({
+          sortDirection: state.sortDirection === 'asc' ? 'desc' : 'asc',
+        })),
     }),
     {
       name: 'navigation-storage',

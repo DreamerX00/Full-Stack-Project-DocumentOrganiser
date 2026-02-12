@@ -8,8 +8,6 @@ import {
 import { foldersApi } from '@/lib/api/folders';
 import { toast } from 'sonner';
 import type {
-  FolderResponse,
-  FolderTreeResponse,
   CreateFolderRequest,
   UpdateFolderRequest,
   MoveFolderRequest,
@@ -25,8 +23,6 @@ export const folderKeys = {
   tree: () => [...folderKeys.all, 'tree'] as const,
   details: () => [...folderKeys.all, 'detail'] as const,
   detail: (id: string) => [...folderKeys.details(), id] as const,
-  contents: (id: string, page?: number) =>
-    [...folderKeys.all, 'contents', id, { page }] as const,
 };
 
 // ── Queries ─────────────────────────────────────────────────
@@ -57,20 +53,6 @@ export function useFolder(id: string) {
     queryKey: folderKeys.detail(id),
     queryFn: () => foldersApi.getById(id),
     enabled: !!id,
-  });
-}
-
-export function useFolderContents(
-  folderId: string,
-  page = 0,
-  size = 20,
-  sortBy = 'updatedAt',
-  sortDir = 'desc'
-) {
-  return useQuery({
-    queryKey: folderKeys.contents(folderId, page),
-    queryFn: () => foldersApi.getContents(folderId, page, size, sortBy, sortDir),
-    enabled: !!folderId,
   });
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, use } from 'react';
+import { useState, use, useEffect } from 'react';
 import { FolderPlus, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FileGrid } from '@/components/features/files/FileGrid';
@@ -9,49 +9,61 @@ import { FolderCard } from '@/components/features/folders/FolderCard';
 import { EmptyState } from '@/components/features/files/EmptyState';
 import { CreateFolderDialog } from '@/components/features/folders/CreateFolderDialog';
 import { FileUploadDialog } from '@/components/features/files/FileUploadDialog';
+import { RenameDialog } from '@/components/features/files/RenameDialog';
+import { ShareDialog } from '@/components/features/share/ShareDialog';
+import { FilePreview } from '@/components/features/files/FilePreview';
 import { AppBreadcrumb } from '@/components/layout/Breadcrumb';
 import { useNavigationStore } from '@/lib/store/navigationStore';
 import { useFileStore } from '@/lib/store/fileStore';
-import { documentsApi } from '@/lib/api/documents';
-import { foldersApi } from '@/lib/api/folders';
-import { toast } from 'sonner';
-import { downloadBlob } from '@/lib/utils/format';
-import type { DocumentResponse, FolderResponse } from '@/lib/types';
+import {
+  useDocumentsByFolder,
+  useDeleteDocument,
+  useToggleFavorite,
+  useDownloadDocument,
+  useRenameDocument,
+} from '@/lib/hooks/useDocuments';
+import {
+  useFolder,
+  useSubfolders,
+  useCreateFolder,
+  useDeleteFolder,
+} from '@/lib/hooks/useFolders';
+import { useShareDocumentWithUser, useCreateDocumentShareLink } from '@/lib/hooks/useShares';
+import type { DocumentResponse } from '@/lib/types';
 
 export default function FolderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { viewMode } = useNavigationStore();
-  const { documents, folders, isLoading, setDocuments, setFolders, setLoading, setCurrentFolderId } =
-    useFileStore();
+  const { setCurrentFolderId } = useFileStore();
 
-  const [folder, setFolder] = useState<FolderResponse | null>(null);
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [renameDoc, setRenameDoc] = useState<DocumentResponse | null>(null);
+  const [shareDoc, setShareDoc] = useState<DocumentResponse | null>(null);
+  const [shareLink, setShareLink] = useState<string | undefined>();
+  const [previewDoc, setPreviewDoc] = useState<DocumentResponse | null>(null);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [folderData, docsData, subfoldersData] = await Promise.all([
-        foldersApi.getById(id),
-        documentsApi.listByFolder(id),
-        foldersApi.listSubfolders(id),
-      ]);
-      setFolder(folderData);
-      setDocuments(docsData.content);
-      setFolders(subfoldersData);
-      setCurrentFolderId(id);
-    } catch (error) {
-      console.error('Failed to fetch folder:', error);
-      toast.error('Failed to load folder');
-    } finally {
-      setLoading(false);
-    }
-  }, [id, setDocuments, setFolders, setLoading, setCurrentFolderId]);
+  // React Query hooks
+  const { data: folder } = useFolder(id);
+  const { data: docsData, isLoading: docsLoading } = useDocumentsByFolder(id);
+  const { data: subfolders, isLoading: foldersLoading } = useSubfolders(id);
+  const deleteDoc = useDeleteDocument();
+  const toggleFavorite = useToggleFavorite();
+  const downloadDoc = useDownloadDocument();
+  const renameDocument = useRenameDocument();
+  const createFolder = useCreateFolder();
+  const deleteFolder = useDeleteFolder();
+  const shareWithUser = useShareDocumentWithUser();
+  const createShareLink = useCreateDocumentShareLink();
+
+  const documents = docsData?.content ?? [];
+  const folders = subfolders ?? [];
+  const isLoading = docsLoading || foldersLoading;
 
   useEffect(() => {
-    fetchData();
+    setCurrentFolderId(id);
     return () => setCurrentFolderId(null);
-  }, [fetchData, setCurrentFolderId]);
+  }, [id, setCurrentFolderId]);
 
   const breadcrumbItems = [
     { id: 'documents', name: 'My Documents', href: '/dashboard/documents' },
@@ -59,42 +71,10 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
   ];
 
   const handleCreateFolder = async (data: { name: string; description?: string; color?: string }) => {
-    try {
-      await foldersApi.create({ ...data, parentFolderId: id });
-      toast.success('Folder created');
-      setCreateFolderOpen(false);
-      fetchData();
-    } catch {
-      toast.error('Failed to create folder');
-    }
-  };
-
-  const handleDeleteDoc = async (doc: DocumentResponse) => {
-    try {
-      await documentsApi.delete(doc.id);
-      toast.success('Moved to trash');
-      fetchData();
-    } catch {
-      toast.error('Failed to delete');
-    }
-  };
-
-  const handleToggleFavorite = async (doc: DocumentResponse) => {
-    try {
-      await documentsApi.toggleFavorite(doc.id);
-      fetchData();
-    } catch {
-      toast.error('Failed to update');
-    }
-  };
-
-  const handleDownload = async (doc: DocumentResponse) => {
-    try {
-      const blob = await documentsApi.download(doc.id);
-      downloadBlob(blob, doc.originalName || doc.name);
-    } catch {
-      toast.error('Failed to download');
-    }
+    createFolder.mutate(
+      { ...data, parentFolderId: id },
+      { onSuccess: () => setCreateFolderOpen(false) },
+    );
   };
 
   const isEmpty = !isLoading && documents.length === 0 && folders.length === 0;
@@ -132,7 +112,11 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
               <h2 className="mb-3 text-sm font-medium text-muted-foreground">Folders</h2>
               <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {folders.map((f) => (
-                  <FolderCard key={f.id} folder={f} />
+                  <FolderCard
+                    key={f.id}
+                    folder={f}
+                    onDelete={(f) => deleteFolder.mutate(f.id)}
+                  />
                 ))}
               </div>
             </div>
@@ -145,17 +129,23 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
                 <FileGrid
                   documents={documents}
                   isLoading={isLoading}
-                  onDelete={handleDeleteDoc}
-                  onToggleFavorite={handleToggleFavorite}
-                  onDownload={handleDownload}
+                  onPreview={(doc) => setPreviewDoc(doc)}
+                  onDelete={(doc) => deleteDoc.mutate(doc.id)}
+                  onToggleFavorite={(doc) => toggleFavorite.mutate(doc.id)}
+                  onDownload={(doc) => downloadDoc.mutate(doc)}
+                  onRename={(doc) => setRenameDoc(doc)}
+                  onShare={(doc) => setShareDoc(doc)}
                 />
               ) : (
                 <FileList
                   documents={documents}
                   isLoading={isLoading}
-                  onDelete={handleDeleteDoc}
-                  onToggleFavorite={handleToggleFavorite}
-                  onDownload={handleDownload}
+                  onPreview={(doc) => setPreviewDoc(doc)}
+                  onDelete={(doc) => deleteDoc.mutate(doc.id)}
+                  onToggleFavorite={(doc) => toggleFavorite.mutate(doc.id)}
+                  onDownload={(doc) => downloadDoc.mutate(doc)}
+                  onRename={(doc) => setRenameDoc(doc)}
+                  onShare={(doc) => setShareDoc(doc)}
                 />
               )}
             </div>
@@ -163,12 +153,61 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
         </>
       )}
 
+      {/* Dialogs */}
       <CreateFolderDialog
         open={createFolderOpen}
         onOpenChange={setCreateFolderOpen}
         onSubmit={handleCreateFolder}
       />
       <FileUploadDialog open={uploadOpen} onOpenChange={setUploadOpen} />
+      <RenameDialog
+        open={!!renameDoc}
+        onOpenChange={() => setRenameDoc(null)}
+        currentName={renameDoc?.name ?? ''}
+        onRename={(newName) => {
+          if (renameDoc) {
+            renameDocument.mutate(
+              { id: renameDoc.id, data: { newName } },
+              { onSuccess: () => setRenameDoc(null) },
+            );
+          }
+        }}
+        isLoading={renameDocument.isPending}
+      />
+      <ShareDialog
+        open={!!shareDoc}
+        onOpenChange={() => { setShareDoc(null); setShareLink(undefined); }}
+        itemName={shareDoc?.name ?? ''}
+        shareLink={shareLink}
+        onShareWithUser={async (email, permission) => {
+          if (shareDoc) {
+            shareWithUser.mutate({
+              documentId: shareDoc.id,
+              data: { email, permission },
+            });
+          }
+        }}
+        onCreateLink={async (permission) => {
+          if (shareDoc) {
+            createShareLink.mutate(
+              { documentId: shareDoc.id, data: { permission } },
+              {
+                onSuccess: (link) => {
+                  setShareLink(`${window.location.origin}/share/${link.token}`);
+                },
+              },
+            );
+          }
+        }}
+      />
+      <FilePreview
+        document={previewDoc}
+        open={!!previewDoc}
+        onOpenChange={() => setPreviewDoc(null)}
+        onDownload={(doc) => downloadDoc.mutate(doc)}
+        onShare={(doc) => setShareDoc(doc)}
+        onToggleFavorite={(doc) => toggleFavorite.mutate(doc.id)}
+      />
     </div>
   );
 }

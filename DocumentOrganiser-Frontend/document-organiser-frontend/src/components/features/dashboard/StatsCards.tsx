@@ -28,7 +28,7 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
     },
     {
       title: 'Storage Used',
-      value: formatFileSize(stats?.storageUsed ?? 0),
+      value: formatFileSize(stats?.storageUsedBytes ?? 0),
       icon: HardDrive,
       color: 'text-green-600',
       bgColor: 'bg-green-100 dark:bg-green-900/30',

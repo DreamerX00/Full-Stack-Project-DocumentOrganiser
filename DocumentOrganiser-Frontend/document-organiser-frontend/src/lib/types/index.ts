@@ -78,7 +78,7 @@ export interface ApiResponse<T> {
   message: string;
   data: T;
   timestamp: string;
-  errors?: ErrorDetails[];
+  error?: ErrorDetails;
 }
 
 export interface ErrorDetails {
@@ -121,33 +121,31 @@ export interface AuthResponse {
 }
 
 // ============================================================
-// User DTOs
+// User DTOs (matches backend UserResponse.java)
 // ============================================================
 
 export interface UserResponse {
   id: string;
   email: string;
   name: string;
-  profilePictureUrl?: string;
+  profilePicture?: string;
   role: Role;
-  authProvider: AuthProvider;
-  storageUsed: number;
-  storageQuota: number;
-  enabled: boolean;
+  emailVerified?: boolean;
+  storageUsedBytes: number;
+  storageLimitBytes: number;
   createdAt: string;
-  updatedAt: string;
+  settings?: UserSettingsResponse;
 }
 
 export interface UserSettingsResponse {
-  id: string;
-  theme: Theme;
+  theme: string;
   language: string;
+  storageLimitMb?: number;
   notificationsEnabled: boolean;
   emailNotificationsEnabled: boolean;
-  defaultViewMode: ViewMode;
-  defaultSortField: SortField;
-  defaultSortDirection: SortDirection;
-  storageQuotaMb: number;
+  defaultView: string;
+  sortBy: string;
+  sortOrder: string;
 }
 
 export interface UpdateProfileRequest {
@@ -156,37 +154,38 @@ export interface UpdateProfileRequest {
 }
 
 export interface UpdateSettingsRequest {
-  theme?: Theme;
+  theme?: string;
   language?: string;
   notificationsEnabled?: boolean;
   emailNotificationsEnabled?: boolean;
-  defaultViewMode?: ViewMode;
-  defaultSortField?: SortField;
-  defaultSortDirection?: SortDirection;
+  defaultView?: string;
+  sortBy?: string;
+  sortOrder?: string;
 }
 
 // ============================================================
-// Document DTOs
+// Document DTOs (matches backend DocumentResponse.java)
 // ============================================================
 
 export interface DocumentResponse {
   id: string;
   name: string;
   originalName: string;
-  contentType: string;
-  size: number;
+  fileSize: number;
+  fileType: string;
+  mimeType: string;
   category: DocumentCategory;
-  storageKey: string;
+  version: number;
+  isFavorite: boolean;
+  downloadCount: number;
   folderId?: string;
-  folderName?: string;
-  favorite: boolean;
+  folderPath?: string;
   tags: string[];
-  versionCount: number;
-  currentVersion: number;
   thumbnailUrl?: string;
   downloadUrl?: string;
   createdAt: string;
   updatedAt: string;
+  lastAccessedAt?: string;
 }
 
 export interface RenameDocumentRequest {
@@ -198,32 +197,32 @@ export interface MoveDocumentRequest {
 }
 
 // ============================================================
-// Folder DTOs
+// Folder DTOs (matches backend FolderResponse.java)
 // ============================================================
 
 export interface FolderResponse {
   id: string;
   name: string;
-  description?: string;
-  color?: string;
-  parentFolderId?: string;
-  parentFolderName?: string;
-  documentCount: number;
-  subfolderCount: number;
-  totalSize: number;
   path: string;
+  color?: string;
+  description?: string;
+  isRoot: boolean;
+  parentFolderId?: string;
   createdAt: string;
   updatedAt: string;
+  subFolders: FolderResponse[];
+  documentCount: number;
+  subFolderCount: number;
 }
 
 export interface FolderTreeResponse {
   id: string;
   name: string;
+  path?: string;
   color?: string;
-  parentFolderId?: string;
-  documentCount: number;
-  subfolderCount: number;
+  isRoot?: boolean;
   children: FolderTreeResponse[];
+  documentCount: number;
 }
 
 export interface CreateFolderRequest {
@@ -240,11 +239,11 @@ export interface UpdateFolderRequest {
 }
 
 export interface MoveFolderRequest {
-  targetParentFolderId: string | null;
+  targetFolderId: string | null;
 }
 
 // ============================================================
-// Share DTOs
+// Share DTOs (matches backend SharedItemResponse.java)
 // ============================================================
 
 export interface ShareWithUserRequest {
@@ -263,136 +262,112 @@ export interface CreateShareLinkRequest {
 
 export interface SharedItemResponse {
   id: string;
-  itemType: ItemType;
+  itemType: string;
   itemId: string;
   itemName: string;
-  sharedByUserId: string;
-  sharedByUserName: string;
-  sharedByUserEmail: string;
-  sharedWithUserId: string;
-  sharedWithUserName: string;
-  sharedWithUserEmail: string;
+  sharedByEmail: string;
+  sharedByName: string;
+  sharedWithEmail: string;
+  sharedWithName: string;
   permission: SharePermission;
+  expiresAt?: string;
   message?: string;
   createdAt: string;
+  isExpired?: boolean;
 }
 
 export interface ShareLinkResponse {
   id: string;
   token: string;
-  itemType: ItemType;
+  url: string;
+  itemType: string;
   itemId: string;
   itemName: string;
   permission: SharePermission;
-  hasPassword: boolean;
   expiresAt?: string;
-  maxAccessCount?: number;
+  hasPassword: boolean;
   accessCount: number;
-  createdByUserName: string;
+  maxAccessCount?: number;
+  isActive: boolean;
   createdAt: string;
-  active: boolean;
-}
-
-export interface PublicShareResponse {
-  itemName: string;
-  itemType: ItemType;
-  contentType?: string;
-  size?: number;
-  permission: SharePermission;
-  sharedBy: string;
-  previewUrl?: string;
 }
 
 // ============================================================
-// Trash DTOs
+// Trash DTOs (matches backend TrashItemResponse.java)
 // ============================================================
 
 export interface TrashItemResponse {
   id: string;
-  itemType: ItemType;
+  itemType: string;
   itemId: string;
   itemName: string;
-  originalFolderId?: string;
-  originalFolderName?: string;
-  size: number;
+  originalPath?: string;
+  fileSize: number;
   deletedAt: string;
   expiresAt: string;
+  daysUntilPermanentDeletion: number;
 }
 
 // ============================================================
-// Notification DTOs
+// Notification DTOs (matches backend NotificationResponse.java)
 // ============================================================
 
 export interface NotificationResponse {
   id: string;
-  type: NotificationType;
+  notificationType: NotificationType;
   title: string;
   message: string;
-  read: boolean;
+  isRead: boolean;
+  resourceType?: string;
+  resourceId?: string;
   actionUrl?: string;
-  relatedItemId?: string;
-  relatedItemType?: ItemType;
   metadata?: Record<string, unknown>;
   createdAt: string;
 }
 
 // ============================================================
-// Activity DTOs
+// Activity DTOs (matches backend ActivityResponse.java)
 // ============================================================
 
 export interface ActivityResponse {
   id: string;
   activityType: ActivityType;
+  resourceType?: string;
+  resourceId?: string;
+  resourceName?: string;
   description: string;
-  itemId?: string;
-  itemName?: string;
-  itemType?: ItemType;
   metadata?: Record<string, unknown>;
   createdAt: string;
 }
 
 // ============================================================
-// Dashboard DTOs
+// Dashboard DTOs (matches backend DashboardStatsResponse.java)
 // ============================================================
 
 export interface DashboardStatsResponse {
   totalDocuments: number;
   totalFolders: number;
-  storageUsed: number;
-  storageQuota: number;
+  storageUsedBytes: number;
+  storageLimitBytes: number;
   storageUsedPercentage: number;
   favoriteCount: number;
   sharedWithMeCount: number;
   sharedByMeCount: number;
   documentsByCategory: Record<string, number>;
   recentDocuments: DocumentResponse[];
-  recentActivities: ActivityResponse[];
+  recentActivity: ActivityResponse[];
 }
 
 // ============================================================
-// Search DTOs
+// Search DTOs (matches backend SearchResultResponse.java)
 // ============================================================
 
 export interface SearchResultResponse {
-  id: string;
-  name: string;
-  itemType: ItemType;
-  contentType?: string;
-  category?: DocumentCategory;
-}
-
-export interface SearchRequest {
-  query?: string;
-  category?: DocumentCategory;
-  contentType?: string;
-  folderId?: string;
-  startDate?: string;
-  endDate?: string;
-  sizeMin?: number;
-  sizeMax?: number;
-  favoritesOnly?: boolean;
-  tags?: string[];
-  sortBy?: SortField;
+  documents: DocumentResponse[];
+  folders: FolderResponse[];
+  totalDocuments: number;
+  totalFolders: number;
+  totalResults: number;
 }
 
 // ============================================================

@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { activityApi } from '@/lib/api/activity';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState } from 'react';
+import { useActivities } from '@/lib/hooks/useActivity';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -21,57 +21,78 @@ import {
 } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/utils/format';
 import { ActivityType } from '@/lib/types';
-import type { ActivityResponse } from '@/lib/types';
-import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 const activityIcons: Record<string, React.ElementType> = {
-  UPLOAD: Upload,
-  DOWNLOAD: Download,
-  DELETE: Trash2,
-  RENAME: Edit,
-  SHARE: Share2,
-  FAVORITE: Star,
-  CREATE_FOLDER: FolderPlus,
-  MOVE: Move,
-  COPY: Copy,
-  VIEW: Eye,
+  DOCUMENT_UPLOADED: Upload,
+  DOCUMENT_DOWNLOADED: Download,
+  DOCUMENT_VIEWED: Eye,
+  DOCUMENT_RENAMED: Edit,
+  DOCUMENT_MOVED: Move,
+  DOCUMENT_COPIED: Copy,
+  DOCUMENT_DELETED: Trash2,
+  DOCUMENT_RESTORED: Move,
+  DOCUMENT_PERMANENTLY_DELETED: Trash2,
+  DOCUMENT_FAVORITED: Star,
+  DOCUMENT_UNFAVORITED: Star,
+  DOCUMENT_TAGGED: Edit,
+  DOCUMENT_UNTAGGED: Edit,
+  FOLDER_CREATED: FolderPlus,
+  FOLDER_RENAMED: Edit,
+  FOLDER_MOVED: Move,
+  FOLDER_DELETED: Trash2,
+  FOLDER_RESTORED: Move,
+  FOLDER_PERMANENTLY_DELETED: Trash2,
+  SHARE_CREATED: Share2,
+  SHARE_UPDATED: Share2,
+  SHARE_REVOKED: Share2,
+  SHARE_LINK_CREATED: Share2,
+  SHARE_LINK_ACCESSED: Eye,
+  SHARE_LINK_REVOKED: Share2,
+  USER_LOGIN: Eye,
+  USER_LOGOUT: Eye,
+  USER_SETTINGS_UPDATED: Edit,
 };
 
 const activityColors: Record<string, string> = {
-  UPLOAD: 'text-green-500 bg-green-500/10',
-  DOWNLOAD: 'text-blue-500 bg-blue-500/10',
-  DELETE: 'text-red-500 bg-red-500/10',
-  RENAME: 'text-yellow-500 bg-yellow-500/10',
-  SHARE: 'text-purple-500 bg-purple-500/10',
-  FAVORITE: 'text-amber-500 bg-amber-500/10',
-  CREATE_FOLDER: 'text-indigo-500 bg-indigo-500/10',
-  MOVE: 'text-cyan-500 bg-cyan-500/10',
-  COPY: 'text-teal-500 bg-teal-500/10',
-  VIEW: 'text-gray-500 bg-gray-500/10',
+  DOCUMENT_UPLOADED: 'text-green-500 bg-green-500/10',
+  DOCUMENT_DOWNLOADED: 'text-blue-500 bg-blue-500/10',
+  DOCUMENT_VIEWED: 'text-gray-500 bg-gray-500/10',
+  DOCUMENT_RENAMED: 'text-yellow-500 bg-yellow-500/10',
+  DOCUMENT_MOVED: 'text-cyan-500 bg-cyan-500/10',
+  DOCUMENT_COPIED: 'text-teal-500 bg-teal-500/10',
+  DOCUMENT_DELETED: 'text-red-500 bg-red-500/10',
+  DOCUMENT_RESTORED: 'text-green-500 bg-green-500/10',
+  DOCUMENT_PERMANENTLY_DELETED: 'text-red-700 bg-red-700/10',
+  DOCUMENT_FAVORITED: 'text-amber-500 bg-amber-500/10',
+  DOCUMENT_UNFAVORITED: 'text-amber-500 bg-amber-500/10',
+  DOCUMENT_TAGGED: 'text-indigo-500 bg-indigo-500/10',
+  DOCUMENT_UNTAGGED: 'text-indigo-500 bg-indigo-500/10',
+  FOLDER_CREATED: 'text-indigo-500 bg-indigo-500/10',
+  FOLDER_RENAMED: 'text-yellow-500 bg-yellow-500/10',
+  FOLDER_MOVED: 'text-cyan-500 bg-cyan-500/10',
+  FOLDER_DELETED: 'text-red-500 bg-red-500/10',
+  FOLDER_RESTORED: 'text-green-500 bg-green-500/10',
+  FOLDER_PERMANENTLY_DELETED: 'text-red-700 bg-red-700/10',
+  SHARE_CREATED: 'text-purple-500 bg-purple-500/10',
+  SHARE_UPDATED: 'text-purple-500 bg-purple-500/10',
+  SHARE_REVOKED: 'text-purple-500 bg-purple-500/10',
+  SHARE_LINK_CREATED: 'text-purple-500 bg-purple-500/10',
+  SHARE_LINK_ACCESSED: 'text-purple-500 bg-purple-500/10',
+  SHARE_LINK_REVOKED: 'text-purple-500 bg-purple-500/10',
+  USER_LOGIN: 'text-green-500 bg-green-500/10',
+  USER_LOGOUT: 'text-gray-500 bg-gray-500/10',
+  USER_SETTINGS_UPDATED: 'text-blue-500 bg-blue-500/10',
 };
 
 export default function ActivityPage() {
-  const [activities, setActivities] = useState<ActivityResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
 
-  useEffect(() => {
-    const fetchActivities = async () => {
-      setIsLoading(true);
-      try {
-        const data = await activityApi.list(
-          filter !== 'all' ? (filter as ActivityType) : undefined
-        );
-        setActivities(data.content);
-      } catch {
-        toast.error('Failed to load activity');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchActivities();
-  }, [filter]);
+  const { data, isLoading } = useActivities(
+    filter !== 'all' ? (filter as ActivityType) : undefined,
+  );
+
+  const activities = data?.content ?? [];
 
   return (
     <div className="space-y-6 p-6">
@@ -134,7 +155,7 @@ export default function ActivityPage() {
                       <div>
                         <p className="text-sm font-medium">{activity.description}</p>
                         <p className="text-xs text-muted-foreground">
-                          {activity.itemName || ''}
+                          {activity.resourceName || ''}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">

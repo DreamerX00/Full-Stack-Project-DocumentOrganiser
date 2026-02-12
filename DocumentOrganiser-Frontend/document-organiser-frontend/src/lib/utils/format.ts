@@ -158,6 +158,31 @@ export function getFileIcon(contentType: string): LucideIcon {
 }
 
 /**
+ * Get icon by file name/extension
+ */
+export function getFileIconByName(filename: string): LucideIcon {
+  const ext = getFileExtension(filename).toLowerCase();
+  const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'ico'];
+  const videoExts = ['mp4', 'avi', 'mkv', 'mov', 'wmv', 'flv', 'webm'];
+  const audioExts = ['mp3', 'wav', 'ogg', 'flac', 'aac', 'wma', 'm4a'];
+  const docExts = ['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt'];
+  const spreadsheetExts = ['xls', 'xlsx', 'csv', 'ods'];
+  const presentationExts = ['ppt', 'pptx', 'odp'];
+  const archiveExts = ['zip', 'rar', '7z', 'tar', 'gz', 'bz2'];
+  const codeExts = ['js', 'ts', 'jsx', 'tsx', 'py', 'java', 'c', 'cpp', 'h', 'html', 'css', 'json', 'xml', 'yaml', 'yml', 'md', 'sh', 'rb', 'go', 'rs'];
+
+  if (imageExts.includes(ext)) return Image;
+  if (videoExts.includes(ext)) return Video;
+  if (audioExts.includes(ext)) return Music;
+  if (docExts.includes(ext)) return FileText;
+  if (spreadsheetExts.includes(ext)) return FileSpreadsheet;
+  if (presentationExts.includes(ext)) return Presentation;
+  if (archiveExts.includes(ext)) return Archive;
+  if (codeExts.includes(ext)) return Code;
+  return File;
+}
+
+/**
  * Truncate text with ellipsis
  */
 export function truncate(text: string, maxLength: number): string {

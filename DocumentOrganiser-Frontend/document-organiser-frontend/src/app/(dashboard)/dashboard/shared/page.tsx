@@ -1,18 +1,18 @@
 'use client';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useSharedWithMe, useSharedByMe, useRevokeDocumentShare } from '@/lib/hooks/useShares';
+import { useDocumentsSharedWithMe, useDocumentsSharedByMe, useRevokeDocumentShare } from '@/lib/hooks/useShares';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileText, Trash2, Users } from 'lucide-react';
+import { FileText, Folder, Trash2, Users } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/utils/format';
 import type { SharedItemResponse } from '@/lib/types';
 
 export default function SharedPage() {
-  const { data: withMeData, isLoading: loadingWithMe } = useSharedWithMe();
-  const { data: byMeData, isLoading: loadingByMe } = useSharedByMe();
+  const { data: withMeData, isLoading: loadingWithMe } = useDocumentsSharedWithMe();
+  const { data: byMeData, isLoading: loadingByMe } = useDocumentsSharedByMe();
   const revokeShare = useRevokeDocumentShare();
 
   const sharedWithMe = withMeData?.content ?? [];
@@ -55,11 +55,15 @@ export default function SharedPage() {
           <Card key={share.id}>
             <CardContent className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3">
-                <FileText className="h-8 w-8 text-blue-500" />
+                {share.itemType === 'FOLDER' ? (
+                  <Folder className="h-8 w-8 text-amber-500" />
+                ) : (
+                  <FileText className="h-8 w-8 text-blue-500" />
+                )}
                 <div>
                   <p className="font-medium">{share.itemName || 'Unnamed Document'}</p>
                   <p className="text-xs text-muted-foreground">
-                    {showRevoke ? `Shared with ${share.sharedWithUserEmail}` : `Shared by ${share.sharedByUserName}`}
+                    {showRevoke ? `Shared with ${share.sharedWithEmail}` : `Shared by ${share.sharedByName}`}
                     {' · '}
                     {formatRelativeTime(share.createdAt)}
                   </p>

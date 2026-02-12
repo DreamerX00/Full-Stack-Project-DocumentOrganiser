@@ -42,7 +42,7 @@ export function RecentFiles({ documents }: RecentFilesProps) {
                 <div className="flex-1 min-w-0">
                   <p className="truncate text-sm font-medium">{doc.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {formatFileSize(doc.size)} · {formatRelativeTime(doc.updatedAt)}
+                    {formatFileSize(doc.fileSize)} · {formatRelativeTime(doc.updatedAt)}
                   </p>
                 </div>
               </div>

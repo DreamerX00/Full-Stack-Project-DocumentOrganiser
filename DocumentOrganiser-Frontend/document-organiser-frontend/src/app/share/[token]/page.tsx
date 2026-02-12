@@ -8,11 +8,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { FileText, Download, AlertTriangle } from 'lucide-react';
 import { formatFileSize, downloadBlob } from '@/lib/utils/format';
 import { toast } from 'sonner';
-import type { PublicShareResponse } from '@/lib/types';
+import type { DocumentResponse } from '@/lib/types';
 
 export default function PublicSharePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
-  const [share, setShare] = useState<PublicShareResponse | null>(null);
+  const [doc, setDoc] = useState<DocumentResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +21,7 @@ export default function PublicSharePage({ params }: { params: Promise<{ token: s
     const fetchShare = async () => {
       try {
         const data = await sharesApi.getPublicShare(token);
-        setShare(data);
+        setDoc(data);
       } catch {
         setError('This share link is invalid or has expired.');
       } finally {
@@ -35,7 +35,7 @@ export default function PublicSharePage({ params }: { params: Promise<{ token: s
     setIsDownloading(true);
     try {
       const blob = await sharesApi.downloadPublicShare(token);
-      downloadBlob(blob, share?.itemName ?? 'download');
+      downloadBlob(blob, doc?.originalName ?? doc?.name ?? 'download');
     } catch {
       toast.error('Failed to download');
     } finally {
@@ -78,39 +78,29 @@ export default function PublicSharePage({ params }: { params: Promise<{ token: s
           <div className="mx-auto mb-4 rounded-xl bg-primary/10 p-4 w-fit">
             <FileText className="h-10 w-10 text-primary" />
           </div>
-          <CardTitle className="text-xl">{share?.itemName}</CardTitle>
+          <CardTitle className="text-xl">{doc?.name}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <p className="text-muted-foreground">Shared by</p>
-              <p className="font-medium">{share?.sharedBy}</p>
-            </div>
-            <div>
               <p className="text-muted-foreground">Size</p>
-              <p className="font-medium">{formatFileSize(share?.size ?? 0)}</p>
+              <p className="font-medium">{formatFileSize(doc?.fileSize ?? 0)}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Type</p>
-              <p className="font-medium">{share?.contentType ?? 'Unknown'}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Permission</p>
-              <p className="font-medium capitalize">{share?.permission?.toLowerCase()}</p>
+              <p className="font-medium">{doc?.mimeType ?? 'Unknown'}</p>
             </div>
           </div>
 
-          {(share?.permission === 'VIEW' || share?.permission === 'DOWNLOAD') && (
-            <Button
-              onClick={handleDownload}
-              disabled={isDownloading}
-              className="w-full gap-2"
-              size="lg"
-            >
-              <Download className="h-4 w-4" />
-              {isDownloading ? 'Downloading...' : 'Download'}
-            </Button>
-          )}
+          <Button
+            onClick={handleDownload}
+            disabled={isDownloading}
+            className="w-full gap-2"
+            size="lg"
+          >
+            <Download className="h-4 w-4" />
+            {isDownloading ? 'Downloading...' : 'Download'}
+          </Button>
 
           <p className="text-xs text-center text-muted-foreground">
             Powered by DocOrganiser

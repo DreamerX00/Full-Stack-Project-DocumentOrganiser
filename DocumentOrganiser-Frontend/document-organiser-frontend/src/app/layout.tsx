@@ -9,10 +9,33 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Document Organiser — Manage Your Documents Effortlessly',
+  title: {
+    default: 'Document Organiser — Manage Your Documents Effortlessly',
+    template: '%s | Document Organiser',
+  },
   description:
     'A modern document management platform. Upload, organize, search, and share your files with ease.',
   keywords: ['document management', 'file organizer', 'cloud storage', 'file sharing'],
+  authors: [{ name: 'Alpha Documents' }],
+  openGraph: {
+    type: 'website',
+    title: 'Document Organiser',
+    description: 'Upload, organize, search, and share your documents with ease.',
+    siteName: 'Document Organiser',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Document Organiser',
+    description: 'Upload, organize, search, and share your documents with ease.',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  icons: {
+    icon: '/favicon.ico',
+  },
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
@@ -22,6 +45,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <meta name="theme-color" content="#0f172a" />
+      </head>
       <body className={`${inter.variable} font-sans antialiased`}>
         <Providers>{children}</Providers>
       </body>

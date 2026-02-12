@@ -1,22 +1,33 @@
 'use client';
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { searchApi } from '@/lib/api/search';
 import type { DocumentCategory } from '@/lib/types';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 // ── Query Keys ──────────────────────────────────────────────
 export const searchKeys = {
   all: ['search'] as const,
-  results: (params: Record<string, unknown>) =>
-    [...searchKeys.all, 'results', params] as const,
+  combined: (q: string) => [...searchKeys.all, 'combined', q] as const,
+  documents: (params: Record<string, unknown>) =>
+    [...searchKeys.all, 'documents', params] as const,
+  folders: (q: string, page?: number) =>
+    [...searchKeys.all, 'folders', { q, page }] as const,
   suggestions: (q: string) => [...searchKeys.all, 'suggest', q] as const,
-  byTags: (tags: string, page?: number) =>
-    [...searchKeys.all, 'tags', { tags, page }] as const,
-  recent: () => [...searchKeys.all, 'recent'] as const,
 };
 
 // ── Queries ─────────────────────────────────────────────────
+
+/** Combined search (documents + folders) via GET /search */
+export function useCombinedSearch(query: string, limit = 10) {
+  return useQuery({
+    queryKey: searchKeys.combined(query),
+    queryFn: () => searchApi.search(query, limit),
+    enabled: query.trim().length > 0,
+  });
+}
+
+/** Document search via GET /search/documents */
 export function useSearchDocuments(
   query: string,
   category?: DocumentCategory,
@@ -26,34 +37,28 @@ export function useSearchDocuments(
   enabled = true
 ) {
   return useQuery({
-    queryKey: searchKeys.results({ query, category, contentType, page }),
-    queryFn: () => searchApi.search(query, category, contentType, page, size),
+    queryKey: searchKeys.documents({ query, category, contentType, page }),
+    queryFn: () => searchApi.searchDocuments(query, category, contentType, page, size),
     enabled: enabled && query.trim().length > 0,
   });
 }
 
-export function useSearchByTags(tags: string[], page = 0, size = 20) {
-  const joined = tags.join(',');
+/** Folder search via GET /search/folders */
+export function useSearchFolders(query: string, page = 0, size = 20) {
   return useQuery({
-    queryKey: searchKeys.byTags(joined, page),
-    queryFn: () => searchApi.searchByTags(joined, page, size),
-    enabled: tags.length > 0,
+    queryKey: searchKeys.folders(query, page),
+    queryFn: () => searchApi.searchFolders(query, page, size),
+    enabled: query.trim().length > 0,
   });
 }
 
+/** Suggestions via GET /search/suggestions */
 export function useSearchSuggestions(query: string) {
   return useQuery({
     queryKey: searchKeys.suggestions(query),
     queryFn: () => searchApi.suggest(query),
     enabled: query.length >= 2,
     staleTime: 30_000,
-  });
-}
-
-export function useRecentSearches() {
-  return useQuery({
-    queryKey: searchKeys.recent(),
-    queryFn: () => searchApi.recentSearches(),
   });
 }
 

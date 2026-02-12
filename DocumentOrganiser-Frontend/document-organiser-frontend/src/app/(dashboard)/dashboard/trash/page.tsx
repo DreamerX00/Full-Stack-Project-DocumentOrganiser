@@ -23,8 +23,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Trash2, RotateCcw, AlertTriangle, Search } from 'lucide-react';
-import { formatRelativeTime, formatFileSize, getFileIcon } from '@/lib/utils/format';
+import { Trash2, RotateCcw, AlertTriangle, Search, Folder } from 'lucide-react';
+import { formatRelativeTime, formatFileSize, getFileIconByName } from '@/lib/utils/format';
 import type { TrashItemResponse } from '@/lib/types';
 
 export default function TrashPage() {
@@ -103,7 +103,9 @@ export default function TrashPage() {
       ) : (
         <div className="space-y-2">
           {items.map((item) => {
-            const FileIcon = getFileIcon(item.itemName);
+            const FileIcon = item.itemType === 'FOLDER'
+              ? Folder
+              : getFileIconByName(item.itemName);
             return (
               <Card key={item.id}>
                 <CardContent className="flex items-center justify-between p-4">
@@ -112,7 +114,7 @@ export default function TrashPage() {
                     <div>
                       <p className="font-medium">{item.itemName}</p>
                       <p className="text-xs text-muted-foreground">
-                        {formatFileSize(item.size)} · Deleted{' '}
+                        {formatFileSize(item.fileSize)} · Deleted{' '}
                         {formatRelativeTime(item.deletedAt)}
                       </p>
                     </div>

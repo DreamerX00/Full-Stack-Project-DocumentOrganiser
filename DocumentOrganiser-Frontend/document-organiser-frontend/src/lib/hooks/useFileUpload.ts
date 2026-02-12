@@ -19,7 +19,9 @@ export function useFileUpload() {
       for (const item of pendingItems) {
         uploadStore.setStatus(item.id, 'uploading');
         try {
-          await documentsApi.upload(item.file, folderId);
+          await documentsApi.upload(item.file, folderId, (progress) => {
+            uploadStore.updateProgress(item.id, progress);
+          });
           uploadStore.updateProgress(item.id, 100);
           uploadStore.setStatus(item.id, 'completed');
           toast.success(`Uploaded ${item.file.name}`);

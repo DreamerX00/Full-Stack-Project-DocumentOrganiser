@@ -2,7 +2,6 @@ import apiClient from './client';
 import type {
   ApiResponse,
   UserResponse,
-  UserSettingsResponse,
   UpdateProfileRequest,
   UpdateSettingsRequest,
 } from '@/lib/types';
@@ -18,13 +17,10 @@ export const usersApi = {
     return res.data.data;
   },
 
-  getSettings: async () => {
-    const res = await apiClient.get<ApiResponse<UserSettingsResponse>>('/users/settings');
-    return res.data.data;
-  },
-
+  /** Settings are embedded in UserResponse.settings — no separate GET.
+   *  PUT /users/settings returns UserResponse. */
   updateSettings: async (data: UpdateSettingsRequest) => {
-    const res = await apiClient.put<ApiResponse<UserSettingsResponse>>('/users/settings', data);
+    const res = await apiClient.put<ApiResponse<UserResponse>>('/users/settings', data);
     return res.data.data;
   },
 

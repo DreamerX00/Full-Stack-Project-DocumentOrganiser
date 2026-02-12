@@ -21,6 +21,7 @@ interface FileState {
   deselectFolder: (id: string) => void;
   toggleFolderSelection: (id: string) => void;
   selectAll: () => void;
+  selectAllIds: (fileIds: string[], folderIds?: string[]) => void;
   clearSelection: () => void;
 
   hasSelection: () => boolean;
@@ -77,6 +78,11 @@ export const useFileStore = create<FileState>()((set, get) => ({
       selectedFiles: state.documents.map((d) => d.id),
       selectedFolders: state.folders.map((f) => f.id),
     })),
+  selectAllIds: (fileIds: string[], folderIds?: string[]) =>
+    set({
+      selectedFiles: fileIds,
+      selectedFolders: folderIds ?? [],
+    }),
   clearSelection: () => set({ selectedFiles: [], selectedFolders: [] }),
 
   hasSelection: () =>
