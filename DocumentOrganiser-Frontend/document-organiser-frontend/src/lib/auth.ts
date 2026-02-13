@@ -37,8 +37,9 @@ export const authConfig: NextAuthConfig = {
         provider: token.provider as string,
       };
     },
-    async authorized({ auth }) {
-      return !!auth;
+    async authorized() {
+      // Let our middleware.ts handle route protection
+      return true;
     },
   },
   session: {

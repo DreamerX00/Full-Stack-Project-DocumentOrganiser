@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import { AppSidebar } from './Sidebar';
 import { TopNav } from './TopNav';
 import { MobileNav } from './MobileNav';
@@ -22,6 +23,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const { uploadFiles } = useFileUpload();
   const currentFolderId = useFileStore((s) => s.currentFolderId);
+  const redirectedRef = useRef(false);
 
   // All hooks MUST be called before any conditional returns (Rules of Hooks)
   useKeyboardShortcuts();
@@ -38,6 +40,19 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     [uploadFiles, currentFolderId],
   );
 
+  // Handle unauthenticated redirect via effect to avoid render-time side effects
+  useEffect(() => {
+    if (!isLoading && !session && !redirectedRef.current) {
+      redirectedRef.current = true;
+      // Sign out to clear any stale cookies before redirecting
+      signOut({ redirect: false }).then(() => {
+        router.replace('/login');
+      }).catch(() => {
+        router.replace('/login');
+      });
+    }
+  }, [isLoading, session, router]);
+
   // Client-side auth guard (after all hooks)
   if (isLoading) {
     return (
@@ -48,7 +63,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (!session) {
-    router.replace('/login');
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

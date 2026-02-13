@@ -1,29 +1,53 @@
 'use client';
 
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FileText, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { GoogleLoginButton } from '@/components/features/auth/GoogleLoginButton';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { signOut } from 'next-auth/react';
 import Link from 'next/link';
 
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { session, isLoading } = useAuth();
+  const { session, isLoading, isAuthenticated } = useAuth();
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+  const [forceShow, setForceShow] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // If user already has a session (returned from Google OAuth), redirect
+  // Safety timeout: if we're stuck loading/redirecting for > 3 seconds,
+  // clear any stale session and show the login form
   useEffect(() => {
-    if (session && !isLoading) {
+    if (isLoading || session) {
+      timeoutRef.current = setTimeout(async () => {
+        // Session is stale or stuck — force sign out and show login
+        try {
+          await signOut({ redirect: false });
+        } catch {
+          // ignore
+        }
+        setForceShow(true);
+      }, 3000);
+    }
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [isLoading, session]);
+
+  // If user has a valid session AND backend auth is done, redirect
+  useEffect(() => {
+    if (session && !isLoading && isAuthenticated && !forceShow) {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
       router.replace(callbackUrl);
     }
-  }, [session, isLoading, callbackUrl, router]);
+  }, [session, isLoading, isAuthenticated, callbackUrl, router, forceShow]);
 
   // Show loading while session is being checked or token is being exchanged
-  if (isLoading || session) {
+  // but only if we haven't hit the safety timeout
+  if ((isLoading || (session && !forceShow)) && !forceShow) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
