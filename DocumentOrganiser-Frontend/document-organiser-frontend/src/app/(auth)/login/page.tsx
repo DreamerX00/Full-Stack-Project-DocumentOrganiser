@@ -1,7 +1,6 @@
 'use client';
 
-import { Suspense, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { FileText, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,21 +9,9 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import Link from 'next/link';
 
 function LoginContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { session, isLoading, isAuthenticated } = useAuth();
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+  const { session, isLoading } = useAuth();
 
-  // If user has a valid NextAuth session AND backend auth is done, redirect
-  useEffect(() => {
-    if (session && !isLoading && isAuthenticated) {
-      router.replace(callbackUrl);
-    }
-  }, [session, isLoading, isAuthenticated, callbackUrl, router]);
-
-  // Show spinner ONLY while NextAuth session is loading (status === 'loading')
-  // OR while the backend token exchange is in progress
-  // (session exists but isAuthenticated is not yet true)
+  // Show spinner while NextAuth session is loading
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -33,9 +20,10 @@ function LoginContent() {
     );
   }
 
-  // If we have a NextAuth session but backend exchange hasn't completed yet,
-  // show loading — the useAuth hook's useEffect is exchanging the token
-  if (session && !isAuthenticated) {
+  // If we have a NextAuth session, the useAuth hook is exchanging
+  // the token with the backend and will redirect to /dashboard on success.
+  // Show a spinner while that's happening.
+  if (session) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -43,8 +31,7 @@ function LoginContent() {
     );
   }
 
-  // If already authenticated (session + backend), the useEffect above
-  // will redirect. If no session, show the login form.
+  // No session — show the login form.
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted/30 px-4">

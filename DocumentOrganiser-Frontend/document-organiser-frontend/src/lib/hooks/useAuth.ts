@@ -12,15 +12,19 @@ export function useAuth() {
   const router = useRouter();
   const exchangingRef = useRef(false);
   const exchangeFailedRef = useRef(false);
+  const lastExchangedTokenRef = useRef<string | null>(null);
 
-  // Exchange Google ID token for backend JWT on first sign-in
+  // Exchange Google ID token for backend JWT on sign-in.
+  // Runs whenever a new idToken appears (fresh Google OAuth).
+  // If the store has stale auth from localStorage, we re-exchange
+  // because the old backend JWT may be expired.
   useEffect(() => {
     const exchangeToken = async () => {
       if (
         session?.idToken &&
-        !store.isAuthenticated &&
         !exchangingRef.current &&
-        !exchangeFailedRef.current
+        !exchangeFailedRef.current &&
+        session.idToken !== lastExchangedTokenRef.current
       ) {
         exchangingRef.current = true;
         try {
@@ -32,16 +36,15 @@ export function useAuth() {
             authResponse.accessToken,
             authResponse.refreshToken
           );
+          lastExchangedTokenRef.current = session.idToken;
           exchangeFailedRef.current = false;
           // Redirect to dashboard after successful token exchange
           router.replace('/dashboard');
         } catch (error) {
           console.error('Failed to exchange token with backend:', error);
-          // Mark exchange as failed so we don't retry in a loop.
-          // The login page will detect !isAuthenticated and show the form.
           exchangeFailedRef.current = true;
+          lastExchangedTokenRef.current = session.idToken;
           // Sign out the NextAuth session so the login form is shown
-          // (otherwise the login page sees session=truthy and shows spinner)
           try {
             await signOut({ redirect: false });
           } catch {
@@ -54,7 +57,7 @@ export function useAuth() {
     };
 
     exchangeToken();
-  }, [session?.idToken, store.isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [session?.idToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset the failure flag when there's no session (user signed out or fresh visit)
   useEffect(() => {
