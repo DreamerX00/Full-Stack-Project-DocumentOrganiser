@@ -1,13 +1,12 @@
 'use client';
 
-import { Suspense, useEffect, useState, useRef } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FileText, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { GoogleLoginButton } from '@/components/features/auth/GoogleLoginButton';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { signOut } from 'next-auth/react';
 import Link from 'next/link';
 
 function LoginContent() {
@@ -15,45 +14,37 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const { session, isLoading, isAuthenticated } = useAuth();
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
-  const [forceShow, setForceShow] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Safety timeout: if we're stuck loading/redirecting for > 3 seconds,
-  // clear any stale session and show the login form
+  // If user has a valid NextAuth session AND backend auth is done, redirect
   useEffect(() => {
-    if (isLoading || session) {
-      timeoutRef.current = setTimeout(async () => {
-        // Session is stale or stuck — force sign out and show login
-        try {
-          await signOut({ redirect: false });
-        } catch {
-          // ignore
-        }
-        setForceShow(true);
-      }, 3000);
-    }
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, [isLoading, session]);
-
-  // If user has a valid session AND backend auth is done, redirect
-  useEffect(() => {
-    if (session && !isLoading && isAuthenticated && !forceShow) {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (session && !isLoading && isAuthenticated) {
       router.replace(callbackUrl);
     }
-  }, [session, isLoading, isAuthenticated, callbackUrl, router, forceShow]);
+  }, [session, isLoading, isAuthenticated, callbackUrl, router]);
 
-  // Show loading while session is being checked or token is being exchanged
-  // but only if we haven't hit the safety timeout
-  if ((isLoading || (session && !forceShow)) && !forceShow) {
+  // Show spinner ONLY while NextAuth session is loading (status === 'loading')
+  // OR while the backend token exchange is in progress
+  // (session exists but isAuthenticated is not yet true)
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
+
+  // If we have a NextAuth session but backend exchange hasn't completed yet,
+  // show loading — the useAuth hook's useEffect is exchanging the token
+  if (session && !isAuthenticated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // If already authenticated (session + backend), the useEffect above
+  // will redirect. If no session, show the login form.
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted/30 px-4">

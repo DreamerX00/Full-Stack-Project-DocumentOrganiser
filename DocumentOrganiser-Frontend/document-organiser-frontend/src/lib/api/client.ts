@@ -63,9 +63,10 @@ apiClient.interceptors.response.use(
       } catch {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
-        }
+        // Don't hard-redirect here — let React components handle auth state.
+        // A hard redirect (window.location.href) causes a full page reload that
+        // clears in-memory state but keeps the NextAuth cookie, creating a
+        // login→dashboard→login redirect loop.
         return Promise.reject(error);
       }
     }

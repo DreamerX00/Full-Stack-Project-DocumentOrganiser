@@ -11,6 +11,7 @@ export function useAuth() {
   const store = useAuthStore();
   const router = useRouter();
   const exchangingRef = useRef(false);
+  const exchangeFailedRef = useRef(false);
 
   // Exchange Google ID token for backend JWT on first sign-in
   useEffect(() => {
@@ -18,7 +19,8 @@ export function useAuth() {
       if (
         session?.idToken &&
         !store.isAuthenticated &&
-        !exchangingRef.current
+        !exchangingRef.current &&
+        !exchangeFailedRef.current
       ) {
         exchangingRef.current = true;
         try {
@@ -30,12 +32,21 @@ export function useAuth() {
             authResponse.accessToken,
             authResponse.refreshToken
           );
+          exchangeFailedRef.current = false;
           // Redirect to dashboard after successful token exchange
           router.replace('/dashboard');
         } catch (error) {
           console.error('Failed to exchange token with backend:', error);
-          // Clear the stale NextAuth session so the user can re-login
-          await signOut({ redirect: false });
+          // Mark exchange as failed so we don't retry in a loop.
+          // The login page will detect !isAuthenticated and show the form.
+          exchangeFailedRef.current = true;
+          // Sign out the NextAuth session so the login form is shown
+          // (otherwise the login page sees session=truthy and shows spinner)
+          try {
+            await signOut({ redirect: false });
+          } catch {
+            // ignore
+          }
         } finally {
           exchangingRef.current = false;
         }
@@ -44,6 +55,13 @@ export function useAuth() {
 
     exchangeToken();
   }, [session?.idToken, store.isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reset the failure flag when there's no session (user signed out or fresh visit)
+  useEffect(() => {
+    if (!session) {
+      exchangeFailedRef.current = false;
+    }
+  }, [session]);
 
   const loginWithGoogle = useCallback(async () => {
     await signIn('google', { callbackUrl: '/dashboard' });
