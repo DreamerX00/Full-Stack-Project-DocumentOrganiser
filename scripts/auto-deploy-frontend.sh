@@ -74,7 +74,7 @@ else
   log "WARN: Could not fetch secrets — building with defaults"
 fi
 
-npm ci --omit=dev >> "$LOG_FILE" 2>&1
+HUSKY=0 npm ci --omit=dev >> "$LOG_FILE" 2>&1
 npm run build >> "$LOG_FILE" 2>&1
 
 if [ ! -f ".next/standalone/server.js" ]; then

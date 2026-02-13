@@ -59,12 +59,15 @@ echo "$CURRENT" > /opt/docorganiser/.current-commit
 chown ec2-user:ec2-user /opt/docorganiser/.current-commit
 
 # 5. Install cron job — every 5 minutes
-CRON_LINE="*/5 * * * * /opt/docorganiser/scripts/auto-deploy.sh >> /var/log/docorganiser/auto-deploy.log 2>&1"
-# Get existing crontab (ignore errors if none exists), remove old auto-deploy entries, add new one
+CRON_LINE="*/5 * * * * /opt/docorganiser/scripts/auto-deploy.sh"
+# Remove ALL old auto-deploy entries, then add exactly one
 EXISTING=$(crontab -u ec2-user -l 2>/dev/null || true)
-FILTERED=$(echo "$EXISTING" | grep -v "auto-deploy" || true)
-echo "${FILTERED}
-${CRON_LINE}" | sed '/^$/d' | crontab -u ec2-user -
+FILTERED=$(echo "$EXISTING" | grep -v "auto-deploy" | grep -v '^$' || true)
+if [ -n "$FILTERED" ]; then
+  printf '%s\n%s\n' "$FILTERED" "$CRON_LINE" | crontab -u ec2-user -
+else
+  echo "$CRON_LINE" | crontab -u ec2-user -
+fi
 
 echo ""
 echo "✅ Auto-deploy cron installed for ec2-user"
