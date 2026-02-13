@@ -74,7 +74,11 @@ else
   log "WARN: Could not fetch secrets — building with defaults"
 fi
 
-HUSKY=0 npm ci --omit=dev >> "$LOG_FILE" 2>&1
+# Remove the "prepare" lifecycle script so npm doesn't try to run
+# the missing husky binary (devDependencies are omitted).
+npm pkg delete scripts.prepare >> "$LOG_FILE" 2>&1
+
+npm ci --omit=dev >> "$LOG_FILE" 2>&1
 npm run build >> "$LOG_FILE" 2>&1
 
 if [ ! -f ".next/standalone/server.js" ]; then
