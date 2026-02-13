@@ -84,7 +84,7 @@ if ls "$DEPLOY_DIR"/*.jar 1>/dev/null 2>&1; then
 fi
 
 sudo rm -f "$DEPLOY_DIR"/*.jar
-sudo cp "$JAR_FILE" "$DEPLOY_DIR/"
+sudo cp "$JAR_FILE" "$DEPLOY_DIR/backend.jar"
 sudo chown -R ec2-user:ec2-user "$DEPLOY_DIR/"
 
 # ── 5. Restart and verify ──
