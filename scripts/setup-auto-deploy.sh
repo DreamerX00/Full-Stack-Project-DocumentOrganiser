@@ -23,6 +23,14 @@ fi
 
 echo "Setting up auto-deploy for: $ROLE"
 
+# 0. Install cronie if not present (Amazon Linux 2023 doesn't include it)
+if ! command -v crontab &>/dev/null; then
+  echo "Installing cronie..."
+  dnf install -y cronie
+  systemctl enable crond
+  systemctl start crond
+fi
+
 # 1. Create directories
 mkdir -p "$SCRIPTS_DIR" "$LOG_DIR"
 chown -R ec2-user:ec2-user "$LOG_DIR"
