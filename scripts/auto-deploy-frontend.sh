@@ -75,10 +75,11 @@ else
 fi
 
 # Remove the "prepare" lifecycle script so npm doesn't try to run
-# the missing husky binary (devDependencies are omitted).
+# husky during install (it runs before node_modules/.bin is linked).
 npm pkg delete scripts.prepare >> "$LOG_FILE" 2>&1
 
-npm ci --omit=dev >> "$LOG_FILE" 2>&1
+# Full install (devDeps needed — TypeScript is required to build next.config.ts)
+npm ci >> "$LOG_FILE" 2>&1
 npm run build >> "$LOG_FILE" 2>&1
 
 if [ ! -f ".next/standalone/server.js" ]; then
