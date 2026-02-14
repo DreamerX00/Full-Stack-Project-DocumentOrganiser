@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 import {
   Home,
   FileText,
@@ -114,7 +115,7 @@ export function AppSidebar({ className }: SidebarProps) {
       <div className="flex h-14 items-center justify-between border-b px-4">
         {!sidebarCollapsed && (
           <Link href="/dashboard" className="flex items-center gap-2">
-            <FileText className="h-6 w-6 text-primary" />
+            <Image src="/logo.svg" alt="DocOrganiser" width={28} height={28} className="h-7 w-7" />
             <span className="font-bold text-lg">DocOrganiser</span>
           </Link>
         )}

@@ -5,6 +5,7 @@ import { sharesApi } from '@/lib/api/shares';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import Image from 'next/image';
 import { FileText, Download, AlertTriangle } from 'lucide-react';
 import { formatFileSize, downloadBlob } from '@/lib/utils/format';
 import { toast } from 'sonner';
@@ -76,7 +77,7 @@ export default function PublicSharePage({ params }: { params: Promise<{ token: s
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 rounded-xl bg-primary/10 p-4 w-fit">
-            <FileText className="h-10 w-10 text-primary" />
+            <Image src="/logo.svg" alt="DocOrganiser" width={40} height={40} className="h-10 w-10" />
           </div>
           <CardTitle className="text-xl">{doc?.name}</CardTitle>
         </CardHeader>

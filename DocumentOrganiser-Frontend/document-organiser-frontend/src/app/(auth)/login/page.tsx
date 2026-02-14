@@ -2,7 +2,8 @@
 
 import { Suspense } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Loader2 } from 'lucide-react';
+import Image from 'next/image';
+import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { GoogleLoginButton } from '@/components/features/auth/GoogleLoginButton';
 import { useAuth } from '@/lib/hooks/useAuth';
@@ -43,7 +44,7 @@ function LoginContent() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-              <FileText className="h-7 w-7 text-primary" />
+              <Image src="/logo.svg" alt="DocOrganiser" width={28} height={28} className="h-7 w-7" />
             </div>
             <CardTitle className="text-2xl">Welcome Back</CardTitle>
             <CardDescription>

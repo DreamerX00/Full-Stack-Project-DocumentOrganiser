@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import {
   FileText,
@@ -62,7 +63,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link href="/" className="flex items-center gap-2">
-            <FileText className="h-6 w-6 text-primary" />
+            <Image src="/logo.svg" alt="DocOrganiser" width={28} height={28} className="h-7 w-7" />
             <span className="text-xl font-bold">DocOrganiser</span>
           </Link>
           <div className="flex items-center gap-3">
@@ -112,7 +113,7 @@ export default function LandingPage() {
         >
           <div className="aspect-[16/9] rounded-xl border bg-gradient-to-br from-primary/5 to-primary/10 shadow-2xl flex items-center justify-center">
             <div className="text-center">
-              <FileText className="mx-auto h-16 w-16 text-primary/30" />
+              <Image src="/logo.svg" alt="DocOrganiser" width={64} height={64} className="mx-auto h-16 w-16 opacity-30" />
               <p className="mt-4 text-muted-foreground">Dashboard Preview</p>
             </div>
           </div>
@@ -194,7 +195,7 @@ export default function LandingPage() {
       <footer className="border-t py-8">
         <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 sm:flex-row">
           <div className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" />
+            <Image src="/logo.svg" alt="DocOrganiser" width={20} height={20} className="h-5 w-5" />
             <span className="font-semibold">DocOrganiser</span>
           </div>
           <p className="text-sm text-muted-foreground">
