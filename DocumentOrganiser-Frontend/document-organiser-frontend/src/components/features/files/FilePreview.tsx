@@ -122,9 +122,10 @@ export function FilePreview({
       setPreviewUrl(blobUrl);
     };
 
-    documentsApi
-      .getPreviewUrl(doc.id)
-      .then(async (url) => {
+    // Use an async IIFE so all awaits are properly chained before finally
+    (async () => {
+      try {
+        const url = await documentsApi.getPreviewUrl(doc.id);
         if (cancelled) return;
         if (url) {
           setPreviewUrl(url);
@@ -132,8 +133,7 @@ export function FilePreview({
           // Presigned URL empty — fall back to blob download
           await fallbackToBlob();
         }
-      })
-      .catch(async () => {
+      } catch {
         if (cancelled) return;
         try {
           // Presigned URL endpoint failed — fall back to blob download
@@ -141,13 +141,13 @@ export function FilePreview({
         } catch {
           if (!cancelled) setError('Could not load preview');
         }
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) {
           hasFetchedUrl.current = true;
           setLoadingUrl(false);
         }
-      });
+      }
+    })();
 
     return () => {
       cancelled = true;
@@ -398,23 +398,24 @@ export function FilePreview({
                       setPreviewUrl(blobUrl);
                     };
 
-                    documentsApi
-                      .getPreviewUrl(doc.id)
-                      .then(async (url) => {
+                    (async () => {
+                      try {
+                        const url = await documentsApi.getPreviewUrl(doc.id);
                         if (url) {
                           setPreviewUrl(url);
                         } else {
                           await fallbackToBlob();
                         }
-                      })
-                      .catch(async () => {
+                      } catch {
                         try {
                           await fallbackToBlob();
                         } catch {
                           setError('Could not load preview');
                         }
-                      })
-                      .finally(() => setLoadingUrl(false));
+                      } finally {
+                        setLoadingUrl(false);
+                      }
+                    })();
                   }}
                   onDownload={() => onDownload?.(doc)}
                 />
