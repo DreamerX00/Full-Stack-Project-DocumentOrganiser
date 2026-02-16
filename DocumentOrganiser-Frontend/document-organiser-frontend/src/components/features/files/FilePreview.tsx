@@ -102,7 +102,7 @@ export function FilePreview({
   const categoryInfo = doc ? getCategoryInfo(doc.category) : null;
   const CategoryIcon = categoryInfo?.icon;
 
-  // ── Fetch preview URL ──────────────────────────────────────────────────
+  // ── Fetch preview URL (with blob fallback) ──────────────────────────
   useEffect(() => {
     if (!doc || !open) return;
 
@@ -114,18 +114,33 @@ export function FilePreview({
     setZoom(1);
     setLoadingUrl(true);
 
+    // Helper: download the file as a blob and create an object URL
+    const fallbackToBlob = async () => {
+      const blob = await documentsApi.download(doc.id);
+      if (cancelled) return;
+      const blobUrl = URL.createObjectURL(blob);
+      setPreviewUrl(blobUrl);
+    };
+
     documentsApi
       .getPreviewUrl(doc.id)
-      .then((url) => {
+      .then(async (url) => {
         if (cancelled) return;
         if (url) {
           setPreviewUrl(url);
         } else {
-          setError('Server returned an empty preview URL');
+          // Presigned URL empty — fall back to blob download
+          await fallbackToBlob();
         }
       })
-      .catch(() => {
-        if (!cancelled) setError('Could not load preview URL');
+      .catch(async () => {
+        if (cancelled) return;
+        try {
+          // Presigned URL endpoint failed — fall back to blob download
+          await fallbackToBlob();
+        } catch {
+          if (!cancelled) setError('Could not load preview');
+        }
       })
       .finally(() => {
         if (!cancelled) {
@@ -138,6 +153,22 @@ export function FilePreview({
       cancelled = true;
     };
   }, [doc, open]);
+
+  // ── Cleanup blob URLs on unmount / when URL changes ────────────────────
+  const prevUrlRef = useRef<string | null>(null);
+  useEffect(() => {
+    // Revoke the previous blob URL if it changed
+    if (prevUrlRef.current && prevUrlRef.current.startsWith('blob:') && prevUrlRef.current !== previewUrl) {
+      URL.revokeObjectURL(prevUrlRef.current);
+    }
+    prevUrlRef.current = previewUrl;
+
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   // ── Fetch text content for code / csv / markdown ───────────────────────
   useEffect(() => {
@@ -360,10 +391,29 @@ export function FilePreview({
                     setPreviewUrl(null);
                     setTextContent(null);
                     setLoadingUrl(true);
+
+                    const fallbackToBlob = async () => {
+                      const blob = await documentsApi.download(doc.id);
+                      const blobUrl = URL.createObjectURL(blob);
+                      setPreviewUrl(blobUrl);
+                    };
+
                     documentsApi
                       .getPreviewUrl(doc.id)
-                      .then(setPreviewUrl)
-                      .catch(() => setError('Could not load preview'))
+                      .then(async (url) => {
+                        if (url) {
+                          setPreviewUrl(url);
+                        } else {
+                          await fallbackToBlob();
+                        }
+                      })
+                      .catch(async () => {
+                        try {
+                          await fallbackToBlob();
+                        } catch {
+                          setError('Could not load preview');
+                        }
+                      })
                       .finally(() => setLoadingUrl(false));
                   }}
                   onDownload={() => onDownload?.(doc)}
