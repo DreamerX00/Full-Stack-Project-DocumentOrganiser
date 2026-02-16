@@ -92,6 +92,7 @@ export function FilePreview({
   const [error, setError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const hasFetchedUrl = useRef(false);
 
   // Derived
   const previewType: PreviewType = doc
@@ -106,6 +107,7 @@ export function FilePreview({
     if (!doc || !open) return;
 
     let cancelled = false;
+    hasFetchedUrl.current = false;
     setPreviewUrl(null);
     setTextContent(null);
     setError(null);
@@ -115,13 +117,21 @@ export function FilePreview({
     documentsApi
       .getPreviewUrl(doc.id)
       .then((url) => {
-        if (!cancelled) setPreviewUrl(url);
+        if (cancelled) return;
+        if (url) {
+          setPreviewUrl(url);
+        } else {
+          setError('Server returned an empty preview URL');
+        }
       })
       .catch(() => {
         if (!cancelled) setError('Could not load preview URL');
       })
       .finally(() => {
-        if (!cancelled) setLoadingUrl(false);
+        if (!cancelled) {
+          hasFetchedUrl.current = true;
+          setLoadingUrl(false);
+        }
       });
 
     return () => {
@@ -159,7 +169,8 @@ export function FilePreview({
     if (previewUrl) window.open(previewUrl, '_blank', 'noopener');
   }, [previewUrl]);
 
-  const isLoading = loadingUrl || loadingContent;
+  // Show loading until the first fetch completes (prevents fallback flash on initial render)
+  const isLoading = loadingUrl || loadingContent || (open && !hasFetchedUrl.current && !error);
 
   // ── Guard ──────────────────────────────────────────────────────────────
   if (!doc) return null;
