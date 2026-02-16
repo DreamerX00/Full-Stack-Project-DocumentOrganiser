@@ -75,8 +75,9 @@ else
 fi
 
 # Remove the "prepare" lifecycle script so npm doesn't try to run
-# husky during install (it runs before node_modules/.bin is linked).
-npm pkg delete scripts.prepare >> "$LOG_FILE" 2>&1
+# husky during install. We use sed instead of `npm pkg delete` because
+# any npm command can itself trigger lifecycle hooks before node_modules exists.
+sed -i '/"prepare":/d' package.json
 
 # Full install (devDeps needed — TypeScript is required to build next.config.ts)
 npm ci >> "$LOG_FILE" 2>&1
