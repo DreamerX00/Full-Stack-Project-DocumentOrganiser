@@ -4,6 +4,8 @@ import { Suspense, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { FileGrid } from '@/components/features/files/FileGrid';
 import { FileList } from '@/components/features/files/FileList';
+import { FilePreview } from '@/components/features/files/FilePreview';
+import { ShareDialog } from '@/components/features/share/ShareDialog';
 import { EmptyState } from '@/components/features/files/EmptyState';
 import { useNavigationStore } from '@/lib/store/navigationStore';
 import { Input } from '@/components/ui/input';
@@ -20,7 +22,8 @@ import {
   useSearchSuggestions,
   useDebouncedValue,
 } from '@/lib/hooks/useSearch';
-import { useAllTags, useToggleFavorite, useDownloadDocument } from '@/lib/hooks/useDocuments';
+import { useAllTags, useToggleFavorite, useDownloadDocument, useDeleteDocument } from '@/lib/hooks/useDocuments';
+import { useShareDocumentWithUser, useCreateDocumentShareLink } from '@/lib/hooks/useShares';
 
 export default function SearchPage() {
   return (
@@ -46,6 +49,9 @@ function SearchContent() {
   const [query, setQuery] = useState(searchParams.get('q') ?? '');
   const [submittedQuery, setSubmittedQuery] = useState(searchParams.get('q') ?? '');
   const [category, setCategory] = useState<string>('all');
+  const [previewDoc, setPreviewDoc] = useState<DocumentResponse | null>(null);
+  const [shareDoc, setShareDoc] = useState<DocumentResponse | null>(null);
+  const [shareLink, setShareLink] = useState<string | undefined>();
 
   const debouncedQuery = useDebouncedValue(query, 300);
 
@@ -62,6 +68,9 @@ function SearchContent() {
   const { data: allTags } = useAllTags();
   const toggleFavorite = useToggleFavorite();
   const downloadDoc = useDownloadDocument();
+  const deleteDoc = useDeleteDocument();
+  const shareWithUser = useShareDocumentWithUser();
+  const createShareLink = useCreateDocumentShareLink();
 
   const isLoading = searchLoading;
   const documents = searchData?.content ?? [];
@@ -169,19 +178,63 @@ function SearchContent() {
             <FileGrid
               documents={documents}
               isLoading={isLoading}
+              onPreview={(doc) => setPreviewDoc(doc)}
               onDownload={(doc) => downloadDoc.mutate(doc)}
               onToggleFavorite={(doc) => toggleFavorite.mutate(doc.id)}
+              onDelete={(doc) => deleteDoc.mutate(doc.id)}
+              onShare={(doc) => setShareDoc(doc)}
             />
           ) : (
             <FileList
               documents={documents}
               isLoading={isLoading}
+              onPreview={(doc) => setPreviewDoc(doc)}
               onDownload={(doc) => downloadDoc.mutate(doc)}
               onToggleFavorite={(doc) => toggleFavorite.mutate(doc.id)}
+              onDelete={(doc) => deleteDoc.mutate(doc.id)}
+              onShare={(doc) => setShareDoc(doc)}
             />
           )}
         </div>
       ) : null}
+
+      {/* Preview Dialog */}
+      <FilePreview
+        document={previewDoc}
+        open={!!previewDoc}
+        onOpenChange={() => setPreviewDoc(null)}
+        onDownload={(doc) => downloadDoc.mutate(doc)}
+        onShare={(doc) => { setPreviewDoc(null); setShareDoc(doc); }}
+        onToggleFavorite={(doc) => toggleFavorite.mutate(doc.id)}
+      />
+
+      {/* Share Dialog */}
+      <ShareDialog
+        open={!!shareDoc}
+        onOpenChange={() => { setShareDoc(null); setShareLink(undefined); }}
+        itemName={shareDoc?.name ?? ''}
+        shareLink={shareLink}
+        onShareWithUser={async (email, permission) => {
+          if (shareDoc) {
+            shareWithUser.mutate({
+              documentId: shareDoc.id,
+              data: { email, permission },
+            });
+          }
+        }}
+        onCreateLink={async (permission) => {
+          if (shareDoc) {
+            createShareLink.mutate(
+              { documentId: shareDoc.id, data: { permission } },
+              {
+                onSuccess: (link) => {
+                  setShareLink(`${window.location.origin}/share/${link.token}`);
+                },
+              },
+            );
+          }
+        }}
+      />
     </div>
   );
 }

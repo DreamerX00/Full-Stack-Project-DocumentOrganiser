@@ -77,10 +77,14 @@ fi
 # Remove the "prepare" lifecycle script so npm doesn't try to run
 # husky during install. We use sed instead of `npm pkg delete` because
 # any npm command can itself trigger lifecycle hooks before node_modules exists.
+# Also strip any trailing comma left behind to keep the JSON valid.
 sed -i '/"prepare":/d' package.json
+sed -i ':a;N;$!ba;s/,\n[[:space:]]*}/\n  }/g' package.json
 
-# Full install (devDeps needed — TypeScript is required to build next.config.ts)
-npm ci >> "$LOG_FILE" 2>&1
+# Full install — explicitly include dev deps (TypeScript is required to
+# transpile next.config.ts). On EC2, NODE_ENV may be "production" which
+# causes npm ci to skip devDependencies; --include=dev overrides that.
+npm ci --include=dev >> "$LOG_FILE" 2>&1
 npm run build >> "$LOG_FILE" 2>&1
 
 if [ ! -f ".next/standalone/server.js" ]; then
