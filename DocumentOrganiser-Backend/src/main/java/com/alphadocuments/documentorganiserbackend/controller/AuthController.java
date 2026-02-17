@@ -1,7 +1,9 @@
 package com.alphadocuments.documentorganiserbackend.controller;
 
 import com.alphadocuments.documentorganiserbackend.dto.request.GoogleAuthRequest;
+import com.alphadocuments.documentorganiserbackend.dto.request.LoginRequest;
 import com.alphadocuments.documentorganiserbackend.dto.request.RefreshTokenRequest;
+import com.alphadocuments.documentorganiserbackend.dto.request.RegisterRequest;
 import com.alphadocuments.documentorganiserbackend.dto.response.ApiResponse;
 import com.alphadocuments.documentorganiserbackend.dto.response.AuthResponse;
 import com.alphadocuments.documentorganiserbackend.dto.response.UserResponse;
@@ -28,6 +30,34 @@ public class AuthController {
 
     private final AuthService authService;
     private final UserService userService;
+
+    @PostMapping("/register")
+    @Operation(summary = "Register new user", description = "Register a new user with email and password")
+    public ResponseEntity<ApiResponse<AuthResponse>> register(
+            @Valid @RequestBody RegisterRequest request,
+            HttpServletRequest httpRequest) {
+
+        AuthResponse authResponse = authService.register(
+                request,
+                httpRequest.getHeader("User-Agent"),
+                getClientIp(httpRequest));
+
+        return ResponseEntity.ok(ApiResponse.success(authResponse, "User registered successfully"));
+    }
+
+    @PostMapping("/login")
+    @Operation(summary = "Login user", description = "Login with email and password")
+    public ResponseEntity<ApiResponse<AuthResponse>> login(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest) {
+
+        AuthResponse authResponse = authService.login(
+                request,
+                httpRequest.getHeader("User-Agent"),
+                getClientIp(httpRequest));
+
+        return ResponseEntity.ok(ApiResponse.success(authResponse, "Login successful"));
+    }
 
     @PostMapping("/google")
     @Operation(summary = "Authenticate with Google", description = "Authenticate user with Google OAuth ID token")

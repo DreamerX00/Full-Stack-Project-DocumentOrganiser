@@ -3,11 +3,23 @@ import type {
   ApiResponse,
   AuthResponse,
   GoogleAuthRequest,
+  LoginRequest,
   RefreshTokenRequest,
+  RegisterRequest,
   UserResponse,
 } from '@/lib/types';
 
 export const authApi = {
+  register: async (data: RegisterRequest) => {
+    const res = await apiClient.post<ApiResponse<AuthResponse>>('/auth/register', data);
+    return res.data.data;
+  },
+
+  login: async (data: LoginRequest) => {
+    const res = await apiClient.post<ApiResponse<AuthResponse>>('/auth/login', data);
+    return res.data.data;
+  },
+
   loginWithGoogle: async (data: GoogleAuthRequest) => {
     const res = await apiClient.post<ApiResponse<AuthResponse>>('/auth/google', data);
     return res.data.data;

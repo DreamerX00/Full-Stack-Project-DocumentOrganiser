@@ -1,7 +1,9 @@
 package com.alphadocuments.documentorganiserbackend.service.impl;
 
 import com.alphadocuments.documentorganiserbackend.dto.request.GoogleAuthRequest;
+import com.alphadocuments.documentorganiserbackend.dto.request.LoginRequest;
 import com.alphadocuments.documentorganiserbackend.dto.request.RefreshTokenRequest;
+import com.alphadocuments.documentorganiserbackend.dto.request.RegisterRequest;
 import com.alphadocuments.documentorganiserbackend.dto.response.AuthResponse;
 import com.alphadocuments.documentorganiserbackend.dto.response.UserResponse;
 import com.alphadocuments.documentorganiserbackend.dto.response.UserSettingsResponse;
@@ -10,8 +12,11 @@ import com.alphadocuments.documentorganiserbackend.entity.User;
 import com.alphadocuments.documentorganiserbackend.entity.UserSettings;
 import com.alphadocuments.documentorganiserbackend.entity.enums.AuthProvider;
 import com.alphadocuments.documentorganiserbackend.entity.enums.Role;
+import com.alphadocuments.documentorganiserbackend.exception.BadRequestException;
+import com.alphadocuments.documentorganiserbackend.exception.ResourceNotFoundException;
 import com.alphadocuments.documentorganiserbackend.exception.UnauthorizedException;
 import com.alphadocuments.documentorganiserbackend.repository.UserRepository;
+import com.alphadocuments.documentorganiserbackend.security.UserPrincipal;
 import com.alphadocuments.documentorganiserbackend.security.jwt.JwtTokenProvider;
 import com.alphadocuments.documentorganiserbackend.service.AuthService;
 import com.alphadocuments.documentorganiserbackend.service.RefreshTokenService;
@@ -23,9 +28,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,10 +51,47 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final RefreshTokenService refreshTokenService;
-    private final JwtTokenProvider jwtTokenProvider;
+    private final JwtTokenProvider tokenProvider;
+    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
 
     @Value("${spring.security.oauth2.client.registration.google.client-id:}")
     private String googleClientId;
+
+    @Override
+    @Transactional
+    public AuthResponse register(RegisterRequest request, String userAgent, String ipAddress) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new BadRequestException("Email already in use");
+        }
+
+        User user = createNewUser(
+                request.getEmail(),
+                request.getName(),
+                null,
+                null,
+                false
+        );
+        user.setAuthProvider(AuthProvider.LOCAL);
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+
+        user = userRepository.save(user);
+
+        return generateAuthResponse(user, userAgent, ipAddress);
+    }
+
+    @Override
+    public AuthResponse login(LoginRequest request, String userAgent, String ipAddress) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+        );
+
+        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+        User user = userRepository.findById(userPrincipal.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userPrincipal.getId()));
+
+        return generateAuthResponse(user, userAgent, ipAddress);
+    }
 
     @Override
     @Transactional
@@ -165,7 +213,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private AuthResponse generateAuthResponse(User user, String userAgent, String ipAddress) {
-        String accessToken = jwtTokenProvider.generateAccessToken(user.getId(), user.getEmail());
+        String accessToken = tokenProvider.generateAccessToken(user.getId(), user.getEmail());
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(
                 user.getId(), userAgent, ipAddress);
 
@@ -205,7 +253,7 @@ public class AuthServiceImpl implements AuthService {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken.getToken())
                 .tokenType("Bearer")
-                .expiresIn(jwtTokenProvider.getExpirationMs() / 1000)
+                .expiresIn(tokenProvider.getExpirationMs() / 1000)
                 .user(userResponse)
                 .build();
     }

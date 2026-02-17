@@ -39,6 +39,9 @@ public class User extends BaseEntity {
     @Column(name = "auth_provider", nullable = false)
     private AuthProvider authProvider;
 
+    @Column(name = "password")
+    private String password;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
     @Builder.Default

@@ -10,23 +10,21 @@ CREATE INDEX IF NOT EXISTS idx_documents_search_vector ON documents USING GIN (s
 -- Populate the search vector from existing data
 UPDATE documents SET search_vector =
     setweight(to_tsvector('english', coalesce(name, '')), 'A') ||
-    setweight(to_tsvector('english', coalesce(description, '')), 'B') ||
-    setweight(to_tsvector('english', coalesce(category, '')), 'C');
+    setweight(to_tsvector('english', coalesce(category, '')), 'B');
 
 -- Create a trigger function to keep the search vector updated
 CREATE OR REPLACE FUNCTION documents_search_vector_update() RETURNS trigger AS $$
 BEGIN
     NEW.search_vector :=
         setweight(to_tsvector('english', coalesce(NEW.name, '')), 'A') ||
-        setweight(to_tsvector('english', coalesce(NEW.description, '')), 'B') ||
-        setweight(to_tsvector('english', coalesce(NEW.category, '')), 'C');
+        setweight(to_tsvector('english', coalesce(NEW.category, '')), 'B');
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
 -- Create trigger to auto-update search vector on insert/update
 CREATE TRIGGER trig_documents_search_vector_update
-    BEFORE INSERT OR UPDATE OF name, description, category
+    BEFORE INSERT OR UPDATE OF name, category
     ON documents
     FOR EACH ROW
     EXECUTE FUNCTION documents_search_vector_update();
