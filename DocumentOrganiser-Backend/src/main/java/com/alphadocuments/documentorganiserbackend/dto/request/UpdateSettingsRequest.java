@@ -33,4 +33,10 @@ public class UpdateSettingsRequest {
 
     @Pattern(regexp = "^(asc|desc)$", message = "Sort order must be 'asc' or 'desc'")
     private String sortOrder;
+
+    // Onboarding fields
+    private String profession;
+    private String subcategory;
+    private String specialization;
+    private Boolean onboardingComplete;
 }

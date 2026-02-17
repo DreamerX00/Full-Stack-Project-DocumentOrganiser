@@ -22,4 +22,10 @@ public class UserSettingsResponse {
     private String defaultView;
     private String sortBy;
     private String sortOrder;
+
+    // Onboarding fields
+    private String profession;
+    private String subcategory;
+    private String specialization;
+    private Boolean onboardingComplete;
 }

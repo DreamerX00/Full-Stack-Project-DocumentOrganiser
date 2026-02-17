@@ -52,4 +52,18 @@ public class UserSettings extends BaseEntity {
     @Column(name = "sort_order")
     @Builder.Default
     private String sortOrder = "asc"; // asc or desc
+
+    // Onboarding fields
+    @Column(name = "profession")
+    private String profession;
+
+    @Column(name = "subcategory")
+    private String subcategory;
+
+    @Column(name = "specialization")
+    private String specialization;
+
+    @Column(name = "onboarding_complete")
+    @Builder.Default
+    private Boolean onboardingComplete = false;
 }

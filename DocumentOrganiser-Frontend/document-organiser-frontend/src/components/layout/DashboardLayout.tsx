@@ -14,6 +14,44 @@ import { useKeyboardShortcuts } from '@/lib/hooks/useKeyboardShortcuts';
 import { useFileUpload } from '@/lib/hooks/useFileUpload';
 import { useFileStore } from '@/lib/store/fileStore';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { useAuthStore } from '@/lib/store/authStore';
+import { OnboardingPopup, OnboardingData } from '@/components/features/onboarding/OnboardingPopup';
+import { completeOnboarding } from '@/lib/api/onboarding';
+  const user = useAuthStore((s) => s.user);
+  const updateUser = useAuthStore((s) => s.updateUser);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  // Show onboarding popup for new users (onboardingComplete not set)
+  useEffect(() => {
+    if (user && user.settings && user.settings.onboardingComplete !== true) {
+      setOnboardingOpen(true);
+    }
+  }, [user]);
+  // Handle onboarding completion
+  const handleOnboardingComplete = async (data: OnboardingData) => {
+    setOnboardingOpen(false);
+    try {
+      const updatedUser = await completeOnboarding({
+        profession: data.profession,
+        subcategory: data.subcategory,
+        specialization: data.specialization,
+      });
+      updateUser({ settings: updatedUser.settings });
+    } catch {
+      // fallback: still mark onboarding as complete locally
+      updateUser({ settings: { ...user?.settings, onboardingComplete: true } });
+    }
+  };
+
+  // Handle onboarding skip
+  const handleOnboardingSkip = async () => {
+    setOnboardingOpen(false);
+    try {
+      const updatedUser = await completeOnboarding({});
+      updateUser({ settings: updatedUser.settings });
+    } catch {
+      updateUser({ settings: { ...user?.settings, onboardingComplete: true } });
+    }
+  };
 import { Loader2 } from 'lucide-react';
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -71,8 +109,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <DragDropZone onFilesDropped={handleFilesDropped}>
-      <div className="flex h-screen overflow-hidden">
+    <>
+      <OnboardingPopup
+        open={onboardingOpen}
+        onComplete={handleOnboardingComplete}
+        onSkip={handleOnboardingSkip}
+      />
+      <DragDropZone onFilesDropped={handleFilesDropped}>
+        <div className="flex h-screen overflow-hidden">
         {/* Desktop Sidebar */}
         <div className="hidden md:block">
           <AppSidebar />
@@ -108,7 +152,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
         {/* Keyboard Shortcuts Dialog (triggered by ?) */}
         <KeyboardShortcutsDialog />
-      </div>
-    </DragDropZone>
+        </div>
+      </DragDropZone>
+    </>
   );
 }

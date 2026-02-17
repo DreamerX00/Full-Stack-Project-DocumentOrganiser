@@ -146,6 +146,11 @@ export interface UserSettingsResponse {
   defaultView: string;
   sortBy: string;
   sortOrder: string;
+  // Onboarding fields
+  profession?: string;
+  subcategory?: string;
+  specialization?: string;
+  onboardingComplete?: boolean;
 }
 
 export interface UpdateProfileRequest {
@@ -161,6 +166,11 @@ export interface UpdateSettingsRequest {
   defaultView?: string;
   sortBy?: string;
   sortOrder?: string;
+  // Onboarding fields
+  profession?: string;
+  subcategory?: string;
+  specialization?: string;
+  onboardingComplete?: boolean;
 }
 
 // ============================================================
