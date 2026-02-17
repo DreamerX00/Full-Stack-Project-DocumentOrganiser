@@ -3,9 +3,11 @@ package com.alphadocuments.documentorganiserbackend.service.impl;
 import com.alphadocuments.documentorganiserbackend.dto.request.MoveDocumentRequest;
 import com.alphadocuments.documentorganiserbackend.dto.request.RenameDocumentRequest;
 import com.alphadocuments.documentorganiserbackend.dto.response.DocumentResponse;
+import com.alphadocuments.documentorganiserbackend.dto.response.DocumentVersionResponse;
 import com.alphadocuments.documentorganiserbackend.entity.Document;
 import com.alphadocuments.documentorganiserbackend.entity.DeletedItem;
 import com.alphadocuments.documentorganiserbackend.entity.DocumentTag;
+import com.alphadocuments.documentorganiserbackend.entity.DocumentVersion;
 import com.alphadocuments.documentorganiserbackend.entity.Folder;
 import com.alphadocuments.documentorganiserbackend.entity.User;
 import com.alphadocuments.documentorganiserbackend.entity.enums.DocumentCategory;
@@ -13,6 +15,7 @@ import com.alphadocuments.documentorganiserbackend.exception.*;
 import com.alphadocuments.documentorganiserbackend.repository.DeletedItemRepository;
 import com.alphadocuments.documentorganiserbackend.repository.DocumentRepository;
 import com.alphadocuments.documentorganiserbackend.repository.DocumentTagRepository;
+import com.alphadocuments.documentorganiserbackend.repository.DocumentVersionRepository;
 import com.alphadocuments.documentorganiserbackend.repository.FolderRepository;
 import com.alphadocuments.documentorganiserbackend.repository.UserRepository;
 import com.alphadocuments.documentorganiserbackend.service.ActivityService;
@@ -55,6 +58,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final FolderRepository folderRepository;
     private final UserRepository userRepository;
     private final DocumentTagRepository documentTagRepository;
+    private final DocumentVersionRepository documentVersionRepository;
     private final DeletedItemRepository deletedItemRepository;
     private final StorageService storageService;
     private final UserService userService;
@@ -465,6 +469,61 @@ public class DocumentServiceImpl implements DocumentService {
                 .updatedAt(document.getUpdatedAt())
                 .lastAccessedAt(document.getLastAccessedAt())
                 .tags(tags)
+                .build();
+    }
+
+    // ── Version management ─────────────────────────────────────
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DocumentVersionResponse> getVersions(UUID userId, UUID documentId) {
+        Document document = documentRepository.findById(documentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Document", "id", documentId));
+        if (!document.getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("You do not have permission to view this document's versions");
+        }
+        return documentVersionRepository.findByDocumentIdOrderByVersionNumberDesc(documentId)
+                .stream()
+                .map(this::mapToVersionResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public DocumentResponse restoreVersion(UUID userId, UUID documentId, Integer versionNumber) {
+        Document document = documentRepository.findById(documentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Document", "id", documentId));
+        if (!document.getUser().getId().equals(userId)) {
+            throw new AccessDeniedException("You do not have permission to restore versions of this document");
+        }
+        DocumentVersion version = documentVersionRepository
+                .findByDocumentIdAndVersionNumber(documentId, versionNumber)
+                .orElseThrow(() -> new ResourceNotFoundException("DocumentVersion", "versionNumber", versionNumber));
+
+        // Update the main document to point to the restored version's storage
+        document.setStorageKey(version.getStorageKey());
+        document.setFileSize(version.getFileSize());
+        document.setChecksum(version.getChecksum());
+        document.setVersion(version.getVersionNumber());
+        documentRepository.save(document);
+
+        activityService.logActivity(userId, ActivityType.DOCUMENT_UPDATED,
+                "Document", documentId.toString(), document.getName(),
+                "Restored to version " + versionNumber, null);
+
+        return mapToDocumentResponse(document);
+    }
+
+    private DocumentVersionResponse mapToVersionResponse(DocumentVersion version) {
+        return DocumentVersionResponse.builder()
+                .id(version.getId())
+                .documentId(version.getDocument().getId())
+                .versionNumber(version.getVersionNumber())
+                .fileSize(version.getFileSize())
+                .checksum(version.getChecksum())
+                .changeDescription(version.getChangeDescription())
+                .uploadedBy(version.getUploadedBy())
+                .createdAt(version.getCreatedAt())
                 .build();
     }
 }

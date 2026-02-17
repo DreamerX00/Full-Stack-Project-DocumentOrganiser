@@ -6,7 +6,7 @@ import { ApiResponse } from '@/lib/types';
 const API_BASE_URL =
   typeof window !== 'undefined'
     ? '/api/backend'
-    : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api');
+    : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1');
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

@@ -2,6 +2,7 @@ import apiClient from './client';
 import type {
   ApiResponse,
   DocumentResponse,
+  DocumentVersionResponse,
   PagedResponse,
   RenameDocumentRequest,
   MoveDocumentRequest,
@@ -138,6 +139,19 @@ export const documentsApi = {
 
   getAllTags: async () => {
     const res = await apiClient.get<ApiResponse<string[]>>('/documents/tags');
+    return res.data.data;
+  },
+
+  // Version management
+  getVersions: async (id: string) => {
+    const res = await apiClient.get<ApiResponse<DocumentVersionResponse[]>>(`/documents/${id}/versions`);
+    return res.data.data;
+  },
+
+  restoreVersion: async (id: string, versionNumber: number) => {
+    const res = await apiClient.post<ApiResponse<DocumentResponse>>(
+      `/documents/${id}/versions/${versionNumber}/restore`
+    );
     return res.data.data;
   },
 };

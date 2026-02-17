@@ -100,6 +100,17 @@ export interface PagedResponse<T> {
   hasPrevious: boolean;
 }
 
+export interface DocumentVersionResponse {
+  id: string;
+  documentId: string;
+  versionNumber: number;
+  fileSize: number;
+  checksum?: string;
+  changeDescription?: string;
+  uploadedBy?: string;
+  createdAt: string;
+}
+
 // ============================================================
 // Auth DTOs
 // ============================================================

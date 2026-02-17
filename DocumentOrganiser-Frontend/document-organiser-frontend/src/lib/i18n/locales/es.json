@@ -1,0 +1,77 @@
+{
+    "common": {
+        "loading": "Cargando...",
+        "save": "Guardar",
+        "cancel": "Cancelar",
+        "delete": "Eliminar",
+        "edit": "Editar",
+        "create": "Crear",
+        "search": "Buscar",
+        "noResults": "No se encontraron resultados",
+        "error": "Ocurrió un error",
+        "success": "Éxito",
+        "confirm": "Confirmar",
+        "back": "Atrás",
+        "next": "Siguiente",
+        "close": "Cerrar"
+    },
+    "auth": {
+        "login": "Iniciar sesión",
+        "signUp": "Registrarse",
+        "logout": "Cerrar sesión",
+        "email": "Correo electrónico",
+        "password": "Contraseña",
+        "forgotPassword": "¿Olvidaste tu contraseña?",
+        "googleLogin": "Continuar con Google"
+    },
+    "dashboard": {
+        "title": "Panel de control",
+        "welcome": "Bienvenido de nuevo",
+        "recentFiles": "Archivos recientes",
+        "storage": "Almacenamiento",
+        "quickActions": "Acciones rápidas"
+    },
+    "documents": {
+        "upload": "Subir",
+        "download": "Descargar",
+        "rename": "Renombrar",
+        "move": "Mover",
+        "copy": "Copiar",
+        "delete": "Eliminar",
+        "favorite": "Favorito",
+        "unfavorite": "Quitar favorito",
+        "versions": "Historial de versiones",
+        "comments": "Comentarios",
+        "tags": "Etiquetas",
+        "noDocuments": "No hay documentos aún",
+        "uploadFirst": "Sube tu primer documento para empezar"
+    },
+    "folders": {
+        "create": "Nueva carpeta",
+        "rename": "Renombrar carpeta",
+        "delete": "Eliminar carpeta",
+        "empty": "Esta carpeta está vacía"
+    },
+    "settings": {
+        "title": "Configuración",
+        "profile": "Perfil",
+        "appearance": "Apariencia",
+        "language": "Idioma",
+        "notifications": "Notificaciones",
+        "security": "Seguridad",
+        "export": "Exportar datos"
+    },
+    "notifications": {
+        "title": "Notificaciones",
+        "markRead": "Marcar como leída",
+        "markAllRead": "Marcar todas como leídas",
+        "noNotifications": "Sin notificaciones",
+        "allCaughtUp": "¡Estás al día!"
+    },
+    "ai": {
+        "tools": "Herramientas IA",
+        "autoTag": "Etiquetar automáticamente",
+        "suggestTags": "Sugerir etiquetas",
+        "summarize": "Resumir"
+    }
+}

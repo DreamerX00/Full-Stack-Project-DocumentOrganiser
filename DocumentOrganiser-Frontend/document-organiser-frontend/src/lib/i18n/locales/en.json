@@ -1,0 +1,77 @@
+{
+    "common": {
+        "loading": "Loading...",
+        "save": "Save",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "edit": "Edit",
+        "create": "Create",
+        "search": "Search",
+        "noResults": "No results found",
+        "error": "An error occurred",
+        "success": "Success",
+        "confirm": "Confirm",
+        "back": "Back",
+        "next": "Next",
+        "close": "Close"
+    },
+    "auth": {
+        "login": "Log In",
+        "signUp": "Sign Up",
+        "logout": "Log Out",
+        "email": "Email",
+        "password": "Password",
+        "forgotPassword": "Forgot Password?",
+        "googleLogin": "Continue with Google"
+    },
+    "dashboard": {
+        "title": "Dashboard",
+        "welcome": "Welcome back",
+        "recentFiles": "Recent Files",
+        "storage": "Storage",
+        "quickActions": "Quick Actions"
+    },
+    "documents": {
+        "upload": "Upload",
+        "download": "Download",
+        "rename": "Rename",
+        "move": "Move",
+        "copy": "Copy",
+        "delete": "Delete",
+        "favorite": "Favorite",
+        "unfavorite": "Unfavorite",
+        "versions": "Version History",
+        "comments": "Comments",
+        "tags": "Tags",
+        "noDocuments": "No documents yet",
+        "uploadFirst": "Upload your first document to get started"
+    },
+    "folders": {
+        "create": "New Folder",
+        "rename": "Rename Folder",
+        "delete": "Delete Folder",
+        "empty": "This folder is empty"
+    },
+    "settings": {
+        "title": "Settings",
+        "profile": "Profile",
+        "appearance": "Appearance",
+        "language": "Language",
+        "notifications": "Notifications",
+        "security": "Security",
+        "export": "Export Data"
+    },
+    "notifications": {
+        "title": "Notifications",
+        "markRead": "Mark as read",
+        "markAllRead": "Mark all read",
+        "noNotifications": "No notifications",
+        "allCaughtUp": "You're all caught up!"
+    },
+    "ai": {
+        "tools": "AI Tools",
+        "autoTag": "Auto-Tag",
+        "suggestTags": "Suggest Tags",
+        "summarize": "Summarize"
+    }
+}

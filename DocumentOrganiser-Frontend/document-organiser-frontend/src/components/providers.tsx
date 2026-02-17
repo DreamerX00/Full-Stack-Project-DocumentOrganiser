@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useState, type ReactNode } from 'react';
 import { ThemeProvider } from './theme-provider';
+import { I18nProvider } from '@/lib/i18n';
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -33,7 +34,9 @@ export function Providers({ children }: { children: ReactNode }) {
             disableTransitionOnChange
           >
             <TooltipProvider>
-              {children}
+              <I18nProvider>
+                {children}
+              </I18nProvider>
             </TooltipProvider>
             <Toaster richColors position="bottom-right" />
           </ThemeProvider>

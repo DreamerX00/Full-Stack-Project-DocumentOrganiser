@@ -4,6 +4,7 @@ import com.alphadocuments.documentorganiserbackend.dto.request.MoveDocumentReque
 import com.alphadocuments.documentorganiserbackend.dto.request.RenameDocumentRequest;
 import com.alphadocuments.documentorganiserbackend.dto.response.ApiResponse;
 import com.alphadocuments.documentorganiserbackend.dto.response.DocumentResponse;
+import com.alphadocuments.documentorganiserbackend.dto.response.DocumentVersionResponse;
 import com.alphadocuments.documentorganiserbackend.dto.response.PagedResponse;
 import com.alphadocuments.documentorganiserbackend.entity.enums.DocumentCategory;
 import com.alphadocuments.documentorganiserbackend.security.CurrentUser;
@@ -236,5 +237,28 @@ public class DocumentController {
                 .hasNext(page.hasNext())
                 .hasPrevious(page.hasPrevious())
                 .build();
+    }
+
+    // ── Version management endpoints ───────────────────────
+
+    @GetMapping("/{documentId}/versions")
+    @Operation(summary = "Get version history", description = "Get all versions of a document")
+    public ResponseEntity<ApiResponse<List<DocumentVersionResponse>>> getVersions(
+            @CurrentUser UserPrincipal userPrincipal,
+            @PathVariable UUID documentId) {
+
+        List<DocumentVersionResponse> versions = documentService.getVersions(userPrincipal.getId(), documentId);
+        return ResponseEntity.ok(ApiResponse.success(versions));
+    }
+
+    @PostMapping("/{documentId}/versions/{versionNumber}/restore")
+    @Operation(summary = "Restore version", description = "Restore a document to a previous version")
+    public ResponseEntity<ApiResponse<DocumentResponse>> restoreVersion(
+            @CurrentUser UserPrincipal userPrincipal,
+            @PathVariable UUID documentId,
+            @PathVariable Integer versionNumber) {
+
+        DocumentResponse document = documentService.restoreVersion(userPrincipal.getId(), documentId, versionNumber);
+        return ResponseEntity.ok(ApiResponse.success(document, "Version restored successfully"));
     }
 }

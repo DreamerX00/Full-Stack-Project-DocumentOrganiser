@@ -19,7 +19,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useNavigationStore } from '@/lib/store/navigationStore';
-import { useNotifications, useUnreadNotificationCount, useMarkNotificationAsRead } from '@/lib/hooks/useNotifications';
 import { NotificationBell } from '@/components/features/notifications/NotificationBell';
 import { CommandPalette } from '@/components/features/search/CommandPalette';
 import { cn } from '@/lib/utils';
@@ -34,11 +33,6 @@ export function TopNav({ onUploadClick, onMenuClick }: TopNavProps) {
   const router = useRouter();
   const [commandOpen, setCommandOpen] = useState(false);
   const { viewMode, setViewMode, sortBy, setSortBy } = useNavigationStore();
-
-  // Live notification data
-  const { data: notificationsData } = useNotifications(0, 5);
-  const { data: unreadCount } = useUnreadNotificationCount();
-  const markAsRead = useMarkNotificationAsRead();
 
   // Global Ctrl+K / Cmd+K keyboard shortcut
   useEffect(() => {
@@ -131,11 +125,7 @@ export function TopNav({ onUploadClick, onMenuClick }: TopNavProps) {
           </DropdownMenu>
 
           {/* Notifications - live data */}
-          <NotificationBell
-            notifications={notificationsData?.content ?? []}
-            unreadCount={unreadCount ?? 0}
-            onMarkAsRead={(id) => markAsRead.mutate(id)}
-          />
+          <NotificationBell />
 
           {/* Upload */}
           <Button onClick={onUploadClick} size="sm" className="gap-2">

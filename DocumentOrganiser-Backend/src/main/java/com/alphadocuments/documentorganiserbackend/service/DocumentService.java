@@ -5,6 +5,7 @@ import com.alphadocuments.documentorganiserbackend.dto.request.RenameDocumentReq
 import com.alphadocuments.documentorganiserbackend.dto.response.DocumentResponse;
 import com.alphadocuments.documentorganiserbackend.dto.response.PagedResponse;
 import com.alphadocuments.documentorganiserbackend.entity.enums.DocumentCategory;
+import com.alphadocuments.documentorganiserbackend.dto.response.DocumentVersionResponse;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -53,4 +54,9 @@ public interface DocumentService {
     void removeTag(UUID userId, UUID documentId, String tag);
 
     List<String> getUserTags(UUID userId);
+
+    // ── Version management ─────────────────────────────────────
+    List<DocumentVersionResponse> getVersions(UUID userId, UUID documentId);
+
+    DocumentResponse restoreVersion(UUID userId, UUID documentId, Integer versionNumber);
 }
