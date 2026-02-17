@@ -36,6 +36,16 @@ export function KeyboardShortcutsDialog() {
       ],
     },
     {
+      title: 'File Grid',
+      shortcuts: [
+        { keys: ['←', '→', '↑', '↓'], description: 'Navigate files' },
+        { keys: ['Enter'], description: 'Open selected file' },
+        { keys: ['Space'], description: 'Toggle selection' },
+        { keys: ['Delete'], description: 'Delete selected file' },
+        { keys: ['Esc'], description: 'Clear selection' },
+      ],
+    },
+    {
       title: 'Actions',
       shortcuts: [
         { keys: [modKey, 'K'], description: 'Open Command Palette' },

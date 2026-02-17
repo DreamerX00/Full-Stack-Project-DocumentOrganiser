@@ -1,7 +1,10 @@
 'use client';
 
+import { useCallback } from 'react';
 import { FileCard } from './FileCard';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useFileGridKeyboard } from '@/lib/hooks/useFileGridKeyboard';
+import { useFileStore } from '@/lib/store/fileStore';
 import type { DocumentResponse } from '@/lib/types';
 
 interface FileGridProps {
@@ -29,6 +32,39 @@ export function FileGrid({
   onDownload,
   onToggleFavorite,
 }: FileGridProps) {
+  const { toggleFileSelection } = useFileStore();
+
+  const handleOpen = useCallback(
+    (index: number) => {
+      const doc = documents[index];
+      if (doc) onPreview?.(doc);
+    },
+    [documents, onPreview]
+  );
+
+  const handleDelete = useCallback(
+    (index: number) => {
+      const doc = documents[index];
+      if (doc) onDelete?.(doc);
+    },
+    [documents, onDelete]
+  );
+
+  const handleToggleSelection = useCallback(
+    (index: number) => {
+      const doc = documents[index];
+      if (doc) toggleFileSelection(doc.id);
+    },
+    [documents, toggleFileSelection]
+  );
+
+  const { focusedIndex, setFocusedIndex, gridRef } = useFileGridKeyboard({
+    itemCount: documents.length,
+    onOpen: handleOpen,
+    onDelete: handleDelete,
+    onToggleSelection: handleToggleSelection,
+  });
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
@@ -48,11 +84,18 @@ export function FileGrid({
   }
 
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-      {documents.map((doc) => (
+    <div
+      ref={gridRef}
+      className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+      role="grid"
+      aria-label="File grid"
+    >
+      {documents.map((doc, index) => (
         <FileCard
           key={doc.id}
           document={doc}
+          isFocused={index === focusedIndex}
+          onMouseEnter={() => setFocusedIndex(index)}
           onPreview={onPreview}
           onRename={onRename}
           onDelete={onDelete}
@@ -66,3 +109,4 @@ export function FileGrid({
     </div>
   );
 }
+

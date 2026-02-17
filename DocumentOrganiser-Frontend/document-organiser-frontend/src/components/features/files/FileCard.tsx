@@ -26,6 +26,8 @@ import { useFileStore } from '@/lib/store/fileStore';
 
 interface FileCardProps {
   document: DocumentResponse;
+  isFocused?: boolean;
+  onMouseEnter?: () => void;
   onPreview?: (doc: DocumentResponse) => void;
   onRename?: (doc: DocumentResponse) => void;
   onDelete?: (doc: DocumentResponse) => void;
@@ -38,6 +40,8 @@ interface FileCardProps {
 
 export function FileCard({
   document: doc,
+  isFocused,
+  onMouseEnter,
   onPreview,
   onRename,
   onDelete,
@@ -64,9 +68,12 @@ export function FileCard({
         <Card
           draggable
           onDragStart={handleDragStart}
+          onMouseEnter={onMouseEnter}
+          tabIndex={0}
           className={cn(
             'group relative cursor-pointer transition-all hover:shadow-md',
-            isSelected && 'ring-2 ring-primary'
+            isSelected && 'ring-2 ring-primary',
+            isFocused && !isSelected && 'ring-2 ring-ring/50'
           )}
         >
           {/* Selection checkbox */}

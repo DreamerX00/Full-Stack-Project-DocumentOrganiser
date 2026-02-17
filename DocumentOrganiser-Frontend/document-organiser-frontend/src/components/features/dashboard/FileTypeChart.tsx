@@ -1,76 +1,54 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  Legend,
-} from 'recharts';
+import { PieChart } from 'lucide-react';
 
 interface FileTypeChartProps {
-  data: Record<string, number>;
+    data: Record<string, number>;
 }
 
 const COLORS = [
-  '#3B82F6', '#10B981', '#8B5CF6', '#EC4899',
-  '#F59E0B', '#EF4444', '#06B6D4', '#F97316', '#6B7280',
+    'bg-blue-500', 'bg-purple-500', 'bg-green-500', 'bg-yellow-500',
+    'bg-pink-500', 'bg-orange-500', 'bg-teal-500', 'bg-red-500',
 ];
 
 export function FileTypeChart({ data }: FileTypeChartProps) {
-  const chartData = Object.entries(data)
-    .filter(([, count]) => count > 0)
-    .map(([name, value]) => ({
-      name: name.charAt(0) + name.slice(1).toLowerCase(),
-      value,
-    }));
+    const entries = Object.entries(data).sort(([, a], [, b]) => b - a);
+    const total = entries.reduce((sum, [, count]) => sum + count, 0);
 
-  if (chartData.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium">File Distribution</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground text-center py-8">
-            No data yet
-          </p>
-        </CardContent>
-      </Card>
+        <Card>
+            <CardHeader>
+                <CardTitle className="text-sm font-medium">File Types</CardTitle>
+            </CardHeader>
+            <CardContent>
+                {entries.length === 0 ? (
+                    <div className="flex flex-col items-center gap-2 py-4 text-muted-foreground">
+                        <PieChart className="h-8 w-8" />
+                        <p className="text-sm">No data yet</p>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {entries.map(([category, count], idx) => {
+                            const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+                            return (
+                                <div key={category} className="space-y-1">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="capitalize">{category.toLowerCase().replace('_', ' ')}</span>
+                                        <span className="text-muted-foreground">{count} ({pct}%)</span>
+                                    </div>
+                                    <div className="h-2 w-full rounded-full bg-muted">
+                                        <div
+                                            className={`h-full rounded-full ${COLORS[idx % COLORS.length]}`}
+                                            style={{ width: `${pct}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </CardContent>
+        </Card>
     );
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-sm font-medium">File Distribution</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={220}>
-          <PieChart>
-            <Pie
-              data={chartData}
-              cx="50%"
-              cy="50%"
-              innerRadius={50}
-              outerRadius={80}
-              paddingAngle={2}
-              dataKey="value"
-            >
-              {chartData.map((_, index) => (
-                <Cell key={index} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip />
-            <Legend
-              iconSize={8}
-              wrapperStyle={{ fontSize: '12px' }}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
-  );
 }

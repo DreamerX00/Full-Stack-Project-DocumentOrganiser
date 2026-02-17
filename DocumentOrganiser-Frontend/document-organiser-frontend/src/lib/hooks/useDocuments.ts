@@ -52,6 +52,25 @@ export function useDocumentsByFolder(
   });
 }
 
+/**
+ * Infinite-scroll variant – loads pages automatically as the user scrolls.
+ */
+export function useInfiniteDocumentsByFolder(
+  folderId?: string,
+  size = 20,
+  sortBy = 'updatedAt',
+  sortDir = 'desc'
+) {
+  return useInfiniteQuery({
+    queryKey: [...documentKeys.lists(), 'infinite', { folderId }],
+    queryFn: ({ pageParam = 0 }) =>
+      documentsApi.listByFolder(folderId, pageParam, size, sortBy, sortDir),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.hasNext ? lastPage.page + 1 : undefined,
+  });
+}
+
 export function useDocumentsByCategory(
   category: DocumentCategory,
   page = 0,
