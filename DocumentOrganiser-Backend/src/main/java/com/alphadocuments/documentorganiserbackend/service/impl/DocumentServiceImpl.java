@@ -95,6 +95,14 @@ public class DocumentServiceImpl implements DocumentService {
             // Calculate checksum
             String checksum = calculateChecksum(file.getInputStream());
 
+            // Check for duplicate files (same content, different name/location)
+            if (checksum != null) {
+                documentRepository.findFirstByUserIdAndChecksumAndIsDeletedFalse(userId, checksum)
+                        .ifPresent(existing -> log.info(
+                                "Duplicate file detected: '{}' has same checksum as existing '{}' (id={})",
+                                originalName, existing.getOriginalName(), existing.getId()));
+            }
+
             // Upload to storage
             storageService.uploadFile(storageKey, file.getInputStream(), file.getSize(), mimeType);
 

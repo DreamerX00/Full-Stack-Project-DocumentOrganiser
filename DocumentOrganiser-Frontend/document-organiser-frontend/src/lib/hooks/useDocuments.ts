@@ -111,13 +111,42 @@ export function useDeleteDocument() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => documentsApi.delete(id),
+    onMutate: async (id) => {
+      await qc.cancelQueries({ queryKey: documentKeys.lists() });
+
+      const previousQueries = qc.getQueriesData<PagedResponse<DocumentResponse>>({
+        queryKey: documentKeys.lists(),
+      });
+
+      // Optimistically remove the document from all cache entries
+      qc.setQueriesData<PagedResponse<DocumentResponse>>(
+        { queryKey: documentKeys.lists() },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            content: old.content.filter((doc) => doc.id !== id),
+            totalElements: old.totalElements - 1,
+          };
+        }
+      );
+
+      return { previousQueries };
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: documentKeys.lists() });
       qc.invalidateQueries({ queryKey: dashboardKeys.stats() });
       qc.invalidateQueries({ queryKey: trashKeys.all });
       toast.success('Moved to trash');
     },
-    onError: () => toast.error('Failed to delete'),
+    onError: (_err, _id, context) => {
+      if (context?.previousQueries) {
+        for (const [queryKey, data] of context.previousQueries) {
+          qc.setQueryData(queryKey, data);
+        }
+      }
+      toast.error('Failed to delete');
+    },
   });
 }
 
@@ -159,8 +188,29 @@ export function useToggleFavorite() {
   return useMutation({
     mutationFn: (id: string) => documentsApi.toggleFavorite(id),
     onMutate: async (id) => {
-      // Optimistic update: toggle favorite in cache
+      // Cancel outgoing refetches
       await qc.cancelQueries({ queryKey: documentKeys.lists() });
+
+      // Snapshot previous cache
+      const previousQueries = qc.getQueriesData<PagedResponse<DocumentResponse>>({
+        queryKey: documentKeys.lists(),
+      });
+
+      // Optimistically toggle isFavorite in all matching cache entries
+      qc.setQueriesData<PagedResponse<DocumentResponse>>(
+        { queryKey: documentKeys.lists() },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            content: old.content.map((doc) =>
+              doc.id === id ? { ...doc, isFavorite: !doc.isFavorite } : doc
+            ),
+          };
+        }
+      );
+
+      return { previousQueries };
     },
     onSuccess: (updated) => {
       qc.invalidateQueries({ queryKey: documentKeys.lists() });
@@ -169,7 +219,15 @@ export function useToggleFavorite() {
         updated.isFavorite ? 'Added to favorites' : 'Removed from favorites'
       );
     },
-    onError: () => toast.error('Failed to update favorite'),
+    onError: (_err, _id, context) => {
+      // Roll back cache on error
+      if (context?.previousQueries) {
+        for (const [queryKey, data] of context.previousQueries) {
+          qc.setQueryData(queryKey, data);
+        }
+      }
+      toast.error('Failed to update favorite');
+    },
   });
 }
 

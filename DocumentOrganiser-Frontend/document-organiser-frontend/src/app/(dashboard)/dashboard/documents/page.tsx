@@ -92,20 +92,7 @@ export default function DocumentsPage() {
       </div>
 
       {/* Bulk Actions */}
-      <BulkActionsBar
-        onDelete={() => {
-          const { selectedFiles } = useFileStore.getState();
-          selectedFiles.forEach((id) => deleteDoc.mutate(id));
-          clearSelection();
-        }}
-        onDownload={() => {
-          const { selectedFiles } = useFileStore.getState();
-          selectedFiles.forEach((id) => {
-            const doc = documents.find((d) => d.id === id);
-            if (doc) downloadDoc.mutate(doc);
-          });
-        }}
-      />
+      <BulkActionsBar />
 
       {/* Content */}
       {isEmpty ? (

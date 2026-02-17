@@ -64,4 +64,9 @@ public interface DocumentRepository extends JpaRepository<Document, UUID>, JpaSp
     long countByUserIdAndNotDeleted(@Param("userId") UUID userId);
 
     boolean existsByUserIdAndFolderIdAndNameAndIsDeletedFalse(UUID userId, UUID folderId, String name);
+
+    /**
+     * Find existing document with same checksum for deduplication.
+     */
+    Optional<Document> findFirstByUserIdAndChecksumAndIsDeletedFalse(UUID userId, String checksum);
 }

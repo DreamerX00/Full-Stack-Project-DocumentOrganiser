@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const publicPaths = ['/', '/login'];
+const publicPaths = ['/', '/login', '/terms', '/privacy'];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -18,8 +18,7 @@ export function proxy(request: NextRequest) {
     pathname.startsWith('/favicon') ||
     pathname === '/manifest.json' ||
     pathname === '/robots.txt' ||
-    pathname === '/sitemap.xml' ||
-    isPublicPath
+    pathname === '/sitemap.xml'
   ) {
     return NextResponse.next();
   }
@@ -29,6 +28,17 @@ export function proxy(request: NextRequest) {
     request.cookies.get('authjs.session-token')?.value ||
     request.cookies.get('__Secure-authjs.session-token')?.value;
 
+  // Redirect authenticated users away from login page
+  if (pathname === '/login' && sessionToken) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
+  // Allow public paths through
+  if (isPublicPath) {
+    return NextResponse.next();
+  }
+
+  // Protected route — redirect to login if no session
   if (!sessionToken) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('callbackUrl', pathname);

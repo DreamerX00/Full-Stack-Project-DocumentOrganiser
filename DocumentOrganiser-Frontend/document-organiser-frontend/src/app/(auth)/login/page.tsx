@@ -56,11 +56,11 @@ function LoginContent() {
 
             <div className="text-center text-sm text-muted-foreground">
               By signing in, you agree to our{' '}
-              <Link href="#" className="underline hover:text-foreground">
+              <Link href="/terms" className="underline hover:text-foreground">
                 Terms of Service
               </Link>{' '}
               and{' '}
-              <Link href="#" className="underline hover:text-foreground">
+              <Link href="/privacy" className="underline hover:text-foreground">
                 Privacy Policy
               </Link>
             </div>
