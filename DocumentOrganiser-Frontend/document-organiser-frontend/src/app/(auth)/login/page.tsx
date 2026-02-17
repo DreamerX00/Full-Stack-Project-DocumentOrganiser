@@ -36,7 +36,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
-  const { setAuth } = useAuthStore();
+  const { login } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
 
   // Email/Password Form
@@ -52,7 +52,7 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const response = await authApi.login(data);
-      setAuth(response.user, response.accessToken, response.refreshToken);
+      login(response.user, response.accessToken, response.refreshToken);
       toast.success('Logged in successfully');
       router.push('/dashboard/documents');
     } catch (error: any) {

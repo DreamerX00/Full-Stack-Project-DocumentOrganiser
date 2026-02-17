@@ -37,7 +37,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
     const router = useRouter();
-    const { setAuth } = useAuthStore();
+    const { login } = useAuthStore();
     const [isLoading, setIsLoading] = useState(false);
 
     const form = useForm<RegisterFormValues>({
@@ -58,7 +58,7 @@ export default function RegisterPage() {
                 email: data.email,
                 password: data.password,
             });
-            setAuth(response.user, response.accessToken, response.refreshToken);
+            login(response.user, response.accessToken, response.refreshToken);
             toast.success('Account created successfully');
             router.push('/dashboard/documents');
         } catch (error: any) {
