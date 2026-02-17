@@ -23,25 +23,35 @@ export function Providers({ children }: { children: ReactNode }) {
       })
   );
 
-  return (
-    <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''}>
-      <SessionProvider>
-        <QueryClientProvider client={queryClient}>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <TooltipProvider>
-              <I18nProvider>
-                {children}
-              </I18nProvider>
-            </TooltipProvider>
-            <Toaster richColors position="bottom-right" />
-          </ThemeProvider>
-        </QueryClientProvider>
-      </SessionProvider>
-    </GoogleOAuthProvider>
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+
+  const content = (
+    <SessionProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <TooltipProvider>
+            <I18nProvider>
+              {children}
+            </I18nProvider>
+          </TooltipProvider>
+          <Toaster richColors position="bottom-right" />
+        </ThemeProvider>
+      </QueryClientProvider>
+    </SessionProvider>
   );
+
+  if (googleClientId) {
+    return (
+      <GoogleOAuthProvider clientId={googleClientId}>
+        {content}
+      </GoogleOAuthProvider>
+    );
+  }
+
+  return content;
 }
