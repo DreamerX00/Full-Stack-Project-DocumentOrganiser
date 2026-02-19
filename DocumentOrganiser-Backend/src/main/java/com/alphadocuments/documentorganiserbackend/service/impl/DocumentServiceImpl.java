@@ -12,6 +12,7 @@ import com.alphadocuments.documentorganiserbackend.entity.Folder;
 import com.alphadocuments.documentorganiserbackend.entity.User;
 import com.alphadocuments.documentorganiserbackend.entity.enums.DocumentCategory;
 import com.alphadocuments.documentorganiserbackend.exception.*;
+import org.springframework.security.access.AccessDeniedException;
 import com.alphadocuments.documentorganiserbackend.repository.DeletedItemRepository;
 import com.alphadocuments.documentorganiserbackend.repository.DocumentRepository;
 import com.alphadocuments.documentorganiserbackend.repository.DocumentTagRepository;
@@ -508,8 +509,8 @@ public class DocumentServiceImpl implements DocumentService {
         documentRepository.save(document);
 
         activityService.logActivity(userId, ActivityType.DOCUMENT_UPDATED,
-                "Document", documentId.toString(), document.getName(),
-                "Restored to version " + versionNumber, null);
+                "DOCUMENT", documentId, document.getName(),
+                "Restored to version " + versionNumber, null, null, null);
 
         return mapToDocumentResponse(document);
     }

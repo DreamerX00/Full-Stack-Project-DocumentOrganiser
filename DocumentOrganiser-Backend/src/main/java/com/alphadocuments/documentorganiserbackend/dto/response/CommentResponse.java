@@ -2,7 +2,7 @@ package com.alphadocuments.documentorganiserbackend.dto.response;
 
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Data
@@ -16,5 +16,5 @@ public class CommentResponse {
     private String authorName;
     private String authorEmail;
     private UUID parentId;
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 }

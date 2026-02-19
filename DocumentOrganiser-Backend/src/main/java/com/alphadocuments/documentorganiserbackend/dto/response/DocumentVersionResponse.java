@@ -2,7 +2,7 @@ package com.alphadocuments.documentorganiserbackend.dto.response;
 
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -20,5 +20,5 @@ public class DocumentVersionResponse {
     private String checksum;
     private String changeDescription;
     private String uploadedBy;
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 }

@@ -22,7 +22,7 @@ import { Loader2 } from 'lucide-react';
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { isLoading, session } = useAuth();
+  const { isLoading, session, isAuthenticated } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const { uploadFiles } = useFileUpload();
@@ -83,9 +83,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     [uploadFiles, currentFolderId],
   );
 
+  // A user is considered authenticated if they have a NextAuth session (Google OAuth)
+  // OR if they are authenticated via the Zustand auth store (email/password login).
+  const hasAuth = !!session || isAuthenticated;
+
   // Handle unauthenticated redirect via effect to avoid render-time side effects
   useEffect(() => {
-    if (!isLoading && !session && !redirectedRef.current) {
+    if (!isLoading && !hasAuth && !redirectedRef.current) {
       redirectedRef.current = true;
       // Sign out to clear any stale cookies before redirecting
       signOut({ redirect: false }).then(() => {
@@ -94,7 +98,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         router.replace('/login');
       });
     }
-  }, [isLoading, session, router]);
+  }, [isLoading, hasAuth, router]);
 
   // Client-side auth guard (after all hooks)
   if (isLoading) {
@@ -105,7 +109,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!session) {
+  if (!hasAuth) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

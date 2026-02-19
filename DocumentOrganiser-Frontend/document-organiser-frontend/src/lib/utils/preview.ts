@@ -208,16 +208,23 @@ export function renderMarkdownToHtml(src: string): string {
   // Inline code
   text = text.replace(/`([^`]+)`/g, '<code class="preview-inline-code">$1</code>');
 
+  // Sanitize URLs: only allow http(s) and mailto protocols
+  const sanitizeUrl = (url: string): string => {
+    const trimmed = url.trim();
+    if (/^(https?:|mailto:|\/|#)/i.test(trimmed)) return trimmed;
+    return '#';
+  };
+
   // Images (before links so ![...](...) doesn't become a link)
   text = text.replace(
     /!\[([^\]]*)\]\(([^)]+)\)/g,
-    '<img src="$2" alt="$1" style="max-width:100%;border-radius:8px;margin:8px 0"/>',
+    (_match, alt, src) => `<img src="${sanitizeUrl(src)}" alt="${alt}" style="max-width:100%;border-radius:8px;margin:8px 0"/>`,
   );
 
   // Links
   text = text.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
-    '<a href="$2" target="_blank" rel="noopener noreferrer" class="preview-link">$1</a>',
+    (_match, label, href) => `<a href="${sanitizeUrl(href)}" target="_blank" rel="noopener noreferrer" class="preview-link">${label}</a>`,
   );
 
   // Blockquotes (consecutive > lines)

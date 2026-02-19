@@ -10,6 +10,23 @@ import { trashKeys } from './useTrash';
 import { useFileStore } from '@/lib/store/fileStore';
 
 /**
+ * Runs Promise.allSettled and throws if any results were rejected,
+ * so that React Query's onError handler fires correctly.
+ */
+async function allSettledOrThrow<T>(promises: Promise<T>[]): Promise<PromiseSettledResult<T>[]> {
+    const results = await Promise.allSettled(promises);
+    const failures = results.filter((r) => r.status === 'rejected');
+    if (failures.length === results.length) {
+        throw new Error(`All ${failures.length} operations failed`);
+    }
+    return results;
+}
+
+function countFailures(results: PromiseSettledResult<unknown>[]): number {
+    return results.filter((r) => r.status === 'rejected').length;
+}
+
+/**
  * Hook providing bulk operations for selected files.
  */
 export function useBulkDelete() {
@@ -18,16 +35,21 @@ export function useBulkDelete() {
 
     return useMutation({
         mutationFn: async (ids: string[]) => {
-            await Promise.allSettled(ids.map((id) => documentsApi.delete(id)));
+            return allSettledOrThrow(ids.map((id) => documentsApi.delete(id)));
         },
-        onSuccess: (_data, ids) => {
+        onSuccess: (results, ids) => {
             qc.invalidateQueries({ queryKey: documentKeys.lists() });
             qc.invalidateQueries({ queryKey: dashboardKeys.stats() });
             qc.invalidateQueries({ queryKey: trashKeys.all });
             clearSelection();
-            toast.success(`Moved ${ids.length} item(s) to trash`);
+            const failed = countFailures(results);
+            if (failed > 0) {
+                toast.warning(`Moved ${ids.length - failed} item(s) to trash, ${failed} failed`);
+            } else {
+                toast.success(`Moved ${ids.length} item(s) to trash`);
+            }
         },
-        onError: () => toast.error('Some items failed to delete'),
+        onError: () => toast.error('Failed to delete items'),
     });
 }
 
@@ -36,19 +58,23 @@ export function useBulkDownload() {
 
     return useMutation({
         mutationFn: async (docs: { id: string; name: string }[]) => {
-            const results = await Promise.allSettled(
+            return allSettledOrThrow(
                 docs.map(async (doc) => {
                     const blob = await documentsApi.download(doc.id);
                     downloadBlob(blob, doc.name);
                 })
             );
-            return results;
         },
-        onSuccess: (_data, docs) => {
+        onSuccess: (results, docs) => {
             clearSelection();
-            toast.success(`Downloaded ${docs.length} file(s)`);
+            const failed = countFailures(results);
+            if (failed > 0) {
+                toast.warning(`Downloaded ${docs.length - failed} file(s), ${failed} failed`);
+            } else {
+                toast.success(`Downloaded ${docs.length} file(s)`);
+            }
         },
-        onError: () => toast.error('Some downloads failed'),
+        onError: () => toast.error('Failed to download files'),
     });
 }
 
@@ -58,15 +84,20 @@ export function useBulkFavorite() {
 
     return useMutation({
         mutationFn: async (ids: string[]) => {
-            await Promise.allSettled(ids.map((id) => documentsApi.toggleFavorite(id)));
+            return allSettledOrThrow(ids.map((id) => documentsApi.toggleFavorite(id)));
         },
-        onSuccess: () => {
+        onSuccess: (results) => {
             qc.invalidateQueries({ queryKey: documentKeys.lists() });
             qc.invalidateQueries({ queryKey: dashboardKeys.stats() });
             clearSelection();
-            toast.success('Updated favorites');
+            const failed = countFailures(results);
+            if (failed > 0) {
+                toast.warning(`Updated favorites, but ${failed} failed`);
+            } else {
+                toast.success('Updated favorites');
+            }
         },
-        onError: () => toast.error('Failed to update some favorites'),
+        onError: () => toast.error('Failed to update favorites'),
     });
 }
 
@@ -82,18 +113,23 @@ export function useBulkMove() {
             ids: string[];
             targetFolderId: string | null;
         }) => {
-            await Promise.allSettled(
+            return allSettledOrThrow(
                 ids.map((id) =>
                     documentsApi.move(id, { targetFolderId })
                 )
             );
         },
-        onSuccess: (_data, { ids }) => {
+        onSuccess: (results, { ids }) => {
             qc.invalidateQueries({ queryKey: documentKeys.lists() });
             qc.invalidateQueries({ queryKey: dashboardKeys.stats() });
             clearSelection();
-            toast.success(`Moved ${ids.length} item(s)`);
+            const failed = countFailures(results);
+            if (failed > 0) {
+                toast.warning(`Moved ${ids.length - failed} item(s), ${failed} failed`);
+            } else {
+                toast.success(`Moved ${ids.length} item(s)`);
+            }
         },
-        onError: () => toast.error('Some items failed to move'),
+        onError: () => toast.error('Failed to move items'),
     });
 }

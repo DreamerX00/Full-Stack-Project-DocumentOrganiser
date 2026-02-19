@@ -9,6 +9,18 @@ import type {
   DocumentCategory,
 } from '@/lib/types';
 
+// Map UI sort field names to backend entity field names
+const SORT_FIELD_MAP: Record<string, string> = {
+  date: 'updatedAt',
+  name: 'name',
+  size: 'fileSize',
+  type: 'fileType',
+};
+
+function mapSortField(field: string): string {
+  return SORT_FIELD_MAP[field] || field;
+}
+
 export const documentsApi = {
   upload: async (file: File, folderId?: string, onProgress?: (percent: number) => void) => {
     const formData = new FormData();
@@ -86,7 +98,7 @@ export const documentsApi = {
     sortDir = 'desc'
   ) => {
     const res = await apiClient.get<ApiResponse<PagedResponse<DocumentResponse>>>('/documents', {
-      params: { folderId, page, size, sort: `${sortBy},${sortDir}` },
+      params: { folderId, page, size, sort: `${mapSortField(sortBy)},${sortDir}` },
     });
     return res.data.data;
   },

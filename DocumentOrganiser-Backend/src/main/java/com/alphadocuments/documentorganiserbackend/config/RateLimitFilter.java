@@ -33,6 +33,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private static final long WINDOW_MS = 60_000; // 1 minute
 
     private final Map<String, RateWindow> rateLimitMap = new ConcurrentHashMap<>();
+    private volatile long lastCleanup = System.currentTimeMillis();
+    private static final long CLEANUP_INTERVAL_MS = 5 * 60_000; // cleanup every 5 minutes
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -78,6 +80,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+
+        // Lazily cleanup stale entries
+        cleanupStaleEntries();
     }
 
     private int getLimit(String path, String method) {
@@ -112,9 +117,15 @@ public class RateLimitFilter extends OncePerRequestFilter {
         return request.getRemoteAddr();
     }
 
-    /**
-     * Periodically clean up stale entries (called lazily during compute).
-     * For a production system, consider a scheduled task for explicit cleanup.
-     */
+    private void cleanupStaleEntries() {
+        long now = System.currentTimeMillis();
+        if (now - lastCleanup < CLEANUP_INTERVAL_MS) {
+            return;
+        }
+        lastCleanup = now;
+        rateLimitMap.entrySet().removeIf(entry ->
+                now - entry.getValue().windowStart > WINDOW_MS * 2);
+    }
+
     private record RateWindow(long windowStart, AtomicInteger count) {}
 }

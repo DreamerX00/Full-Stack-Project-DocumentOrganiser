@@ -9,3 +9,6 @@ export { activityApi } from './activity';
 export { dashboardApi } from './dashboard';
 export { searchApi } from './search';
 export { usersApi } from './users';
+export { adminApi } from './admin';
+export { aiApi } from './ai';
+export { commentsApi } from './comments';

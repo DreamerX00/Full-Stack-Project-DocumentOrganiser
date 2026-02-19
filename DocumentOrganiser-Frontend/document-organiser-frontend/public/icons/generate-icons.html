@@ -1,0 +1,18 @@
+<canvas id="c" width="512" height="512"></canvas>
+<script>
+const sizes = [192, 512];
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+sizes.forEach(s => {
+  c.width = s; c.height = s;
+  ctx.fillStyle = '#8b5cf6';
+  ctx.beginPath();
+  ctx.roundRect(0, 0, s, s, s * 0.2);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = `bold ${s * 0.4}px Arial`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('DO', s/2, s/2);
+});
+</script>

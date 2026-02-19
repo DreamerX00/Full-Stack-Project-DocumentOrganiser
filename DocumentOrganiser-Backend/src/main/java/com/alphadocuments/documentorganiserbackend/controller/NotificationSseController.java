@@ -19,6 +19,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -33,6 +34,7 @@ public class NotificationSseController {
 
     private final NotificationService notificationService;
     private final Map<UUID, SseEmitter> emitters = new ConcurrentHashMap<>();
+    private final Map<UUID, ScheduledFuture<?>> heartbeatTasks = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     @GetMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -40,13 +42,20 @@ public class NotificationSseController {
     public SseEmitter subscribe(@CurrentUser UserPrincipal userPrincipal) {
         UUID userId = userPrincipal.getId();
 
+        // Cancel any existing heartbeat for this user before creating a new one
+        cancelHeartbeat(userId);
+
         // Timeout after 30 minutes; the client will auto-reconnect
         SseEmitter emitter = new SseEmitter(30 * 60 * 1000L);
 
-        // Remove on completion/timeout/error
-        emitter.onCompletion(() -> emitters.remove(userId));
-        emitter.onTimeout(() -> emitters.remove(userId));
-        emitter.onError(e -> emitters.remove(userId));
+        // Remove on completion/timeout/error and cancel heartbeat
+        Runnable cleanup = () -> {
+            emitters.remove(userId);
+            cancelHeartbeat(userId);
+        };
+        emitter.onCompletion(cleanup);
+        emitter.onTimeout(cleanup);
+        emitter.onError(e -> cleanup.run());
 
         emitters.put(userId, emitter);
 
@@ -61,7 +70,7 @@ public class NotificationSseController {
         }
 
         // Schedule heartbeat every 15 seconds to keep the connection alive
-        scheduler.scheduleAtFixedRate(() -> {
+        ScheduledFuture<?> heartbeat = scheduler.scheduleAtFixedRate(() -> {
             SseEmitter active = emitters.get(userId);
             if (active != null) {
                 try {
@@ -71,9 +80,15 @@ public class NotificationSseController {
                             .data(count));
                 } catch (Exception e) {
                     emitters.remove(userId);
+                    cancelHeartbeat(userId);
                 }
+            } else {
+                // No active emitter, cancel this heartbeat
+                cancelHeartbeat(userId);
             }
         }, 15, 15, TimeUnit.SECONDS);
+
+        heartbeatTasks.put(userId, heartbeat);
 
         return emitter;
     }
@@ -90,7 +105,15 @@ public class NotificationSseController {
                         .data(data));
             } catch (IOException e) {
                 emitters.remove(userId);
+                cancelHeartbeat(userId);
             }
+        }
+    }
+
+    private void cancelHeartbeat(UUID userId) {
+        ScheduledFuture<?> task = heartbeatTasks.remove(userId);
+        if (task != null) {
+            task.cancel(false);
         }
     }
 }

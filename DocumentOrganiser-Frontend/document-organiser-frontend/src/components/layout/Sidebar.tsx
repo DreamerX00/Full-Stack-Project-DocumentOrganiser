@@ -12,7 +12,6 @@ import {
   Share2,
   Trash2,
   Settings,
-  BarChart3,
   Bell,
   Activity,
   ChevronLeft,
@@ -47,7 +46,6 @@ const navItems2 = [
 const navItems3 = [
   { href: '/dashboard/notifications', label: 'Notifications', icon: Bell },
   { href: '/dashboard/activity', label: 'Activity', icon: Activity },
-  { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 

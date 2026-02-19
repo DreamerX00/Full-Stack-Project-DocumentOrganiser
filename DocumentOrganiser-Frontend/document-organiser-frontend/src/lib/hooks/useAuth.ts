@@ -5,11 +5,13 @@ import { useAuthStore } from '@/lib/store/authStore';
 import { authApi } from '@/lib/api/auth';
 import { useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 
 export function useAuth() {
   const { data: session, status } = useSession();
   const store = useAuthStore();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const exchangingRef = useRef(false);
   const exchangeFailedRef = useRef(false);
   const lastExchangedTokenRef = useRef<string | null>(null);
@@ -79,8 +81,9 @@ export function useAuth() {
       // Ignore backend logout errors
     }
     store.logout();
+    queryClient.clear();
     await signOut({ callbackUrl: '/' });
-  }, [store]);
+  }, [store, queryClient]);
 
   return {
     user: store.user,
