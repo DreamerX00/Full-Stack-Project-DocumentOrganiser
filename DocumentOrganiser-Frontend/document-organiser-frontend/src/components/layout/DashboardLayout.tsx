@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { signOut } from 'next-auth/react';
 import { AppSidebar } from './Sidebar';
 import { TopNav } from './TopNav';
 import { MobileNav } from './MobileNav';
@@ -83,25 +82,23 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     [uploadFiles, currentFolderId],
   );
 
-  // A user is considered authenticated if they have a NextAuth session (Google OAuth)
-  // OR if they are authenticated via the Zustand auth store (email/password login).
-  const hasAuth = !!session || isAuthenticated;
+  // Only backend JWT counts as authenticated — a NextAuth session alone
+  // (Google OAuth) is not enough because API calls require a backend token.
+  const hasAuth = isAuthenticated;
+
+  // True while a Google session exists but the backend token exchange hasn't finished yet.
+  const isExchangingToken = !!session?.idToken && !isAuthenticated;
 
   // Handle unauthenticated redirect via effect to avoid render-time side effects
   useEffect(() => {
-    if (!isLoading && !hasAuth && !redirectedRef.current) {
+    if (!isLoading && !isExchangingToken && !hasAuth && !redirectedRef.current) {
       redirectedRef.current = true;
-      // Sign out to clear any stale cookies before redirecting
-      signOut({ redirect: false }).then(() => {
-        router.replace('/login');
-      }).catch(() => {
-        router.replace('/login');
-      });
+      router.replace('/login');
     }
-  }, [isLoading, hasAuth, router]);
+  }, [isLoading, isExchangingToken, hasAuth, router]);
 
   // Client-side auth guard (after all hooks)
-  if (isLoading) {
+  if (isLoading || isExchangingToken) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
