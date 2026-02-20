@@ -48,7 +48,7 @@ public class Document extends BaseEntity {
     private String thumbnailKey; // Key for thumbnail in storage
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "category", nullable = false)
+    @Column(name = "category", nullable = false, length = 50)
     private DocumentCategory category;
 
     @Column(name = "version")

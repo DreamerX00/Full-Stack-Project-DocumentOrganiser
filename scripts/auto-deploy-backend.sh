@@ -94,7 +94,7 @@ sudo systemctl start docorganiser-backend
 log "Waiting for backend to start..."
 for i in $(seq 1 12); do
   sleep 5
-  if curl -sf -o /dev/null http://localhost:8080/api/actuator/health; then
+  if curl -sf -o /dev/null http://localhost:8080/api/v1/actuator/health; then
     log "✅ Deploy complete — ${REMOTE_COMMIT:0:8} is live and healthy"
     echo "$REMOTE_COMMIT" | sudo tee "$COMMIT_FILE" > /dev/null
     rm -rf "$WORK_DIR"
