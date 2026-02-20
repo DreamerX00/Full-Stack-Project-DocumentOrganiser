@@ -1,5 +1,10 @@
 import type { NextConfig } from "next";
 
+const backendUrl =
+  process.env.BACKEND_INTERNAL_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:8080/api/v1";
+
 const nextConfig: NextConfig = {
   output: "standalone",
   images: {
@@ -27,7 +32,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/backend/:path*",
-        destination: `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1"}/:path*`,
+        destination: `${backendUrl}/:path*`,
       },
     ];
   },
