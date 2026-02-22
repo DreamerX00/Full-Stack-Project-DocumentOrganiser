@@ -1,0 +1,59 @@
+version: 0.2
+
+# ============================================================================
+# AWS CodeBuild — Frontend (Next.js)
+# ============================================================================
+# ECR repo: 154370341959.dkr.ecr.us-east-1.amazonaws.com/full-stack-docker/doc-frontend
+#
+# Required environment variables (set in CodeBuild project or as overrides):
+#   AWS_ACCOUNT_ID              – e.g. 154370341959
+#   AWS_DEFAULT_REGION          – e.g. us-east-1
+#   IMAGE_REPO                  – e.g. full-stack-docker/doc-frontend
+#   IMAGE_TAG                   – e.g. 3.0.6  (semantic version)
+#   NEXT_PUBLIC_GOOGLE_CLIENT_ID – Google OAuth client ID (build-time arg)
+#   BACKEND_INTERNAL_URL         – Internal backend URL for SSR rewrites
+# ============================================================================
+
+env:
+  variables:
+    AWS_DEFAULT_REGION: us-east-1
+    AWS_ACCOUNT_ID: "154370341959"
+    IMAGE_REPO: full-stack-docker/doc-frontend
+    IMAGE_TAG: "3.0.6"
+    BACKEND_INTERNAL_URL: http://backend:8080/api/v1
+
+phases:
+  pre_build:
+    commands:
+      - echo "=== Logging in to Amazon ECR ==="
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - REGISTRY=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - COMMIT_SHA=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-8)
+      - echo "Building frontend image — version $IMAGE_TAG (commit $COMMIT_SHA)"
+
+  build:
+    commands:
+      - echo "=== Building Docker image ==="
+      - >-
+        docker build
+        --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
+        --build-arg BACKEND_INTERNAL_URL=$BACKEND_INTERNAL_URL
+        -t $IMAGE_REPO:$IMAGE_TAG
+        -f DocumentOrganiser-Frontend/document-organiser-frontend/Dockerfile
+        DocumentOrganiser-Frontend/document-organiser-frontend/
+      - echo "=== Tagging images ==="
+      - docker tag $IMAGE_REPO:$IMAGE_TAG $REGISTRY/$IMAGE_REPO:$IMAGE_TAG
+      - docker tag $IMAGE_REPO:$IMAGE_TAG $REGISTRY/$IMAGE_REPO:$COMMIT_SHA
+
+  post_build:
+    commands:
+      - echo "=== Pushing images to ECR ==="
+      - docker push $REGISTRY/$IMAGE_REPO:$IMAGE_TAG
+      - docker push $REGISTRY/$IMAGE_REPO:$COMMIT_SHA
+      - echo "=== Writing image definitions file ==="
+      - printf '[{"name":"doc-frontend","imageUri":"%s"}]' $REGISTRY/$IMAGE_REPO:$IMAGE_TAG > imagedefinitions.json
+      - echo "Frontend build complete — pushed $REGISTRY/$IMAGE_REPO:$IMAGE_TAG"
+
+artifacts:
+  files:
+    - imagedefinitions.json

@@ -2,11 +2,11 @@ name: CI – Frontend
 
 on:
   push:
-    branches: [main, develop]
+    branches: [master]
     paths:
       - "DocumentOrganiser-Frontend/**"
   pull_request:
-    branches: [main]
+    branches: [master]
     paths:
       - "DocumentOrganiser-Frontend/**"
 
