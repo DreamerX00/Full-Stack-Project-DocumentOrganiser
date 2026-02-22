@@ -69,9 +69,7 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-bold">
-              {isLoading ? '—' : card.value}
-            </div>
+            <div className="text-xl font-bold">{isLoading ? '—' : card.value}</div>
           </CardContent>
         </Card>
       ))}

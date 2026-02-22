@@ -34,10 +34,9 @@ export const searchApi = {
 
   /** GET /search/folders — paginated folder search */
   searchFolders: async (query: string, page = 0, size = 20) => {
-    const res = await apiClient.get<ApiResponse<PagedResponse<FolderResponse>>>(
-      '/search/folders',
-      { params: { q: query, page, size } }
-    );
+    const res = await apiClient.get<ApiResponse<PagedResponse<FolderResponse>>>('/search/folders', {
+      params: { q: query, page, size },
+    });
     return res.data.data;
   },
 

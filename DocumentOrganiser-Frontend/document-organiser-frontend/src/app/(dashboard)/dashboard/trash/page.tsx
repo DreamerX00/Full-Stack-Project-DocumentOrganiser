@@ -36,9 +36,7 @@ export default function TrashPage() {
 
   const allItems = data?.content ?? [];
   const items = searchQuery
-    ? allItems.filter((item) =>
-        item.itemName.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+    ? allItems.filter((item) => item.itemName.toLowerCase().includes(searchQuery.toLowerCase()))
     : allItems;
 
   return (
@@ -70,7 +68,10 @@ export default function TrashPage() {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={() => emptyTrash.mutate()} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                <AlertDialogAction
+                  onClick={() => emptyTrash.mutate()}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
                   Delete All
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -103,9 +104,7 @@ export default function TrashPage() {
       ) : (
         <div className="space-y-2">
           {items.map((item) => {
-            const FileIcon = item.itemType === 'FOLDER'
-              ? Folder
-              : getFileIconByName(item.itemName);
+            const FileIcon = item.itemType === 'FOLDER' ? Folder : getFileIconByName(item.itemName);
             return (
               <Card key={item.id}>
                 <CardContent className="flex items-center justify-between p-4">
@@ -138,8 +137,8 @@ export default function TrashPage() {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Delete permanently?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            &ldquo;{item.itemName}&rdquo; will be permanently deleted. This cannot be
-                            undone.
+                            &ldquo;{item.itemName}&rdquo; will be permanently deleted. This cannot
+                            be undone.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

@@ -3,12 +3,7 @@
 import { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, X, FileIcon, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -24,8 +19,15 @@ interface FileUploadDialogProps {
 }
 
 export function FileUploadDialog({ open, onOpenChange }: FileUploadDialogProps) {
-  const { uploadFiles, queue, isUploading, clearCompleted, removeFromQueue, conflictFile, resolveConflict } =
-    useFileUpload();
+  const {
+    uploadFiles,
+    queue,
+    isUploading,
+    clearCompleted,
+    removeFromQueue,
+    conflictFile,
+    resolveConflict,
+  } = useFileUpload();
   const currentFolderId = useFileStore((s) => s.currentFolderId);
 
   const onDrop = useCallback(
@@ -61,13 +63,9 @@ export function FileUploadDialog({ open, onOpenChange }: FileUploadDialogProps) 
             <input {...getInputProps()} />
             <Upload className="mb-4 h-10 w-10 text-muted-foreground" />
             <p className="text-sm font-medium">
-              {isDragActive
-                ? 'Drop files here...'
-                : 'Drag & drop files here, or click to browse'}
+              {isDragActive ? 'Drop files here...' : 'Drag & drop files here, or click to browse'}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Maximum file size: 100MB
-            </p>
+            <p className="mt-1 text-xs text-muted-foreground">Maximum file size: 100MB</p>
           </div>
 
           {/* Upload Queue */}
@@ -77,12 +75,7 @@ export function FileUploadDialog({ open, onOpenChange }: FileUploadDialogProps) 
                 <p className="text-sm font-medium">
                   {queue.length} file{queue.length > 1 ? 's' : ''}
                 </p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearCompleted}
-                  disabled={isUploading}
-                >
+                <Button variant="ghost" size="sm" onClick={clearCompleted} disabled={isUploading}>
                   Clear completed
                 </Button>
               </div>
@@ -90,10 +83,7 @@ export function FileUploadDialog({ open, onOpenChange }: FileUploadDialogProps) 
               <ScrollArea className="max-h-48">
                 <div className="space-y-2">
                   {queue.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center gap-3 rounded-lg border p-2"
-                    >
+                    <div key={item.id} className="flex items-center gap-3 rounded-lg border p-2">
                       <FileIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <div className="flex-1 min-w-0">
                         <p className="truncate text-sm">{item.file.name}</p>

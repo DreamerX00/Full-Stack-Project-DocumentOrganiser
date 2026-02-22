@@ -52,7 +52,7 @@ export function DragDropZone({ onFilesDropped, children }: DragDropZoneProps) {
         e.dataTransfer.clearData();
       }
     },
-    [onFilesDropped],
+    [onFilesDropped]
   );
 
   useEffect(() => {
@@ -78,9 +78,7 @@ export function DragDropZone({ onFilesDropped, children }: DragDropZoneProps) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-4 rounded-2xl border-2 border-dashed border-primary bg-primary/5 p-12">
             <Upload className="h-16 w-16 text-primary animate-bounce" />
-            <p className="text-xl font-semibold text-primary">
-              Drop files to upload
-            </p>
+            <p className="text-xl font-semibold text-primary">Drop files to upload</p>
             <p className="text-sm text-muted-foreground">
               Release to upload files to your documents
             </p>

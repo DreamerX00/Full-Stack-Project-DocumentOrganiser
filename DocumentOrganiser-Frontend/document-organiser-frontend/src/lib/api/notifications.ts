@@ -1,9 +1,5 @@
 import apiClient from './client';
-import type {
-  ApiResponse,
-  NotificationResponse,
-  PagedResponse,
-} from '@/lib/types';
+import type { ApiResponse, NotificationResponse, PagedResponse } from '@/lib/types';
 
 export const notificationsApi = {
   list: async (page = 0, size = 20) => {

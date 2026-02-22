@@ -1,7 +1,11 @@
 'use client';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useDocumentsSharedWithMe, useDocumentsSharedByMe, useRevokeDocumentShare } from '@/lib/hooks/useShares';
+import {
+  useDocumentsSharedWithMe,
+  useDocumentsSharedByMe,
+  useRevokeDocumentShare,
+} from '@/lib/hooks/useShares';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -37,7 +41,7 @@ function ShareList({
         <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
         <h3 className="text-lg font-medium">No shared items</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          {showRevoke ? "You haven't shared anything yet" : "Nothing has been shared with you yet"}
+          {showRevoke ? "You haven't shared anything yet" : 'Nothing has been shared with you yet'}
         </p>
       </div>
     );
@@ -57,7 +61,9 @@ function ShareList({
               <div>
                 <p className="font-medium">{share.itemName || 'Unnamed Document'}</p>
                 <p className="text-xs text-muted-foreground">
-                  {showRevoke ? `Shared with ${share.sharedWithEmail}` : `Shared by ${share.sharedByName}`}
+                  {showRevoke
+                    ? `Shared with ${share.sharedWithEmail}`
+                    : `Shared by ${share.sharedByName}`}
                   {' · '}
                   {formatRelativeTime(share.createdAt)}
                 </p>
@@ -66,11 +72,7 @@ function ShareList({
             <div className="flex items-center gap-2">
               <Badge variant="secondary">{share.permission}</Badge>
               {showRevoke && onRevoke && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onRevoke(share.id)}
-                >
+                <Button variant="ghost" size="icon" onClick={() => onRevoke(share.id)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               )}
@@ -106,7 +108,12 @@ export default function SharedPage() {
           <ShareList items={sharedWithMe} isLoading={loadingWithMe} />
         </TabsContent>
         <TabsContent value="by-me" className="mt-4">
-          <ShareList items={sharedByMe} isLoading={loadingByMe} showRevoke onRevoke={(id) => revokeShare.mutate(id)} />
+          <ShareList
+            items={sharedByMe}
+            isLoading={loadingByMe}
+            showRevoke
+            onRevoke={(id) => revokeShare.mutate(id)}
+          />
         </TabsContent>
       </Tabs>
     </div>

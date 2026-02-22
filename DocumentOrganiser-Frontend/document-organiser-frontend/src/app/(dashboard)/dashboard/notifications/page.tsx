@@ -105,9 +105,7 @@ export default function NotificationsPage() {
                       <p className={cn('text-sm', !notification.isRead && 'font-medium')}>
                         {notification.title}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {notification.message}
-                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{notification.message}</p>
                       <p className="text-xs text-muted-foreground mt-1">
                         {formatRelativeTime(notification.createdAt)}
                       </p>

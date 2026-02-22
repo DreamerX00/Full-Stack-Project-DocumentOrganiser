@@ -64,7 +64,11 @@ export default function DocumentsPage() {
   const folders = foldersData ?? [];
   const isLoading = docsLoading || foldersLoading;
 
-  const handleCreateFolder = async (data: { name: string; description?: string; color?: string }) => {
+  const handleCreateFolder = async (data: {
+    name: string;
+    description?: string;
+    color?: string;
+  }) => {
     createFolder.mutate(
       { ...data, parentFolderId: null },
       { onSuccess: () => setCreateFolderOpen(false) }
@@ -78,7 +82,9 @@ export default function DocumentsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <AppBreadcrumb items={[{ id: 'documents', name: 'My Documents', href: '/dashboard/documents' }]} />
+          <AppBreadcrumb
+            items={[{ id: 'documents', name: 'My Documents', href: '/dashboard/documents' }]}
+          />
           <h1 className="mt-2 text-2xl font-bold">My Documents</h1>
         </div>
         <div className="flex gap-2">
@@ -170,7 +176,10 @@ export default function DocumentsPage() {
       <FileUploadDialog open={uploadOpen} onOpenChange={setUploadOpen} />
       <ShareDialog
         open={!!shareDoc}
-        onOpenChange={() => { setShareDoc(null); setShareLink(undefined); }}
+        onOpenChange={() => {
+          setShareDoc(null);
+          setShareLink(undefined);
+        }}
         itemName={shareDoc?.name ?? ''}
         shareLink={shareLink}
         onShareWithUser={async (email, permission) => {
@@ -213,7 +222,10 @@ export default function DocumentsPage() {
         open={!!previewDoc}
         onOpenChange={() => setPreviewDoc(null)}
         onDownload={(doc) => downloadDoc.mutate(doc)}
-        onShare={(doc) => { setPreviewDoc(null); setShareDoc(doc); }}
+        onShare={(doc) => {
+          setPreviewDoc(null);
+          setShareDoc(doc);
+        }}
         onToggleFavorite={(doc) => toggleFavorite.mutate(doc.id)}
       />
       <MoveDialog

@@ -48,9 +48,7 @@ export default function PublicSharePage({ params }: { params: Promise<{ token: s
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
 
-  const previewType: PreviewType = doc
-    ? getPreviewType(doc.mimeType, doc.name)
-    : 'fallback';
+  const previewType: PreviewType = doc ? getPreviewType(doc.mimeType, doc.name) : 'fallback';
 
   const canPreview = previewType !== 'fallback' && previewType !== 'office';
 
@@ -160,7 +158,13 @@ export default function PublicSharePage({ params }: { params: Promise<{ token: s
       <Card className={cn('w-full', showPreview && canPreview ? 'max-w-3xl' : 'max-w-md')}>
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 rounded-xl bg-primary/10 p-4 w-fit">
-            <Image src="/logo.svg" alt="DocOrganiser" width={40} height={40} className="h-10 w-10" />
+            <Image
+              src="/logo.svg"
+              alt="DocOrganiser"
+              width={40}
+              height={40}
+              className="h-10 w-10"
+            />
           </div>
           <CardTitle className="text-xl">{doc?.name}</CardTitle>
         </CardHeader>
@@ -188,9 +192,13 @@ export default function PublicSharePage({ params }: { params: Promise<{ token: s
                   onClick={() => setShowPreview((v) => !v)}
                 >
                   {showPreview ? (
-                    <><EyeOff className="h-4 w-4" /> Hide Preview</>
+                    <>
+                      <EyeOff className="h-4 w-4" /> Hide Preview
+                    </>
                   ) : (
-                    <><Eye className="h-4 w-4" /> Preview</>
+                    <>
+                      <Eye className="h-4 w-4" /> Preview
+                    </>
                   )}
                 </Button>
 
@@ -229,9 +237,7 @@ export default function PublicSharePage({ params }: { params: Promise<{ token: s
             {isDownloading ? 'Downloading...' : 'Download'}
           </Button>
 
-          <p className="text-xs text-center text-muted-foreground">
-            Powered by DocOrganiser
-          </p>
+          <p className="text-xs text-center text-muted-foreground">Powered by DocOrganiser</p>
         </CardContent>
       </Card>
     </div>
@@ -257,14 +263,16 @@ function SharePreviewContent({
     case 'image':
       return blobUrl ? (
         <div className="flex items-center justify-center bg-muted/30 max-h-[50vh] overflow-auto p-2">
-          <img src={blobUrl} alt={doc.name} className="max-w-full max-h-[48vh] object-contain rounded" />
+          <img
+            src={blobUrl}
+            alt={doc.name}
+            className="max-w-full max-h-[48vh] object-contain rounded"
+          />
         </div>
       ) : null;
 
     case 'pdf':
-      return blobUrl ? (
-        <iframe src={blobUrl} className="w-full h-[50vh]" title={doc.name} />
-      ) : null;
+      return blobUrl ? <iframe src={blobUrl} className="w-full h-[50vh]" title={doc.name} /> : null;
 
     case 'video':
       return blobUrl ? (
@@ -288,14 +296,10 @@ function SharePreviewContent({
       ) : null;
 
     case 'csv':
-      return textContent !== null ? (
-        <ShareCsvPreview content={textContent} />
-      ) : null;
+      return textContent !== null ? <ShareCsvPreview content={textContent} /> : null;
 
     case 'markdown':
-      return textContent !== null ? (
-        <ShareMarkdownPreview content={textContent} />
-      ) : null;
+      return textContent !== null ? <ShareMarkdownPreview content={textContent} /> : null;
 
     default:
       return null;
@@ -310,7 +314,9 @@ function ShareCodePreview({ content, fileName }: { content: string; fileName: st
   return (
     <div>
       <div className="bg-muted/50 px-3 py-1.5 border-b flex items-center gap-2">
-        <Badge variant="secondary" className="text-[10px] font-mono">{lang}</Badge>
+        <Badge variant="secondary" className="text-[10px] font-mono">
+          {lang}
+        </Badge>
       </div>
       <ScrollArea className="max-h-[40vh]">
         <div className="overflow-x-auto">
@@ -349,16 +355,22 @@ function ShareCsvPreview({ content }: { content: string }) {
             <TableRow className="bg-muted/40">
               <TableHead className="w-10 text-center text-xs font-mono">#</TableHead>
               {headers.map((h, i) => (
-                <TableHead key={i} className="text-xs font-semibold">{h || `Col ${i + 1}`}</TableHead>
+                <TableHead key={i} className="text-xs font-semibold">
+                  {h || `Col ${i + 1}`}
+                </TableHead>
               ))}
             </TableRow>
           </TableHeader>
           <TableBody>
             {body.map((row, ri) => (
               <TableRow key={ri}>
-                <TableCell className="text-center text-xs text-muted-foreground font-mono">{ri + 1}</TableCell>
+                <TableCell className="text-center text-xs text-muted-foreground font-mono">
+                  {ri + 1}
+                </TableCell>
                 {Array.from({ length: maxCols }).map((_, ci) => (
-                  <TableCell key={ci} className="text-xs">{row[ci] ?? ''}</TableCell>
+                  <TableCell key={ci} className="text-xs">
+                    {row[ci] ?? ''}
+                  </TableCell>
                 ))}
               </TableRow>
             ))}

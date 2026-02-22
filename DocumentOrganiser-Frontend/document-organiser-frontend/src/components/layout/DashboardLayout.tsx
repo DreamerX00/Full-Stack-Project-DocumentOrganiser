@@ -55,7 +55,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       updateUser({ settings: updatedUser.settings });
     } catch {
       // fallback: still mark onboarding as complete locally
-      updateUser({ settings: { ...user?.settings, onboardingComplete: true } as UserSettingsResponse });
+      updateUser({
+        settings: { ...user?.settings, onboardingComplete: true } as UserSettingsResponse,
+      });
     }
   };
 
@@ -66,7 +68,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       const updatedUser = await completeOnboarding({});
       updateUser({ settings: updatedUser.settings });
     } catch {
-      updateUser({ settings: { ...user?.settings, onboardingComplete: true } as UserSettingsResponse });
+      updateUser({
+        settings: { ...user?.settings, onboardingComplete: true } as UserSettingsResponse,
+      });
     }
   };
 
@@ -79,7 +83,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       uploadFiles(files, currentFolderId || undefined);
       setUploadDialogOpen(true);
     },
-    [uploadFiles, currentFolderId],
+    [uploadFiles, currentFolderId]
   );
 
   // Only backend JWT counts as authenticated — a NextAuth session alone
@@ -137,24 +141,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
           {/* Main Content */}
           <div className="flex flex-1 flex-col overflow-hidden">
-            <TopNav
-              onUploadClick={handleUploadClick}
-              onMenuClick={() => setMobileMenuOpen(true)}
-            />
+            <TopNav onUploadClick={handleUploadClick} onMenuClick={() => setMobileMenuOpen(true)} />
 
-            <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
-              {children}
-            </main>
+            <main className="flex-1 overflow-y-auto pb-16 md:pb-0">{children}</main>
 
             {/* Mobile Bottom Nav */}
             <MobileNav />
           </div>
 
           {/* Upload Dialog */}
-          <FileUploadDialog
-            open={uploadDialogOpen}
-            onOpenChange={setUploadDialogOpen}
-          />
+          <FileUploadDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} />
 
           {/* Keyboard Shortcuts Dialog (triggered by ?) */}
           <KeyboardShortcutsDialog />

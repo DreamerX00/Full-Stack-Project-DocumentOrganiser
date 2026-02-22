@@ -21,7 +21,8 @@ const features = [
   {
     icon: Upload,
     title: 'Easy Upload',
-    description: 'Drag & drop files or use the upload button. Support for all file types up to 100MB.',
+    description:
+      'Drag & drop files or use the upload button. Support for all file types up to 100MB.',
   },
   {
     icon: FolderOpen,
@@ -85,12 +86,11 @@ export default function LandingPage() {
             Modern Document Management Platform
           </div>
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-            Organize Your Documents{' '}
-            <span className="text-primary">Effortlessly</span>
+            Organize Your Documents <span className="text-primary">Effortlessly</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-            Upload, organize, search, and share your files with ease. A powerful document
-            management platform built for teams and individuals.
+            Upload, organize, search, and share your files with ease. A powerful document management
+            platform built for teams and individuals.
           </p>
           <div className="mt-10 flex justify-center gap-4">
             <Button size="lg" asChild className="gap-2">
@@ -113,7 +113,13 @@ export default function LandingPage() {
         >
           <div className="aspect-[16/9] rounded-xl border bg-gradient-to-br from-primary/5 to-primary/10 shadow-2xl flex items-center justify-center">
             <div className="text-center">
-              <Image src="/logo.svg" alt="DocOrganiser" width={64} height={64} className="mx-auto h-16 w-16 opacity-30" />
+              <Image
+                src="/logo.svg"
+                alt="DocOrganiser"
+                width={64}
+                height={64}
+                className="mx-auto h-16 w-16 opacity-30"
+              />
               <p className="mt-4 text-muted-foreground">Dashboard Preview</p>
             </div>
           </div>
@@ -162,9 +168,21 @@ export default function LandingPage() {
 
           <div className="grid gap-8 sm:grid-cols-3 max-w-3xl mx-auto">
             {[
-              { step: '1', title: 'Sign In', desc: 'Sign in with your Google account in one click.' },
-              { step: '2', title: 'Upload', desc: 'Drag & drop your files or use the upload button.' },
-              { step: '3', title: 'Organize', desc: 'Create folders, tag files, and share with others.' },
+              {
+                step: '1',
+                title: 'Sign In',
+                desc: 'Sign in with your Google account in one click.',
+              },
+              {
+                step: '2',
+                title: 'Upload',
+                desc: 'Drag & drop your files or use the upload button.',
+              },
+              {
+                step: '3',
+                title: 'Organize',
+                desc: 'Create folders, tag files, and share with others.',
+              },
             ].map((item) => (
               <div key={item.step} className="text-center">
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-lg">

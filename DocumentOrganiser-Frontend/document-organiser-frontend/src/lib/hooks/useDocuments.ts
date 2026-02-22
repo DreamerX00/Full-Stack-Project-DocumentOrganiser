@@ -24,15 +24,13 @@ import type {
 export const documentKeys = {
   all: ['documents'] as const,
   lists: () => [...documentKeys.all, 'list'] as const,
-  list: (filters: Record<string, unknown>) =>
-    [...documentKeys.lists(), filters] as const,
+  list: (filters: Record<string, unknown>) => [...documentKeys.lists(), filters] as const,
   byFolder: (folderId?: string, page?: number) =>
     [...documentKeys.lists(), { folderId, page }] as const,
   byCategory: (category: DocumentCategory, page?: number) =>
     [...documentKeys.lists(), { category, page }] as const,
   recent: (page?: number) => [...documentKeys.lists(), 'recent', { page }] as const,
-  favorites: (page?: number) =>
-    [...documentKeys.lists(), 'favorites', { page }] as const,
+  favorites: (page?: number) => [...documentKeys.lists(), 'favorites', { page }] as const,
   details: () => [...documentKeys.all, 'detail'] as const,
   detail: (id: string) => [...documentKeys.details(), id] as const,
   tags: () => [...documentKeys.all, 'tags'] as const,
@@ -66,16 +64,11 @@ export function useInfiniteDocumentsByFolder(
     queryFn: ({ pageParam = 0 }) =>
       documentsApi.listByFolder(folderId, pageParam, size, sortBy, sortDir),
     initialPageParam: 0,
-    getNextPageParam: (lastPage) =>
-      lastPage.hasNext ? lastPage.page + 1 : undefined,
+    getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.page + 1 : undefined),
   });
 }
 
-export function useDocumentsByCategory(
-  category: DocumentCategory,
-  page = 0,
-  size = 20
-) {
+export function useDocumentsByCategory(category: DocumentCategory, page = 0, size = 20) {
   return useQuery({
     queryKey: documentKeys.byCategory(category, page),
     queryFn: () => documentsApi.listByCategory(category, page, size),
@@ -186,13 +179,8 @@ export function useMoveDocument() {
 export function useCopyDocument() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      id,
-      targetFolderId,
-    }: {
-      id: string;
-      targetFolderId?: string;
-    }) => documentsApi.copy(id, targetFolderId),
+    mutationFn: ({ id, targetFolderId }: { id: string; targetFolderId?: string }) =>
+      documentsApi.copy(id, targetFolderId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: documentKeys.lists() });
       qc.invalidateQueries({ queryKey: dashboardKeys.stats() });
@@ -234,9 +222,7 @@ export function useToggleFavorite() {
     onSuccess: (updated) => {
       qc.invalidateQueries({ queryKey: documentKeys.lists() });
       qc.invalidateQueries({ queryKey: dashboardKeys.stats() });
-      toast.success(
-        updated.isFavorite ? 'Added to favorites' : 'Removed from favorites'
-      );
+      toast.success(updated.isFavorite ? 'Added to favorites' : 'Removed from favorites');
     },
     onError: (_err, _id, context) => {
       // Roll back cache on error
@@ -263,8 +249,7 @@ export function useDownloadDocument() {
 export function useAddTag() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, tag }: { id: string; tag: string }) =>
-      documentsApi.addTag(id, tag),
+    mutationFn: ({ id, tag }: { id: string; tag: string }) => documentsApi.addTag(id, tag),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: documentKeys.lists() });
       qc.invalidateQueries({ queryKey: documentKeys.tags() });
@@ -277,8 +262,7 @@ export function useAddTag() {
 export function useRemoveTag() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, tag }: { id: string; tag: string }) =>
-      documentsApi.removeTag(id, tag),
+    mutationFn: ({ id, tag }: { id: string; tag: string }) => documentsApi.removeTag(id, tag),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: documentKeys.lists() });
       qc.invalidateQueries({ queryKey: documentKeys.tags() });

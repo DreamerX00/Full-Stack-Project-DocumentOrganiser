@@ -12,7 +12,13 @@ import { useNavigationStore } from '@/lib/store/navigationStore';
 import { DocumentCategory } from '@/lib/types';
 import type { DocumentResponse } from '@/lib/types';
 import { getCategoryInfo } from '@/lib/utils/format';
-import { useDocumentsByCategory, useToggleFavorite, useDownloadDocument, useDeleteDocument, useRenameDocument } from '@/lib/hooks/useDocuments';
+import {
+  useDocumentsByCategory,
+  useToggleFavorite,
+  useDownloadDocument,
+  useDeleteDocument,
+  useRenameDocument,
+} from '@/lib/hooks/useDocuments';
 import { useShareDocumentWithUser, useCreateDocumentShareLink } from '@/lib/hooks/useShares';
 
 export default function CategoryPage({ params }: { params: Promise<{ type: string }> }) {
@@ -81,12 +87,18 @@ export default function CategoryPage({ params }: { params: Promise<{ type: strin
         open={!!previewDoc}
         onOpenChange={() => setPreviewDoc(null)}
         onDownload={(doc) => downloadDoc.mutate(doc)}
-        onShare={(doc) => { setPreviewDoc(null); setShareDoc(doc); }}
+        onShare={(doc) => {
+          setPreviewDoc(null);
+          setShareDoc(doc);
+        }}
         onToggleFavorite={(doc) => toggleFavorite.mutate(doc.id)}
       />
       <ShareDialog
         open={!!shareDoc}
-        onOpenChange={() => { setShareDoc(null); setShareLink(undefined); }}
+        onOpenChange={() => {
+          setShareDoc(null);
+          setShareLink(undefined);
+        }}
         itemName={shareDoc?.name ?? ''}
         shareLink={shareLink}
         onShareWithUser={async (email, permission) => {

@@ -35,9 +35,7 @@ export function Providers({ children }: { children: ReactNode }) {
           disableTransitionOnChange
         >
           <TooltipProvider>
-            <I18nProvider>
-              {children}
-            </I18nProvider>
+            <I18nProvider>{children}</I18nProvider>
           </TooltipProvider>
           <Toaster richColors position="bottom-right" />
         </ThemeProvider>
@@ -46,11 +44,7 @@ export function Providers({ children }: { children: ReactNode }) {
   );
 
   if (googleClientId) {
-    return (
-      <GoogleOAuthProvider clientId={googleClientId}>
-        {content}
-      </GoogleOAuthProvider>
-    );
+    return <GoogleOAuthProvider clientId={googleClientId}>{content}</GoogleOAuthProvider>;
   }
 
   return content;

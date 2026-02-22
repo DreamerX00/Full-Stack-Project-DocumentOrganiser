@@ -5,7 +5,13 @@ import { useActivities } from '@/lib/hooks/useActivity';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Activity as ActivityIcon,
   Upload,
@@ -89,7 +95,7 @@ export default function ActivityPage() {
   const [filter, setFilter] = useState<string>('all');
 
   const { data, isLoading } = useActivities(
-    filter !== 'all' ? (filter as ActivityType) : undefined,
+    filter !== 'all' ? (filter as ActivityType) : undefined
   );
 
   const activities = data?.content ?? [];
@@ -138,7 +144,8 @@ export default function ActivityPage() {
           <div className="space-y-4">
             {activities.map((activity) => {
               const Icon = activityIcons[activity.activityType] || ActivityIcon;
-              const colorClass = activityColors[activity.activityType] || 'text-gray-500 bg-gray-500/10';
+              const colorClass =
+                activityColors[activity.activityType] || 'text-gray-500 bg-gray-500/10';
 
               return (
                 <div key={activity.id} className="relative flex gap-4 pl-0">

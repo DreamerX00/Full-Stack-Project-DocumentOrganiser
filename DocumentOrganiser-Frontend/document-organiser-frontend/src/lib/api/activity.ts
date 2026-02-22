@@ -1,10 +1,5 @@
 import apiClient from './client';
-import type {
-  ApiResponse,
-  ActivityResponse,
-  PagedResponse,
-  ActivityType,
-} from '@/lib/types';
+import type { ApiResponse, ActivityResponse, PagedResponse, ActivityType } from '@/lib/types';
 
 export const activityApi = {
   list: async (type?: ActivityType, page = 0, size = 20) => {

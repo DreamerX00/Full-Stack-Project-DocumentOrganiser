@@ -16,16 +16,18 @@ export default function GlobalError({
   return (
     <html lang="en">
       <body style={{ margin: 0, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-        <div style={{
-          display: 'flex',
-          minHeight: '100vh',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '1rem',
-          textAlign: 'center',
-          backgroundColor: '#fafafa',
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            minHeight: '100vh',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+            textAlign: 'center',
+            backgroundColor: '#fafafa',
+          }}
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="80"
@@ -42,8 +44,12 @@ export default function GlobalError({
             <path d="M12 9v4" />
             <path d="M12 17h.01" />
           </svg>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: 700, margin: 0, letterSpacing: '-0.025em' }}>500</h1>
-          <h2 style={{ marginTop: '0.5rem', fontSize: '1.25rem', fontWeight: 600 }}>Something went wrong</h2>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: 700, margin: 0, letterSpacing: '-0.025em' }}>
+            500
+          </h1>
+          <h2 style={{ marginTop: '0.5rem', fontSize: '1.25rem', fontWeight: 600 }}>
+            Something went wrong
+          </h2>
           <p style={{ marginTop: '0.5rem', maxWidth: '28rem', color: '#6b7280' }}>
             An unexpected error occurred. Please try again.
           </p>

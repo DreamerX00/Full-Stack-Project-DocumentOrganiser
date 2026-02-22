@@ -1,7 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { useRecentDocuments, useToggleFavorite, useDownloadDocument, useDeleteDocument, useRenameDocument, useMoveDocument, useCopyDocument } from '@/lib/hooks/useDocuments';
+import {
+  useRecentDocuments,
+  useToggleFavorite,
+  useDownloadDocument,
+  useDeleteDocument,
+  useRenameDocument,
+  useMoveDocument,
+  useCopyDocument,
+} from '@/lib/hooks/useDocuments';
 import { useShareDocumentWithUser, useCreateDocumentShareLink } from '@/lib/hooks/useShares';
 import { FileGrid } from '@/components/features/files/FileGrid';
 import { FileList } from '@/components/features/files/FileList';
@@ -80,12 +88,18 @@ export default function RecentPage() {
         open={!!previewDoc}
         onOpenChange={() => setPreviewDoc(null)}
         onDownload={handleDownload}
-        onShare={(doc) => { setPreviewDoc(null); setShareDoc(doc); }}
+        onShare={(doc) => {
+          setPreviewDoc(null);
+          setShareDoc(doc);
+        }}
         onToggleFavorite={handleToggleFavorite}
       />
       <ShareDialog
         open={!!shareDoc}
-        onOpenChange={() => { setShareDoc(null); setShareLink(undefined); }}
+        onOpenChange={() => {
+          setShareDoc(null);
+          setShareLink(undefined);
+        }}
         itemName={shareDoc?.name ?? ''}
         shareLink={shareLink}
         onShareWithUser={async (email, permission) => {

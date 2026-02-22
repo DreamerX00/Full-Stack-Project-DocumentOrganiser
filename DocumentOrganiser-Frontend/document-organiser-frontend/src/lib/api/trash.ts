@@ -1,9 +1,5 @@
 import apiClient from './client';
-import type {
-  ApiResponse,
-  TrashItemResponse,
-  PagedResponse,
-} from '@/lib/types';
+import type { ApiResponse, TrashItemResponse, PagedResponse } from '@/lib/types';
 
 export const trashApi = {
   list: async (page = 0, size = 20) => {

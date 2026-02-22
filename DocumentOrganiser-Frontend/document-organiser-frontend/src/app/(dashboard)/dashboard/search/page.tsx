@@ -11,18 +11,25 @@ import { useNavigationStore } from '@/lib/store/navigationStore';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Search as SearchIcon, X } from 'lucide-react';
 import { DocumentCategory } from '@/lib/types';
 import type { DocumentResponse } from '@/lib/types';
 import { getCategoryInfo } from '@/lib/utils/format';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useSearchDocuments, useSearchSuggestions, useDebouncedValue } from '@/lib/hooks/useSearch';
 import {
-  useSearchDocuments,
-  useSearchSuggestions,
-  useDebouncedValue,
-} from '@/lib/hooks/useSearch';
-import { useAllTags, useToggleFavorite, useDownloadDocument, useDeleteDocument } from '@/lib/hooks/useDocuments';
+  useAllTags,
+  useToggleFavorite,
+  useDownloadDocument,
+  useDeleteDocument,
+} from '@/lib/hooks/useDocuments';
 import { useShareDocumentWithUser, useCreateDocumentShareLink } from '@/lib/hooks/useShares';
 
 export default function SearchPage() {
@@ -62,7 +69,7 @@ function SearchContent() {
     undefined,
     0,
     20,
-    submittedQuery.trim().length > 0,
+    submittedQuery.trim().length > 0
   );
   const { data: suggestions } = useSearchSuggestions(debouncedQuery);
   const { data: allTags } = useAllTags();
@@ -157,11 +164,7 @@ function SearchContent() {
       {allTags && allTags.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {allTags.map((tag) => (
-            <Badge
-              key={tag}
-              variant="outline"
-              className="text-xs"
-            >
+            <Badge key={tag} variant="outline" className="text-xs">
               {tag}
             </Badge>
           ))}
@@ -173,7 +176,9 @@ function SearchContent() {
         <EmptyState type="search" />
       ) : hasResults ? (
         <div>
-          <p className="text-sm text-muted-foreground mb-4">{searchData?.totalElements ?? documents.length} result(s)</p>
+          <p className="text-sm text-muted-foreground mb-4">
+            {searchData?.totalElements ?? documents.length} result(s)
+          </p>
           {viewMode === 'grid' ? (
             <FileGrid
               documents={documents}
@@ -204,14 +209,20 @@ function SearchContent() {
         open={!!previewDoc}
         onOpenChange={() => setPreviewDoc(null)}
         onDownload={(doc) => downloadDoc.mutate(doc)}
-        onShare={(doc) => { setPreviewDoc(null); setShareDoc(doc); }}
+        onShare={(doc) => {
+          setPreviewDoc(null);
+          setShareDoc(doc);
+        }}
         onToggleFavorite={(doc) => toggleFavorite.mutate(doc.id)}
       />
 
       {/* Share Dialog */}
       <ShareDialog
         open={!!shareDoc}
-        onOpenChange={() => { setShareDoc(null); setShareLink(undefined); }}
+        onOpenChange={() => {
+          setShareDoc(null);
+          setShareLink(undefined);
+        }}
         itemName={shareDoc?.name ?? ''}
         shareLink={shareLink}
         onShareWithUser={async (email, permission) => {
@@ -230,7 +241,7 @@ function SearchContent() {
                 onSuccess: (link) => {
                   setShareLink(`${window.location.origin}/share/${link.token}`);
                 },
-              },
+              }
             );
           }
         }}

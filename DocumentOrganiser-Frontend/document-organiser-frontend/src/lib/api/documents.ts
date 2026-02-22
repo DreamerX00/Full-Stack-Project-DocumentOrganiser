@@ -67,26 +67,19 @@ export const documentsApi = {
   },
 
   move: async (id: string, data: MoveDocumentRequest) => {
-    const res = await apiClient.post<ApiResponse<DocumentResponse>>(
-      `/documents/${id}/move`,
-      data
-    );
+    const res = await apiClient.post<ApiResponse<DocumentResponse>>(`/documents/${id}/move`, data);
     return res.data.data;
   },
 
   copy: async (id: string, targetFolderId?: string) => {
-    const res = await apiClient.post<ApiResponse<DocumentResponse>>(
-      `/documents/${id}/copy`,
-      null,
-      { params: { targetFolderId } }
-    );
+    const res = await apiClient.post<ApiResponse<DocumentResponse>>(`/documents/${id}/copy`, null, {
+      params: { targetFolderId },
+    });
     return res.data.data;
   },
 
   toggleFavorite: async (id: string) => {
-    const res = await apiClient.post<ApiResponse<DocumentResponse>>(
-      `/documents/${id}/favorite`
-    );
+    const res = await apiClient.post<ApiResponse<DocumentResponse>>(`/documents/${id}/favorite`);
     return res.data.data;
   },
 
@@ -136,11 +129,9 @@ export const documentsApi = {
   },
 
   addTag: async (id: string, tag: string) => {
-    const res = await apiClient.post<ApiResponse<null>>(
-      `/documents/${id}/tags`,
-      null,
-      { params: { tag } }
-    );
+    const res = await apiClient.post<ApiResponse<null>>(`/documents/${id}/tags`, null, {
+      params: { tag },
+    });
     return res.data;
   },
 
@@ -156,7 +147,9 @@ export const documentsApi = {
 
   // Version management
   getVersions: async (id: string) => {
-    const res = await apiClient.get<ApiResponse<DocumentVersionResponse[]>>(`/documents/${id}/versions`);
+    const res = await apiClient.get<ApiResponse<DocumentVersionResponse[]>>(
+      `/documents/${id}/versions`
+    );
     return res.data.data;
   },
 

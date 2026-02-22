@@ -64,13 +64,8 @@ export function usePublicShare(token: string) {
 export function useShareDocumentWithUser() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      documentId,
-      data,
-    }: {
-      documentId: string;
-      data: ShareWithUserRequest;
-    }) => sharesApi.shareDocumentWithUser(documentId, data),
+    mutationFn: ({ documentId, data }: { documentId: string; data: ShareWithUserRequest }) =>
+      sharesApi.shareDocumentWithUser(documentId, data),
     onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: shareKeys.all });
       toast.success(`Shared with ${variables.data.email}`);
@@ -82,13 +77,8 @@ export function useShareDocumentWithUser() {
 export function useCreateDocumentShareLink() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      documentId,
-      data,
-    }: {
-      documentId: string;
-      data: CreateShareLinkRequest;
-    }) => sharesApi.createDocumentShareLink(documentId, data),
+    mutationFn: ({ documentId, data }: { documentId: string; data: CreateShareLinkRequest }) =>
+      sharesApi.createDocumentShareLink(documentId, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: shareKeys.links() });
     },

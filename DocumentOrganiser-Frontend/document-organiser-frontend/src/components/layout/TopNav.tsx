@@ -2,14 +2,7 @@
 
 import { useCallback, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Search,
-  LayoutGrid,
-  List,
-  SortAsc,
-  Menu,
-  Upload,
-} from 'lucide-react';
+import { Search, LayoutGrid, List, SortAsc, Menu, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -57,20 +50,12 @@ export function TopNav({ onUploadClick, onMenuClick }: TopNavProps) {
     <>
       <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         {/* Mobile menu */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden"
-          onClick={onMenuClick}
-        >
+        <Button variant="ghost" size="icon" className="md:hidden" onClick={onMenuClick}>
           <Menu className="h-5 w-5" />
         </Button>
 
         {/* Search trigger */}
-        <button
-          onClick={() => setCommandOpen(true)}
-          className="flex-1 max-w-xl"
-        >
+        <button onClick={() => setCommandOpen(true)} className="flex-1 max-w-xl">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <div className="flex items-center justify-between rounded-md border border-input bg-muted/50 px-10 py-2 text-sm text-muted-foreground">

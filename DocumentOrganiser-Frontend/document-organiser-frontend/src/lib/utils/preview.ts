@@ -21,19 +21,81 @@ const OFFICE_MIME_PREFIXES = [
 ];
 
 const OFFICE_EXTENSIONS = new Set([
-  'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp',
+  'doc',
+  'docx',
+  'xls',
+  'xlsx',
+  'ppt',
+  'pptx',
+  'odt',
+  'ods',
+  'odp',
 ]);
 
 const CODE_EXTENSIONS = new Set([
-  'js', 'ts', 'jsx', 'tsx', 'mjs', 'cjs',
-  'py', 'pyw', 'java', 'c', 'cpp', 'cc', 'h', 'hpp', 'cs',
-  'go', 'rs', 'rb', 'php', 'swift', 'kt', 'kts', 'scala',
-  'html', 'htm', 'css', 'scss', 'sass', 'less',
-  'json', 'xml', 'yaml', 'yml', 'toml', 'ini', 'cfg', 'conf', 'env',
-  'sh', 'bash', 'zsh', 'fish', 'ps1', 'bat', 'cmd',
-  'sql', 'graphql', 'gql', 'r', 'lua', 'dart', 'vue', 'svelte',
-  'dockerfile', 'makefile', 'gradle', 'properties',
-  'txt', 'log', 'rtf', 'tex', 'rst', 'adoc',
+  'js',
+  'ts',
+  'jsx',
+  'tsx',
+  'mjs',
+  'cjs',
+  'py',
+  'pyw',
+  'java',
+  'c',
+  'cpp',
+  'cc',
+  'h',
+  'hpp',
+  'cs',
+  'go',
+  'rs',
+  'rb',
+  'php',
+  'swift',
+  'kt',
+  'kts',
+  'scala',
+  'html',
+  'htm',
+  'css',
+  'scss',
+  'sass',
+  'less',
+  'json',
+  'xml',
+  'yaml',
+  'yml',
+  'toml',
+  'ini',
+  'cfg',
+  'conf',
+  'env',
+  'sh',
+  'bash',
+  'zsh',
+  'fish',
+  'ps1',
+  'bat',
+  'cmd',
+  'sql',
+  'graphql',
+  'gql',
+  'r',
+  'lua',
+  'dart',
+  'vue',
+  'svelte',
+  'dockerfile',
+  'makefile',
+  'gradle',
+  'properties',
+  'txt',
+  'log',
+  'rtf',
+  'tex',
+  'rst',
+  'adoc',
 ]);
 
 /**
@@ -61,10 +123,7 @@ export function getPreviewType(mimeType: string, fileName: string): PreviewType 
   if (mimeType === 'text/csv' || ext === 'csv') return 'csv';
 
   // Office documents
-  if (
-    OFFICE_MIME_PREFIXES.some((p) => mimeType.startsWith(p)) ||
-    OFFICE_EXTENSIONS.has(ext)
-  ) {
+  if (OFFICE_MIME_PREFIXES.some((p) => mimeType.startsWith(p)) || OFFICE_EXTENSIONS.has(ext)) {
     return 'office';
   }
 
@@ -96,24 +155,70 @@ export function needsTextContent(type: PreviewType): boolean {
 // ── Language label for code files ────────────────────────────────────────────
 
 const EXT_LANGUAGE_MAP: Record<string, string> = {
-  js: 'JavaScript', jsx: 'JavaScript (JSX)', mjs: 'JavaScript',
-  ts: 'TypeScript', tsx: 'TypeScript (TSX)',
-  py: 'Python', pyw: 'Python',
-  java: 'Java', kt: 'Kotlin', kts: 'Kotlin', scala: 'Scala',
-  c: 'C', cpp: 'C++', cc: 'C++', h: 'C Header', hpp: 'C++ Header', cs: 'C#',
-  go: 'Go', rs: 'Rust', rb: 'Ruby', php: 'PHP', swift: 'Swift',
-  dart: 'Dart', lua: 'Lua', r: 'R',
-  html: 'HTML', htm: 'HTML', css: 'CSS', scss: 'SCSS', sass: 'Sass', less: 'Less',
-  json: 'JSON', xml: 'XML', yaml: 'YAML', yml: 'YAML', toml: 'TOML',
-  sql: 'SQL', graphql: 'GraphQL', gql: 'GraphQL',
-  sh: 'Shell', bash: 'Bash', zsh: 'Zsh', fish: 'Fish', ps1: 'PowerShell',
-  bat: 'Batch', cmd: 'Batch',
-  md: 'Markdown', mdx: 'MDX', txt: 'Plain Text', log: 'Log',
-  tex: 'LaTeX', rst: 'reStructuredText', adoc: 'AsciiDoc',
-  ini: 'INI', cfg: 'Config', conf: 'Config', env: 'Environment',
-  dockerfile: 'Dockerfile', makefile: 'Makefile',
-  gradle: 'Gradle', properties: 'Properties',
-  vue: 'Vue', svelte: 'Svelte', rtf: 'Rich Text',
+  js: 'JavaScript',
+  jsx: 'JavaScript (JSX)',
+  mjs: 'JavaScript',
+  ts: 'TypeScript',
+  tsx: 'TypeScript (TSX)',
+  py: 'Python',
+  pyw: 'Python',
+  java: 'Java',
+  kt: 'Kotlin',
+  kts: 'Kotlin',
+  scala: 'Scala',
+  c: 'C',
+  cpp: 'C++',
+  cc: 'C++',
+  h: 'C Header',
+  hpp: 'C++ Header',
+  cs: 'C#',
+  go: 'Go',
+  rs: 'Rust',
+  rb: 'Ruby',
+  php: 'PHP',
+  swift: 'Swift',
+  dart: 'Dart',
+  lua: 'Lua',
+  r: 'R',
+  html: 'HTML',
+  htm: 'HTML',
+  css: 'CSS',
+  scss: 'SCSS',
+  sass: 'Sass',
+  less: 'Less',
+  json: 'JSON',
+  xml: 'XML',
+  yaml: 'YAML',
+  yml: 'YAML',
+  toml: 'TOML',
+  sql: 'SQL',
+  graphql: 'GraphQL',
+  gql: 'GraphQL',
+  sh: 'Shell',
+  bash: 'Bash',
+  zsh: 'Zsh',
+  fish: 'Fish',
+  ps1: 'PowerShell',
+  bat: 'Batch',
+  cmd: 'Batch',
+  md: 'Markdown',
+  mdx: 'MDX',
+  txt: 'Plain Text',
+  log: 'Log',
+  tex: 'LaTeX',
+  rst: 'reStructuredText',
+  adoc: 'AsciiDoc',
+  ini: 'INI',
+  cfg: 'Config',
+  conf: 'Config',
+  env: 'Environment',
+  dockerfile: 'Dockerfile',
+  makefile: 'Makefile',
+  gradle: 'Gradle',
+  properties: 'Properties',
+  vue: 'Vue',
+  svelte: 'Svelte',
+  rtf: 'Rich Text',
 };
 
 export function getLanguageLabel(fileName: string): string {
@@ -180,15 +285,12 @@ export function parseCSV(text: string): string[][] {
  */
 export function renderMarkdownToHtml(src: string): string {
   // Escape HTML entities first (prevents XSS)
-  let text = src
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  let text = src.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
   // Fenced code blocks  ```lang\n...\n```
   text = text.replace(
     /```(\w*)\n([\s\S]*?)```/g,
-    '<pre class="preview-code-block"><code>$2</code></pre>',
+    '<pre class="preview-code-block"><code>$2</code></pre>'
   );
 
   // Headings
@@ -218,54 +320,48 @@ export function renderMarkdownToHtml(src: string): string {
   // Images (before links so ![...](...) doesn't become a link)
   text = text.replace(
     /!\[([^\]]*)\]\(([^)]+)\)/g,
-    (_match, alt, src) => `<img src="${sanitizeUrl(src)}" alt="${alt}" style="max-width:100%;border-radius:8px;margin:8px 0"/>`,
+    (_match, alt, src) =>
+      `<img src="${sanitizeUrl(src)}" alt="${alt}" style="max-width:100%;border-radius:8px;margin:8px 0"/>`
   );
 
   // Links
   text = text.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
-    (_match, label, href) => `<a href="${sanitizeUrl(href)}" target="_blank" rel="noopener noreferrer" class="preview-link">${label}</a>`,
+    (_match, label, href) =>
+      `<a href="${sanitizeUrl(href)}" target="_blank" rel="noopener noreferrer" class="preview-link">${label}</a>`
   );
 
   // Blockquotes (consecutive > lines)
   text = text.replace(
     /(^&gt; .+\n?)+/gm,
     (match) =>
-      '<blockquote class="preview-blockquote">' +
-      match.replace(/^&gt; /gm, '') +
-      '</blockquote>',
+      '<blockquote class="preview-blockquote">' + match.replace(/^&gt; /gm, '') + '</blockquote>'
   );
 
   // Unordered list items  (- or *)
-  text = text.replace(
-    /(^[\-\*] .+\n?)+/gm,
-    (match) => {
-      const items = match
-        .split('\n')
-        .filter((l) => l.trim())
-        .map((l) => `<li>${l.replace(/^[\-\*] /, '')}</li>`)
-        .join('');
-      return `<ul class="preview-list">${items}</ul>`;
-    },
-  );
+  text = text.replace(/(^[\-\*] .+\n?)+/gm, (match) => {
+    const items = match
+      .split('\n')
+      .filter((l) => l.trim())
+      .map((l) => `<li>${l.replace(/^[\-\*] /, '')}</li>`)
+      .join('');
+    return `<ul class="preview-list">${items}</ul>`;
+  });
 
   // Ordered list items  (1. 2. etc.)
-  text = text.replace(
-    /(^\d+\. .+\n?)+/gm,
-    (match) => {
-      const items = match
-        .split('\n')
-        .filter((l) => l.trim())
-        .map((l) => `<li>${l.replace(/^\d+\. /, '')}</li>`)
-        .join('');
-      return `<ol class="preview-list">${items}</ol>`;
-    },
-  );
+  text = text.replace(/(^\d+\. .+\n?)+/gm, (match) => {
+    const items = match
+      .split('\n')
+      .filter((l) => l.trim())
+      .map((l) => `<li>${l.replace(/^\d+\. /, '')}</li>`)
+      .join('');
+    return `<ol class="preview-list">${items}</ol>`;
+  });
 
   // Wrap remaining bare lines in <p>
   text = text.replace(
     /^(?!<[houlpbia]|<\/|<hr|<li|<block|<pre|<code|<img|<a )(.+)$/gm,
-    '<p>$1</p>',
+    '<p>$1</p>'
   );
 
   return text;

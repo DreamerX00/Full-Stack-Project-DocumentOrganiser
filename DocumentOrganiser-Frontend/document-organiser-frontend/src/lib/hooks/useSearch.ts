@@ -9,10 +9,8 @@ import { useEffect, useState } from 'react';
 export const searchKeys = {
   all: ['search'] as const,
   combined: (q: string) => [...searchKeys.all, 'combined', q] as const,
-  documents: (params: Record<string, unknown>) =>
-    [...searchKeys.all, 'documents', params] as const,
-  folders: (q: string, page?: number) =>
-    [...searchKeys.all, 'folders', { q, page }] as const,
+  documents: (params: Record<string, unknown>) => [...searchKeys.all, 'documents', params] as const,
+  folders: (q: string, page?: number) => [...searchKeys.all, 'folders', { q, page }] as const,
   suggestions: (q: string) => [...searchKeys.all, 'suggest', q] as const,
 };
 

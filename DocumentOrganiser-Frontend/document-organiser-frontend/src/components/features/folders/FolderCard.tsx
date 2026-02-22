@@ -27,7 +27,14 @@ interface FolderCardProps {
   onDocumentDrop?: (documentId: string, targetFolderId: string) => void;
 }
 
-export function FolderCard({ folder, onRename, onDelete, onMove, onShare, onDocumentDrop }: FolderCardProps) {
+export function FolderCard({
+  folder,
+  onRename,
+  onDelete,
+  onMove,
+  onShare,
+  onDocumentDrop,
+}: FolderCardProps) {
   const { selectedFolders, toggleFolderSelection } = useFileStore();
   const isSelected = selectedFolders.includes(folder.id);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -79,10 +86,7 @@ export function FolderCard({ folder, onRename, onDelete, onMove, onShare, onDocu
             className="rounded-lg p-2"
             style={{ backgroundColor: folder.color ? `${folder.color}20` : undefined }}
           >
-            <Folder
-              className="h-6 w-6"
-              style={{ color: folder.color || undefined }}
-            />
+            <Folder className="h-6 w-6" style={{ color: folder.color || undefined }} />
           </div>
           <div className="flex-1 min-w-0">
             <p className="truncate text-sm font-medium">{folder.name}</p>
@@ -96,7 +100,12 @@ export function FolderCard({ folder, onRename, onDelete, onMove, onShare, onDocu
       <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={(e) => e.stopPropagation()}
+            >
               <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -111,10 +120,7 @@ export function FolderCard({ folder, onRename, onDelete, onMove, onShare, onDocu
               <Move className="mr-2 h-4 w-4" /> Move
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => onDelete?.(folder)}
-              className="text-destructive"
-            >
+            <DropdownMenuItem onClick={() => onDelete?.(folder)} className="text-destructive">
               <Trash2 className="mr-2 h-4 w-4" /> Delete
             </DropdownMenuItem>
           </DropdownMenuContent>

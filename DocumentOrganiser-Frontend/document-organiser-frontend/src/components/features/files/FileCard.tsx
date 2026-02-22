@@ -129,12 +129,8 @@ export function FileCard({
 
             {/* Meta */}
             <div className="mt-1 flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">
-                {formatFileSize(doc.fileSize)}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {formatRelativeTime(doc.updatedAt)}
-              </p>
+              <p className="text-xs text-muted-foreground">{formatFileSize(doc.fileSize)}</p>
+              <p className="text-xs text-muted-foreground">{formatRelativeTime(doc.updatedAt)}</p>
             </div>
 
             {/* Tags */}
@@ -158,7 +154,12 @@ export function FileCard({
           <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -191,9 +192,7 @@ export function FileCard({
         </Card>
       </ContextMenuTrigger>
       <ContextMenuContent className="w-48">
-        <ContextMenuItem onClick={() => onPreview?.(doc)}>
-          Preview
-        </ContextMenuItem>
+        <ContextMenuItem onClick={() => onPreview?.(doc)}>Preview</ContextMenuItem>
         <ContextMenuItem onClick={() => onDownload?.(doc)}>
           <Download className="mr-2 h-4 w-4" /> Download
         </ContextMenuItem>
@@ -211,7 +210,9 @@ export function FileCard({
           <Copy className="mr-2 h-4 w-4" /> Copy
         </ContextMenuItem>
         <ContextMenuItem onClick={() => onToggleFavorite?.(doc)}>
-          <Star className={cn('mr-2 h-4 w-4', doc.isFavorite && 'fill-yellow-400 text-yellow-400')} />
+          <Star
+            className={cn('mr-2 h-4 w-4', doc.isFavorite && 'fill-yellow-400 text-yellow-400')}
+          />
           {doc.isFavorite ? 'Unfavorite' : 'Favorite'}
         </ContextMenuItem>
         <ContextMenuSeparator />

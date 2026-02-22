@@ -7,9 +7,7 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public paths
-  const isPublicPath =
-    publicPaths.includes(pathname) ||
-    pathname.startsWith('/share/');
+  const isPublicPath = publicPaths.includes(pathname) || pathname.startsWith('/share/');
 
   // Allow API routes, static files, public assets, and NextAuth
   if (

@@ -1,12 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -20,12 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Download,
   Share2,
@@ -40,12 +30,7 @@ import {
   AlertCircle,
   FileWarning,
 } from 'lucide-react';
-import {
-  formatFileSize,
-  formatDate,
-  getCategoryInfo,
-  copyToClipboard,
-} from '@/lib/utils/format';
+import { formatFileSize, formatDate, getCategoryInfo, copyToClipboard } from '@/lib/utils/format';
 import {
   getPreviewType,
   needsTextContent,
@@ -95,9 +80,7 @@ export function FilePreview({
   const hasFetchedUrl = useRef(false);
 
   // Derived
-  const previewType: PreviewType = doc
-    ? getPreviewType(doc.mimeType, doc.name)
-    : 'fallback';
+  const previewType: PreviewType = doc ? getPreviewType(doc.mimeType, doc.name) : 'fallback';
 
   const categoryInfo = doc ? getCategoryInfo(doc.category) : null;
   const CategoryIcon = categoryInfo?.icon;
@@ -158,7 +141,11 @@ export function FilePreview({
   const prevUrlRef = useRef<string | null>(null);
   useEffect(() => {
     // Revoke the previous blob URL if it changed
-    if (prevUrlRef.current && prevUrlRef.current.startsWith('blob:') && prevUrlRef.current !== previewUrl) {
+    if (
+      prevUrlRef.current &&
+      prevUrlRef.current.startsWith('blob:') &&
+      prevUrlRef.current !== previewUrl
+    ) {
       URL.revokeObjectURL(prevUrlRef.current);
     }
     prevUrlRef.current = previewUrl;
@@ -214,9 +201,7 @@ export function FilePreview({
         <DialogHeader className="px-6 pt-6 pb-0">
           <DialogTitle className="flex items-center gap-2 truncate pr-8">
             {CategoryIcon && (
-              <CategoryIcon
-                className={cn('h-5 w-5 shrink-0', categoryInfo?.color)}
-              />
+              <CategoryIcon className={cn('h-5 w-5 shrink-0', categoryInfo?.color)} />
             )}
             <span className="truncate">{doc.name}</span>
             <Badge variant="outline" className="ml-2 text-[10px] shrink-0">
@@ -270,9 +255,7 @@ export function FilePreview({
                     <Star
                       className={cn(
                         'h-3.5 w-3.5',
-                        doc.isFavorite
-                          ? 'fill-yellow-400 text-yellow-400'
-                          : 'text-muted-foreground',
+                        doc.isFavorite ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'
                       )}
                     />
                     {doc.isFavorite ? 'Unfavorite' : 'Favorite'}
@@ -294,9 +277,7 @@ export function FilePreview({
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7"
-                      onClick={() =>
-                        setZoom((z) => Math.max(0.25, z - 0.25))
-                      }
+                      onClick={() => setZoom((z) => Math.max(0.25, z - 0.25))}
                     >
                       <ZoomOut className="h-3.5 w-3.5" />
                     </Button>
@@ -312,9 +293,7 @@ export function FilePreview({
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7"
-                      onClick={() =>
-                        setZoom((z) => Math.min(5, z + 0.25))
-                      }
+                      onClick={() => setZoom((z) => Math.min(5, z + 0.25))}
                     >
                       <ZoomIn className="h-3.5 w-3.5" />
                     </Button>
@@ -340,12 +319,7 @@ export function FilePreview({
             {previewUrl && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={openInNewTab}
-                  >
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={openInNewTab}>
                     <ExternalLink className="h-3.5 w-3.5" />
                   </Button>
                 </TooltipTrigger>
@@ -361,12 +335,7 @@ export function FilePreview({
                   className="h-8 w-8"
                   onClick={() => setShowDetails((v) => !v)}
                 >
-                  <Info
-                    className={cn(
-                      'h-3.5 w-3.5',
-                      showDetails && 'text-primary',
-                    )}
-                  />
+                  <Info className={cn('h-3.5 w-3.5', showDetails && 'text-primary')} />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>File details</TooltipContent>
@@ -442,14 +411,10 @@ export function FilePreview({
               <DetailField label="Content Type" value={doc.mimeType} mono />
               <DetailField label="Created" value={formatDate(doc.createdAt)} />
               <DetailField label="Modified" value={formatDate(doc.updatedAt)} />
-              {doc.folderPath && (
-                <DetailField label="Folder" value={doc.folderPath} />
-              )}
+              {doc.folderPath && <DetailField label="Folder" value={doc.folderPath} />}
               {doc.tags.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase mb-1">
-                    Tags
-                  </p>
+                  <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Tags</p>
                   <div className="flex flex-wrap gap-1">
                     {doc.tags.map((tag) => (
                       <Badge key={tag} variant="secondary" className="text-xs">
@@ -475,23 +440,11 @@ export function FilePreview({
 
 // ── Detail field ─────────────────────────────────────────────────────────────
 
-function DetailField({
-  label,
-  value,
-  mono,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-}) {
+function DetailField({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div>
-      <p className="text-xs font-medium text-muted-foreground uppercase">
-        {label}
-      </p>
-      <p className={cn('text-sm break-all', mono && 'font-mono text-xs')}>
-        {value}
-      </p>
+      <p className="text-xs font-medium text-muted-foreground uppercase">{label}</p>
+      <p className={cn('text-sm break-all', mono && 'font-mono text-xs')}>{value}</p>
     </div>
   );
 }
@@ -623,7 +576,7 @@ function ImagePreview({
         onZoom(Math.max(0.25, Math.min(5, zoom + delta)));
       }
     },
-    [zoom, onZoom],
+    [zoom, onZoom]
   );
 
   return (
@@ -650,25 +603,14 @@ function ImagePreview({
 // ── PDF preview ──────────────────────────────────────────────────────────────
 
 function PdfPreview({ src, title }: { src: string; title: string }) {
-  return (
-    <iframe
-      src={src}
-      className="w-full h-[62vh] rounded-lg border"
-      title={title}
-    />
-  );
+  return <iframe src={src} className="w-full h-[62vh] rounded-lg border" title={title} />;
 }
 
 // ── Video preview ────────────────────────────────────────────────────────────
 
 function VideoPreview({ src }: { src: string }) {
   return (
-    <video
-      src={src}
-      controls
-      className="w-full max-h-[62vh] rounded-lg bg-black"
-      playsInline
-    >
+    <video src={src} controls className="w-full max-h-[62vh] rounded-lg bg-black" playsInline>
       Your browser does not support the video tag.
     </video>
   );
@@ -747,13 +689,7 @@ function OfficePreview({
 
 // ── Code / text preview ──────────────────────────────────────────────────────
 
-function CodePreview({
-  content,
-  fileName,
-}: {
-  content: string;
-  fileName: string;
-}) {
+function CodePreview({ content, fileName }: { content: string; fileName: string }) {
   const lines = content.split('\n');
   const lang = getLanguageLabel(fileName);
   const lineCount = lines.length;
@@ -812,9 +748,7 @@ function CsvPreview({ content }: { content: string }) {
   const rows = parseCSV(content);
   if (rows.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground text-center py-8">
-        No data found in CSV file.
-      </p>
+      <p className="text-sm text-muted-foreground text-center py-8">No data found in CSV file.</p>
     );
   }
 
@@ -827,8 +761,8 @@ function CsvPreview({ content }: { content: string }) {
     <div className="rounded-lg border overflow-hidden">
       <div className="flex items-center justify-between bg-muted/50 px-4 py-2 border-b">
         <span className="text-xs text-muted-foreground">
-          {totalRows.toLocaleString()} row{totalRows !== 1 ? 's' : ''} ×{' '}
-          {maxCols} column{maxCols !== 1 ? 's' : ''}
+          {totalRows.toLocaleString()} row{totalRows !== 1 ? 's' : ''} × {maxCols} column
+          {maxCols !== 1 ? 's' : ''}
         </span>
       </div>
       <ScrollArea className="max-h-[58vh]">
@@ -919,7 +853,9 @@ function FallbackPreview({
         </div>
       )}
       <p className="text-sm font-medium text-foreground">{doc.name}</p>
-      <p className="text-xs">{doc.mimeType} · {formatFileSize(doc.fileSize)}</p>
+      <p className="text-xs">
+        {doc.mimeType} · {formatFileSize(doc.fileSize)}
+      </p>
       <p className="text-xs text-center max-w-sm">
         Preview is not available for this file type. Download to view in your local application.
       </p>

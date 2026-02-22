@@ -150,7 +150,11 @@ export function getFileIcon(contentType: string): LucideIcon {
   if (contentType.includes('pdf') || contentType.includes('document')) return FileText;
   if (contentType.includes('spreadsheet') || contentType.includes('csv')) return Table;
   if (contentType.includes('presentation')) return Presentation;
-  if (contentType.includes('zip') || contentType.includes('archive') || contentType.includes('compressed'))
+  if (
+    contentType.includes('zip') ||
+    contentType.includes('archive') ||
+    contentType.includes('compressed')
+  )
     return Archive;
   if (contentType.includes('text/') || contentType.includes('json') || contentType.includes('xml'))
     return Code;
@@ -169,7 +173,28 @@ export function getFileIconByName(filename: string): LucideIcon {
   const spreadsheetExts = ['xls', 'xlsx', 'csv', 'ods'];
   const presentationExts = ['ppt', 'pptx', 'odp'];
   const archiveExts = ['zip', 'rar', '7z', 'tar', 'gz', 'bz2'];
-  const codeExts = ['js', 'ts', 'jsx', 'tsx', 'py', 'java', 'c', 'cpp', 'h', 'html', 'css', 'json', 'xml', 'yaml', 'yml', 'md', 'sh', 'rb', 'go', 'rs'];
+  const codeExts = [
+    'js',
+    'ts',
+    'jsx',
+    'tsx',
+    'py',
+    'java',
+    'c',
+    'cpp',
+    'h',
+    'html',
+    'css',
+    'json',
+    'xml',
+    'yaml',
+    'yml',
+    'md',
+    'sh',
+    'rb',
+    'go',
+    'rs',
+  ];
 
   if (imageExts.includes(ext)) return Image;
   if (videoExts.includes(ext)) return Video;

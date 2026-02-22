@@ -36,8 +36,7 @@ export const useNavigationStore = create<NavigationState>()(
       toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
       setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
       setCurrentPath: (currentPath) => set({ currentPath }),
-      pushPath: (item) =>
-        set((state) => ({ currentPath: [...state.currentPath, item] })),
+      pushPath: (item) => set((state) => ({ currentPath: [...state.currentPath, item] })),
       popToPath: (index) =>
         set((state) => ({ currentPath: state.currentPath.slice(0, index + 1) })),
       setViewMode: (viewMode) => set({ viewMode }),

@@ -55,7 +55,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       if (!isOpen) setQuery('');
       onOpenChange(isOpen);
     },
-    [onOpenChange],
+    [onOpenChange]
   );
 
   const handleSelect = useCallback(
@@ -63,7 +63,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       onOpenChange(false);
       router.push(href);
     },
-    [router, onOpenChange],
+    [router, onOpenChange]
   );
 
   const handleSearchAll = useCallback(() => {

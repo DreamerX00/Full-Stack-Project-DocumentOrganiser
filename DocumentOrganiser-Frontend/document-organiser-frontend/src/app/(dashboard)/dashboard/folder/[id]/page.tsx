@@ -25,12 +25,7 @@ import {
   useMoveDocument,
   useCopyDocument,
 } from '@/lib/hooks/useDocuments';
-import {
-  useFolder,
-  useSubfolders,
-  useCreateFolder,
-  useDeleteFolder,
-} from '@/lib/hooks/useFolders';
+import { useFolder, useSubfolders, useCreateFolder, useDeleteFolder } from '@/lib/hooks/useFolders';
 import { useShareDocumentWithUser, useCreateDocumentShareLink } from '@/lib/hooks/useShares';
 import type { DocumentResponse } from '@/lib/types';
 
@@ -77,10 +72,14 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
     ...(folder ? [{ id: folder.id, name: folder.name }] : []),
   ];
 
-  const handleCreateFolder = async (data: { name: string; description?: string; color?: string }) => {
+  const handleCreateFolder = async (data: {
+    name: string;
+    description?: string;
+    color?: string;
+  }) => {
     createFolder.mutate(
       { ...data, parentFolderId: id },
-      { onSuccess: () => setCreateFolderOpen(false) },
+      { onSuccess: () => setCreateFolderOpen(false) }
     );
   };
 
@@ -185,7 +184,7 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
           if (renameDoc) {
             renameDocument.mutate(
               { id: renameDoc.id, data: { newName } },
-              { onSuccess: () => setRenameDoc(null) },
+              { onSuccess: () => setRenameDoc(null) }
             );
           }
         }}
@@ -193,7 +192,10 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
       />
       <ShareDialog
         open={!!shareDoc}
-        onOpenChange={() => { setShareDoc(null); setShareLink(undefined); }}
+        onOpenChange={() => {
+          setShareDoc(null);
+          setShareLink(undefined);
+        }}
         itemName={shareDoc?.name ?? ''}
         shareLink={shareLink}
         onShareWithUser={async (email, permission) => {
@@ -212,7 +214,7 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
                 onSuccess: (link) => {
                   setShareLink(`${window.location.origin}/share/${link.token}`);
                 },
-              },
+              }
             );
           }
         }}

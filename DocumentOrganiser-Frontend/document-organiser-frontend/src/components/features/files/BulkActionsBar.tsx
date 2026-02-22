@@ -14,11 +14,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useFileStore } from '@/lib/store/fileStore';
-import {
-  useBulkDelete,
-  useBulkDownload,
-  useBulkFavorite,
-} from '@/lib/hooks/useBulkOperations';
+import { useBulkDelete, useBulkDownload, useBulkFavorite } from '@/lib/hooks/useBulkOperations';
 
 export function BulkActionsBar() {
   const { selectedFiles, selectedFolders, documents, clearSelection } = useFileStore();
@@ -37,9 +33,7 @@ export function BulkActionsBar() {
   return (
     <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 animate-in slide-in-from-bottom-4 fade-in duration-200">
       <div className="flex items-center gap-2 rounded-xl border bg-background/95 px-4 py-2.5 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <span className="text-sm font-medium text-muted-foreground mr-2">
-          {count} selected
-        </span>
+        <span className="text-sm font-medium text-muted-foreground mr-2">{count} selected</span>
 
         <div className="h-5 w-px bg-border" />
 
@@ -98,12 +92,7 @@ export function BulkActionsBar() {
 
         <div className="h-5 w-px bg-border" />
 
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
-          onClick={clearSelection}
-        >
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={clearSelection}>
           <X className="h-4 w-4" />
           <span className="sr-only">Clear selection</span>
         </Button>

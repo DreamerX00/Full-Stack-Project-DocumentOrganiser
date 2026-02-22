@@ -33,11 +33,7 @@ export function useAuth() {
           const authResponse = await authApi.loginWithGoogle({
             idToken: session.idToken,
           });
-          store.login(
-            authResponse.user,
-            authResponse.accessToken,
-            authResponse.refreshToken
-          );
+          store.login(authResponse.user, authResponse.accessToken, authResponse.refreshToken);
           lastExchangedTokenRef.current = session.idToken;
           exchangeFailedRef.current = false;
           // Redirect to dashboard after successful token exchange

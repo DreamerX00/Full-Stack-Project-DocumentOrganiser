@@ -117,19 +117,12 @@ export function MoveDialog({
               />
             )}
           </button>
-          <Folder
-            className="h-4 w-4 shrink-0"
-            style={{ color: folder.color || '#3B82F6' }}
-          />
+          <Folder className="h-4 w-4 shrink-0" style={{ color: folder.color || '#3B82F6' }} />
           <span className="text-sm truncate flex-1">{folder.name}</span>
-          {isCurrent && (
-            <span className="text-xs text-muted-foreground">(current)</span>
-          )}
+          {isCurrent && <span className="text-xs text-muted-foreground">(current)</span>}
         </div>
         {isExpanded && children.length > 0 && (
-          <div>
-            {children.map((child) => renderFolder(child, depth + 1))}
-          </div>
+          <div>{children.map((child) => renderFolder(child, depth + 1))}</div>
         )}
       </div>
     );
@@ -145,9 +138,7 @@ export function MoveDialog({
         </DialogHeader>
 
         <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Select a destination folder:
-          </p>
+          <p className="text-sm text-muted-foreground">Select a destination folder:</p>
 
           <ScrollArea className="h-64 border rounded-lg p-2">
             {/* Root / My Documents option */}
@@ -171,9 +162,7 @@ export function MoveDialog({
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
             ) : (
-              <div className="mt-1">
-                {rootFolders.map((folder) => renderFolder(folder, 0))}
-              </div>
+              <div className="mt-1">{rootFolders.map((folder) => renderFolder(folder, 0))}</div>
             )}
           </ScrollArea>
         </div>
@@ -184,7 +173,7 @@ export function MoveDialog({
           </Button>
           <Button
             onClick={() => onConfirm(selectedFolderId)}
-            disabled={isLoading || (selectedFolderId === currentFolderId)}
+            disabled={isLoading || selectedFolderId === currentFolderId}
           >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {mode === 'move' ? 'Move Here' : 'Copy Here'}

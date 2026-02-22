@@ -3,12 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  ChevronRight,
-  Folder,
-  FolderOpen,
-  Loader2,
-} from 'lucide-react';
+import { ChevronRight, Folder, FolderOpen, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFolderTree } from '@/lib/hooks/useFolders';
 import type { FolderTreeResponse } from '@/lib/types';
@@ -30,7 +25,7 @@ function FolderTreeNode({ folder, level }: FolderTreeNodeProps) {
       <div
         className={cn(
           'group flex items-center gap-1 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent',
-          isActive && 'bg-accent font-medium',
+          isActive && 'bg-accent font-medium'
         )}
         style={{ paddingLeft: `${level * 12 + 8}px` }}
       >
@@ -57,15 +52,9 @@ function FolderTreeNode({ folder, level }: FolderTreeNodeProps) {
           className="flex flex-1 items-center gap-2 truncate"
         >
           {expanded && hasChildren ? (
-            <FolderOpen
-              className="h-4 w-4 shrink-0"
-              style={{ color: folder.color || undefined }}
-            />
+            <FolderOpen className="h-4 w-4 shrink-0" style={{ color: folder.color || undefined }} />
           ) : (
-            <Folder
-              className="h-4 w-4 shrink-0"
-              style={{ color: folder.color || undefined }}
-            />
+            <Folder className="h-4 w-4 shrink-0" style={{ color: folder.color || undefined }} />
           )}
           <span className="truncate">{folder.name}</span>
           {folder.documentCount > 0 && (
@@ -104,11 +93,7 @@ export function FolderTree() {
   const folders = tree?.children ?? [];
 
   if (!tree || folders.length === 0) {
-    return (
-      <p className="px-3 py-2 text-xs text-muted-foreground">
-        No folders yet
-      </p>
-    );
+    return <p className="px-3 py-2 text-xs text-muted-foreground">No folders yet</p>;
   }
 
   return (

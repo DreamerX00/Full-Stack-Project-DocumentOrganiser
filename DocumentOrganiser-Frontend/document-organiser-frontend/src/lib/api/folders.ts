@@ -41,9 +41,7 @@ export const foldersApi = {
   },
 
   listSubfolders: async (parentId: string) => {
-    const res = await apiClient.get<ApiResponse<FolderResponse[]>>(
-      `/folders/${parentId}/children`
-    );
+    const res = await apiClient.get<ApiResponse<FolderResponse[]>>(`/folders/${parentId}/children`);
     return res.data.data;
   },
 
@@ -53,10 +51,9 @@ export const foldersApi = {
   },
 
   searchFolders: async (query: string, page = 0, size = 20) => {
-    const res = await apiClient.get<ApiResponse<PagedResponse<FolderResponse>>>(
-      '/folders/search',
-      { params: { query, page, size } }
-    );
+    const res = await apiClient.get<ApiResponse<PagedResponse<FolderResponse>>>('/folders/search', {
+      params: { query, page, size },
+    });
     return res.data.data;
   },
 };

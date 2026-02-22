@@ -1,26 +1,17 @@
 'use client';
 
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-} from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { foldersApi } from '@/lib/api/folders';
 import { toast } from 'sonner';
 import { dashboardKeys } from './useDashboard';
-import type {
-  CreateFolderRequest,
-  UpdateFolderRequest,
-  MoveFolderRequest,
-} from '@/lib/types';
+import type { CreateFolderRequest, UpdateFolderRequest, MoveFolderRequest } from '@/lib/types';
 
 // ── Query Keys ──────────────────────────────────────────────
 export const folderKeys = {
   all: ['folders'] as const,
   lists: () => [...folderKeys.all, 'list'] as const,
   root: () => [...folderKeys.lists(), 'root'] as const,
-  subfolders: (parentId: string) =>
-    [...folderKeys.lists(), 'sub', parentId] as const,
+  subfolders: (parentId: string) => [...folderKeys.lists(), 'sub', parentId] as const,
   tree: () => [...folderKeys.all, 'tree'] as const,
   details: () => [...folderKeys.all, 'detail'] as const,
   detail: (id: string) => [...folderKeys.details(), id] as const,

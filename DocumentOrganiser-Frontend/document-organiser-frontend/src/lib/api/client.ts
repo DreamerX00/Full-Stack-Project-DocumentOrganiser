@@ -7,7 +7,9 @@ import { useAuthStore } from '@/lib/store/authStore';
 const API_BASE_URL =
   typeof window !== 'undefined'
     ? '/api/backend'
-    : (process.env.BACKEND_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1');
+    : process.env.BACKEND_INTERNAL_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      'http://localhost:8080/api/v1';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -80,10 +82,9 @@ apiClient.interceptors.response.use(
           throw new Error('No refresh token');
         }
 
-        const response = await axios.post<ApiResponse<{ accessToken: string; refreshToken: string }>>(
-          `${API_BASE_URL}/auth/refresh`,
-          { refreshToken }
-        );
+        const response = await axios.post<
+          ApiResponse<{ accessToken: string; refreshToken: string }>
+        >(`${API_BASE_URL}/auth/refresh`, { refreshToken });
 
         const { accessToken, refreshToken: newRefreshToken } = response.data.data;
 

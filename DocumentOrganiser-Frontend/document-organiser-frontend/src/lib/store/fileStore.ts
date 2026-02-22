@@ -85,8 +85,6 @@ export const useFileStore = create<FileState>()((set, get) => ({
     }),
   clearSelection: () => set({ selectedFiles: [], selectedFolders: [] }),
 
-  hasSelection: () =>
-    get().selectedFiles.length > 0 || get().selectedFolders.length > 0,
-  selectionCount: () =>
-    get().selectedFiles.length + get().selectedFolders.length,
+  hasSelection: () => get().selectedFiles.length > 0 || get().selectedFolders.length > 0,
+  selectionCount: () => get().selectedFiles.length + get().selectedFolders.length,
 }));

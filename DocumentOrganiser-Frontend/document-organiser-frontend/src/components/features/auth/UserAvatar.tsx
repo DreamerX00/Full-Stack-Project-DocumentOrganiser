@@ -29,9 +29,7 @@ export function UserAvatar({ size = 'md', className }: UserAvatarProps) {
   return (
     <Avatar className={`${sizeMap[size]} ${className || ''}`}>
       <AvatarImage src={user?.profilePicture} alt={user?.name || 'User'} />
-      <AvatarFallback className="bg-primary text-primary-foreground">
-        {initials}
-      </AvatarFallback>
+      <AvatarFallback className="bg-primary text-primary-foreground">{initials}</AvatarFallback>
     </Avatar>
   );
 }

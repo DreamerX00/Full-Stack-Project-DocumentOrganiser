@@ -48,9 +48,7 @@ export function AppBreadcrumb({ items }: AppBreadcrumbProps) {
                   <BreadcrumbPage>{item.name}</BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink asChild>
-                    <Link href={item.href || `/dashboard/folder/${item.id}`}>
-                      {item.name}
-                    </Link>
+                    <Link href={item.href || `/dashboard/folder/${item.id}`}>{item.name}</Link>
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>

@@ -2,12 +2,7 @@
 
 import { useState } from 'react';
 import { Copy, Link2, Mail, Check } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -92,10 +87,7 @@ export function ShareDialog({
             </div>
             <div className="space-y-2">
               <Label>Permission</Label>
-              <Select
-                value={permission}
-                onValueChange={(v) => setPermission(v as SharePermission)}
-              >
+              <Select value={permission} onValueChange={(v) => setPermission(v as SharePermission)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -118,10 +110,7 @@ export function ShareDialog({
           <TabsContent value="link" className="space-y-4">
             <div className="space-y-2">
               <Label>Permission</Label>
-              <Select
-                value={permission}
-                onValueChange={(v) => setPermission(v as SharePermission)}
-              >
+              <Select value={permission} onValueChange={(v) => setPermission(v as SharePermission)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

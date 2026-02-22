@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { professions, getSubcategories, getSpecializations } from './onboardingData';
 
@@ -37,14 +43,15 @@ export function OnboardingPopup({ open, onComplete, onSkip }: OnboardingPopupPro
     onSkip();
   };
 
-  const stepTitles = [
-    'What do you do?',
-    'Narrow it down',
-    'Your focus area',
-  ];
+  const stepTitles = ['What do you do?', 'Narrow it down', 'Your focus area'];
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleSkip(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) handleSkip();
+      }}
+    >
       <DialogContent className="max-w-md" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Welcome! Let&apos;s personalize your experience</DialogTitle>
@@ -54,10 +61,9 @@ export function OnboardingPopup({ open, onComplete, onSkip }: OnboardingPopupPro
               <div key={i} className="flex items-center gap-2 flex-1">
                 <div className="flex flex-col items-center flex-1">
                   <div
-                    className={`h-1.5 w-full rounded-full transition-colors ${i + 1 <= step
-                        ? 'bg-primary'
-                        : 'bg-muted'
-                      }`}
+                    className={`h-1.5 w-full rounded-full transition-colors ${
+                      i + 1 <= step ? 'bg-primary' : 'bg-muted'
+                    }`}
                   />
                 </div>
               </div>
@@ -123,7 +129,12 @@ export function OnboardingPopup({ open, onComplete, onSkip }: OnboardingPopupPro
         )}
 
         <DialogFooter className="flex justify-between mt-4">
-          <Button variant="ghost" onClick={handleSkip} type="button" className="text-muted-foreground">
+          <Button
+            variant="ghost"
+            onClick={handleSkip}
+            type="button"
+            className="text-muted-foreground"
+          >
             Skip for now
           </Button>
           <div className="flex gap-2">

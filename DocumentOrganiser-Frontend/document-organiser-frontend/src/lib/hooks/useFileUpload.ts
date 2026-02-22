@@ -48,15 +48,12 @@ export function useFileUpload() {
   }, []);
 
   /** Pauses execution until the user picks a resolution. */
-  const waitForConflictResolution = useCallback(
-    (fileName: string): Promise<ConflictResolution> => {
-      setConflictFile(fileName);
-      return new Promise<ConflictResolution>((resolve) => {
-        conflictResolver.current = resolve;
-      });
-    },
-    []
-  );
+  const waitForConflictResolution = useCallback((fileName: string): Promise<ConflictResolution> => {
+    setConflictFile(fileName);
+    return new Promise<ConflictResolution>((resolve) => {
+      conflictResolver.current = resolve;
+    });
+  }, []);
 
   const uploadFiles = useCallback(
     async (files: File[], folderId?: string) => {
@@ -120,8 +117,7 @@ export function useFileUpload() {
           }
 
           // Non-conflict error
-          const message =
-            error instanceof Error ? error.message : 'Upload failed';
+          const message = error instanceof Error ? error.message : 'Upload failed';
           uploadStore.setStatus(item.id, 'error', message);
           toast.error(`Failed to upload ${item.file.name}`);
         }
@@ -149,4 +145,3 @@ export function useFileUpload() {
     resolveConflict,
   };
 }
-

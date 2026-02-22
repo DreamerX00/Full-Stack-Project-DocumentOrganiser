@@ -1,6 +1,18 @@
 'use client';
 
-import { Star, MoreVertical, Download, Pencil, Trash2, Share2, Move, Copy, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import {
+  Star,
+  MoreVertical,
+  Download,
+  Pencil,
+  Trash2,
+  Share2,
+  Move,
+  Copy,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -87,11 +99,9 @@ export function FileList({
   onDownload,
   onToggleFavorite,
 }: FileListProps) {
-  const { selectedFiles, toggleFileSelection, selectAllIds, clearSelection } =
-    useFileStore();
+  const { selectedFiles, toggleFileSelection, selectAllIds, clearSelection } = useFileStore();
   const { sortBy, sortDirection, setSortBy, toggleSortDirection } = useNavigationStore();
-  const allSelected =
-    documents.length > 0 && documents.every((d) => selectedFiles.includes(d.id));
+  const allSelected = documents.length > 0 && documents.every((d) => selectedFiles.includes(d.id));
 
   const handleSort = (field: SortField) => {
     if (sortBy === field) {
@@ -139,13 +149,42 @@ export function FileList({
           <TableHead className="w-10">
             <Checkbox
               checked={allSelected}
-              onCheckedChange={() => (allSelected ? clearSelection() : selectAllIds(documents.map(d => d.id)))}
+              onCheckedChange={() =>
+                allSelected ? clearSelection() : selectAllIds(documents.map((d) => d.id))
+              }
             />
           </TableHead>
-          <SortableHeader label="Name" field="name" currentSort={sortBy} currentDir={sortDirection} onSort={handleSort} />
-          <SortableHeader label="Modified" field="date" currentSort={sortBy} currentDir={sortDirection} onSort={handleSort} className="hidden sm:table-cell" />
-          <SortableHeader label="Size" field="size" currentSort={sortBy} currentDir={sortDirection} onSort={handleSort} className="hidden md:table-cell" />
-          <SortableHeader label="Type" field="type" currentSort={sortBy} currentDir={sortDirection} onSort={handleSort} className="hidden lg:table-cell" />
+          <SortableHeader
+            label="Name"
+            field="name"
+            currentSort={sortBy}
+            currentDir={sortDirection}
+            onSort={handleSort}
+          />
+          <SortableHeader
+            label="Modified"
+            field="date"
+            currentSort={sortBy}
+            currentDir={sortDirection}
+            onSort={handleSort}
+            className="hidden sm:table-cell"
+          />
+          <SortableHeader
+            label="Size"
+            field="size"
+            currentSort={sortBy}
+            currentDir={sortDirection}
+            onSort={handleSort}
+            className="hidden md:table-cell"
+          />
+          <SortableHeader
+            label="Type"
+            field="type"
+            currentSort={sortBy}
+            currentDir={sortDirection}
+            onSort={handleSort}
+            className="hidden lg:table-cell"
+          />
           <TableHead className="w-10" />
         </TableRow>
       </TableHeader>
@@ -231,10 +270,7 @@ export function FileList({
                       <Copy className="mr-2 h-4 w-4" /> Copy
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => onDelete?.(doc)}
-                      className="text-destructive"
-                    >
+                    <DropdownMenuItem onClick={() => onDelete?.(doc)} className="text-destructive">
                       <Trash2 className="mr-2 h-4 w-4" /> Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>

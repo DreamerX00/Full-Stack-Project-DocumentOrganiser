@@ -13,11 +13,6 @@ export const activityKeys = {
 export function useActivities(activityType?: ActivityType, page = 0, size = 20) {
   return useQuery({
     queryKey: activityKeys.list(activityType, page),
-    queryFn: () =>
-      activityApi.list(
-        activityType,
-        page,
-        size,
-      ),
+    queryFn: () => activityApi.list(activityType, page, size),
   });
 }
