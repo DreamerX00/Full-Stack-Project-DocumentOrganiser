@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -10,10 +10,9 @@ import {
 import { Kbd } from '@/components/ui/kbd';
 
 function useIsMac() {
-  const [isMac, setIsMac] = useState(false);
-  useEffect(() => {
-    setIsMac(typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.userAgent));
-  }, []);
+  const [isMac] = useState(
+    () => typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.userAgent)
+  );
   return isMac;
 }
 

@@ -25,13 +25,6 @@ interface MoveDialogProps {
   isLoading?: boolean;
 }
 
-interface FolderNode {
-  id: string | null;
-  name: string;
-  children: FolderResponse[];
-  loaded: boolean;
-}
-
 export function MoveDialog({
   open,
   onOpenChange,
@@ -48,15 +41,6 @@ export function MoveDialog({
   const [loadingFolders, setLoadingFolders] = useState(false);
   const [loadingSubfolder, setLoadingSubfolder] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (open) {
-      setSelectedFolderId(null);
-      setExpandedFolders(new Set());
-      setSubfolders({});
-      loadRootFolders();
-    }
-  }, [open]);
-
   const loadRootFolders = async () => {
     setLoadingFolders(true);
     try {
@@ -67,6 +51,15 @@ export function MoveDialog({
     }
     setLoadingFolders(false);
   };
+
+  useEffect(() => {
+    if (open) {
+      setSelectedFolderId(null);
+      setExpandedFolders(new Set());
+      setSubfolders({});
+      loadRootFolders();
+    }
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleExpand = async (folderId: string) => {
     const newExpanded = new Set(expandedFolders);

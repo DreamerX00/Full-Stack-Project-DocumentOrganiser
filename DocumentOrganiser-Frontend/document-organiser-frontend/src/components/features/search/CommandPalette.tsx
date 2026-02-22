@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   CommandDialog,
@@ -13,13 +13,11 @@ import {
 } from '@/components/ui/command';
 import {
   FileText,
-  Folder,
   Star,
   Clock,
   Trash2,
   Settings,
   Search,
-  Upload,
   Share2,
   Bell,
   BarChart3,
@@ -52,10 +50,13 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const debouncedQuery = useDebouncedValue(query, 250);
   const { data: suggestions } = useSearchSuggestions(debouncedQuery);
 
-  // Reset query when dialog closes
-  useEffect(() => {
-    if (!open) setQuery('');
-  }, [open]);
+  const handleOpenChange = useCallback(
+    (isOpen: boolean) => {
+      if (!isOpen) setQuery('');
+      onOpenChange(isOpen);
+    },
+    [onOpenChange],
+  );
 
   const handleSelect = useCallback(
     (href: string) => {
@@ -73,7 +74,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   }, [query, router, onOpenChange]);
 
   return (
-    <CommandDialog open={open} onOpenChange={onOpenChange}>
+    <CommandDialog open={open} onOpenChange={handleOpenChange}>
       <CommandInput
         placeholder="Search documents, folders, or navigate..."
         value={query}

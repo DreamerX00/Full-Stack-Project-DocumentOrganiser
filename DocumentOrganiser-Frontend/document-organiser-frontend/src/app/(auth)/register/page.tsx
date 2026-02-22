@@ -83,9 +83,10 @@ export default function RegisterPage() {
             login(response.user, response.accessToken, response.refreshToken);
             toast.success('Account created successfully');
             router.push('/dashboard/documents');
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Registration error:', error);
-            toast.error(error.response?.data?.message || 'Failed to create account');
+            const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to create account';
+            toast.error(message);
         } finally {
             setIsLoading(false);
         }

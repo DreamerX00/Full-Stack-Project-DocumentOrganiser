@@ -20,8 +20,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
 
 import { authApi } from '@/lib/api/auth';
 import { useAuthStore } from '@/lib/store/authStore';
@@ -76,9 +74,10 @@ export default function LoginPage() {
       login(response.user, response.accessToken, response.refreshToken);
       toast.success('Logged in successfully');
       router.push('/dashboard/documents');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
-      toast.error(error.response?.data?.message || 'Invalid email or password');
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Invalid email or password';
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -156,7 +155,7 @@ export default function LoginPage() {
         </CardContent>
         <CardFooter className="flex flex-col gap-2 border-t p-4 text-center text-sm text-muted-foreground">
           <p>
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/register" className="text-primary hover:underline">
               Sign up
             </Link>

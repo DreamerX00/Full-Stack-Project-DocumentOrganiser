@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -20,18 +20,18 @@ interface RenameDialogProps {
   isLoading?: boolean;
 }
 
-export function RenameDialog({
-  open,
-  onOpenChange,
+function RenameForm({
   currentName,
   onRename,
+  onCancel,
   isLoading,
-}: RenameDialogProps) {
+}: {
+  currentName: string;
+  onRename: (newName: string) => void;
+  onCancel: () => void;
+  isLoading?: boolean;
+}) {
   const [name, setName] = useState(currentName);
-
-  useEffect(() => {
-    if (open) setName(currentName);
-  }, [open, currentName]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,41 +42,60 @@ export function RenameDialog({
   };
 
   return (
+    <form onSubmit={handleSubmit}>
+      <div className="space-y-4 py-2">
+        <div className="space-y-2">
+          <Label htmlFor="rename-input">Name</Label>
+          <Input
+            id="rename-input"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoFocus
+            onFocus={(e) => {
+              const dotIndex = e.target.value.lastIndexOf('.');
+              if (dotIndex > 0) {
+                e.target.setSelectionRange(0, dotIndex);
+              } else {
+                e.target.select();
+              }
+            }}
+          />
+        </div>
+      </div>
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={isLoading || !name.trim() || name.trim() === currentName}>
+          {isLoading ? 'Renaming...' : 'Rename'}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+}
+
+export function RenameDialog({
+  open,
+  onOpenChange,
+  currentName,
+  onRename,
+  isLoading,
+}: RenameDialogProps) {
+  return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Rename</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="rename-input">Name</Label>
-              <Input
-                id="rename-input"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                autoFocus
-                onFocus={(e) => {
-                  // Select filename without extension
-                  const dotIndex = e.target.value.lastIndexOf('.');
-                  if (dotIndex > 0) {
-                    e.target.setSelectionRange(0, dotIndex);
-                  } else {
-                    e.target.select();
-                  }
-                }}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading || !name.trim() || name.trim() === currentName}>
-              {isLoading ? 'Renaming...' : 'Rename'}
-            </Button>
-          </DialogFooter>
-        </form>
+        {open && (
+          <RenameForm
+            key={currentName}
+            currentName={currentName}
+            onRename={onRename}
+            onCancel={() => onOpenChange(false)}
+            isLoading={isLoading}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

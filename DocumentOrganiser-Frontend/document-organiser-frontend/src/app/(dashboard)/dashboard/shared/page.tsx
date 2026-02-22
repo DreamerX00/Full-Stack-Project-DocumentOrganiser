@@ -10,6 +10,78 @@ import { FileText, Folder, Trash2, Users } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/utils/format';
 import type { SharedItemResponse } from '@/lib/types';
 
+function ShareList({
+  items,
+  isLoading,
+  showRevoke = false,
+  onRevoke,
+}: {
+  items: SharedItemResponse[];
+  isLoading: boolean;
+  showRevoke?: boolean;
+  onRevoke?: (id: string) => void;
+}) {
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-20 w-full" />
+        ))}
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
+        <h3 className="text-lg font-medium">No shared items</h3>
+        <p className="text-sm text-muted-foreground mt-1">
+          {showRevoke ? "You haven't shared anything yet" : "Nothing has been shared with you yet"}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {items.map((share) => (
+        <Card key={share.id}>
+          <CardContent className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              {share.itemType === 'FOLDER' ? (
+                <Folder className="h-8 w-8 text-amber-500" />
+              ) : (
+                <FileText className="h-8 w-8 text-blue-500" />
+              )}
+              <div>
+                <p className="font-medium">{share.itemName || 'Unnamed Document'}</p>
+                <p className="text-xs text-muted-foreground">
+                  {showRevoke ? `Shared with ${share.sharedWithEmail}` : `Shared by ${share.sharedByName}`}
+                  {' · '}
+                  {formatRelativeTime(share.createdAt)}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">{share.permission}</Badge>
+              {showRevoke && onRevoke && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onRevoke(share.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 export default function SharedPage() {
   const { data: withMeData, isLoading: loadingWithMe } = useDocumentsSharedWithMe();
   const { data: byMeData, isLoading: loadingByMe } = useDocumentsSharedByMe();
@@ -17,76 +89,6 @@ export default function SharedPage() {
 
   const sharedWithMe = withMeData?.content ?? [];
   const sharedByMe = byMeData?.content ?? [];
-
-  const ShareList = ({
-    items,
-    isLoading,
-    showRevoke = false,
-  }: {
-    items: SharedItemResponse[];
-    isLoading: boolean;
-    showRevoke?: boolean;
-  }) => {
-    if (isLoading) {
-      return (
-        <div className="space-y-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-20 w-full" />
-          ))}
-        </div>
-      );
-    }
-
-    if (items.length === 0) {
-      return (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
-          <h3 className="text-lg font-medium">No shared items</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            {showRevoke ? "You haven't shared anything yet" : "Nothing has been shared with you yet"}
-          </p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-3">
-        {items.map((share) => (
-          <Card key={share.id}>
-            <CardContent className="flex items-center justify-between p-4">
-              <div className="flex items-center gap-3">
-                {share.itemType === 'FOLDER' ? (
-                  <Folder className="h-8 w-8 text-amber-500" />
-                ) : (
-                  <FileText className="h-8 w-8 text-blue-500" />
-                )}
-                <div>
-                  <p className="font-medium">{share.itemName || 'Unnamed Document'}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {showRevoke ? `Shared with ${share.sharedWithEmail}` : `Shared by ${share.sharedByName}`}
-                    {' · '}
-                    {formatRelativeTime(share.createdAt)}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary">{share.permission}</Badge>
-                {showRevoke && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => revokeShare.mutate(share.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  };
 
   return (
     <div className="space-y-6 p-6">
@@ -104,7 +106,7 @@ export default function SharedPage() {
           <ShareList items={sharedWithMe} isLoading={loadingWithMe} />
         </TabsContent>
         <TabsContent value="by-me" className="mt-4">
-          <ShareList items={sharedByMe} isLoading={loadingByMe} showRevoke />
+          <ShareList items={sharedByMe} isLoading={loadingByMe} showRevoke onRevoke={(id) => revokeShare.mutate(id)} />
         </TabsContent>
       </Tabs>
     </div>
