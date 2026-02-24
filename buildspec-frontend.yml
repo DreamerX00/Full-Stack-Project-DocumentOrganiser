@@ -19,7 +19,7 @@ env:
     AWS_DEFAULT_REGION: us-east-1
     AWS_ACCOUNT_ID: "154370341959"
     IMAGE_REPO: full-stack-docker/doc-frontend
-    IMAGE_TAG: "3.0.6"
+    IMAGE_TAG: "3.0.8"
     BACKEND_INTERNAL_URL: http://backend:8080/api/v1
 
 phases:
