@@ -19,7 +19,7 @@ import java.util.UUID;
  */
 public interface DocumentService {
 
-    DocumentResponse uploadDocument(UUID userId, UUID folderId, MultipartFile file);
+    DocumentResponse uploadDocument(UUID userId, UUID folderId, MultipartFile file, String conflictResolution);
 
     DocumentResponse getDocument(UUID userId, UUID documentId);
 

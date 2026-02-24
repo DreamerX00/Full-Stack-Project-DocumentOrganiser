@@ -39,6 +39,8 @@ export const useAuthStore = create<AuthState>()(
         if (typeof window !== 'undefined') {
           localStorage.setItem('accessToken', accessToken);
           localStorage.setItem('refreshToken', refreshToken);
+          // Set a cookie so the middleware can detect authentication
+          document.cookie = 'auth-token=1; path=/; SameSite=Lax';
         }
         set({
           user,
@@ -56,6 +58,8 @@ export const useAuthStore = create<AuthState>()(
         if (typeof window !== 'undefined') {
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
+          // Clear the auth cookie so middleware redirects to login
+          document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
         }
         set({
           user: null,

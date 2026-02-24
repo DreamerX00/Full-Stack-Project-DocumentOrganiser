@@ -68,7 +68,7 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     @Transactional
-    public DocumentResponse uploadDocument(UUID userId, UUID folderId, MultipartFile file) {
+    public DocumentResponse uploadDocument(UUID userId, UUID folderId, MultipartFile file, String conflictResolution) {
         if (file.isEmpty()) {
             throw new ValidationException("File is empty");
         }
@@ -93,12 +93,52 @@ public class DocumentServiceImpl implements DocumentService {
             String mimeType = fileTypeUtil.detectMimeType(file);
             String extension = fileTypeUtil.getFileExtension(originalName);
             DocumentCategory category = fileTypeUtil.categorizeDocument(originalName, mimeType);
+            String baseName = fileTypeUtil.getFileNameWithoutExtension(originalName);
+
+            // ── Conflict detection ─────────────────────────────────────
+            boolean nameConflict = (folderId != null)
+                    ? documentRepository.existsByUserIdAndFolderIdAndNameAndIsDeletedFalse(userId, folderId, baseName)
+                    : documentRepository.existsByUserIdAndFolderIsNullAndNameAndIsDeletedFalse(userId, baseName);
+
+            if (nameConflict) {
+                String resolution = conflictResolution == null ? "error" : conflictResolution.toLowerCase();
+                switch (resolution) {
+                    case "replace" -> {
+                        // Soft-delete the existing document
+                        java.util.Optional<Document> existing = (folderId != null)
+                                ? documentRepository.findFirstByUserIdAndFolderIdAndNameAndIsDeletedFalse(userId, folderId, baseName)
+                                : documentRepository.findFirstByUserIdAndFolderIsNullAndNameAndIsDeletedFalse(userId, baseName);
+                        existing.ifPresent(doc -> {
+                            doc.setIsDeleted(true);
+                            doc.setDeletedAt(Instant.now());
+                            documentRepository.save(doc);
+                        });
+                    }
+                    case "keepboth" -> {
+                        // Rename the new file with a numeric suffix
+                        int counter = 1;
+                        String candidate = baseName + " (" + counter + ")";
+                        while ((folderId != null)
+                                ? documentRepository.existsByUserIdAndFolderIdAndNameAndIsDeletedFalse(userId, folderId, candidate)
+                                : documentRepository.existsByUserIdAndFolderIsNullAndNameAndIsDeletedFalse(userId, candidate)) {
+                            counter++;
+                            candidate = baseName + " (" + counter + ")";
+                        }
+                        baseName = candidate;
+                    }
+                    default -> throw new DuplicateResourceException(
+                            "A file named '" + baseName + "' already exists in this location");
+                }
+            }
 
             // Generate unique storage key
             String storageKey = generateStorageKey(userId, originalName);
 
+            // Read file bytes once — avoids double-consuming the InputStream
+            byte[] fileBytes = file.getBytes();
+
             // Calculate checksum
-            String checksum = calculateChecksum(file.getInputStream());
+            String checksum = calculateChecksumFromBytes(fileBytes);
 
             // Check for duplicate files (same content, different name/location)
             if (checksum != null) {
@@ -108,12 +148,13 @@ public class DocumentServiceImpl implements DocumentService {
                                 originalName, existing.getOriginalName(), existing.getId()));
             }
 
-            // Upload to storage
-            storageService.uploadFile(storageKey, file.getInputStream(), file.getSize(), mimeType);
+            // Upload to storage using the already-buffered bytes
+            storageService.uploadFile(storageKey, new java.io.ByteArrayInputStream(fileBytes), fileBytes.length, mimeType);
+            final String resolvedName = baseName;
 
             // Create document entity
             Document document = Document.builder()
-                    .name(fileTypeUtil.getFileNameWithoutExtension(originalName))
+                    .name(resolvedName)
                     .originalName(originalName)
                     .fileSize(file.getSize())
                     .fileType(extension)
@@ -234,9 +275,13 @@ public class DocumentServiceImpl implements DocumentService {
                     .orElseThrow(() -> new ResourceNotFoundException("Target folder", request.getTargetFolderId().toString()));
         }
 
-        // Check for duplicate name in target folder
-        if (documentRepository.existsByUserIdAndFolderIdAndNameAndIsDeletedFalse(
-                userId, request.getTargetFolderId(), document.getName())) {
+        // Check for duplicate name in target folder (handles null = root correctly)
+        boolean moveConflict = (request.getTargetFolderId() != null)
+                ? documentRepository.existsByUserIdAndFolderIdAndNameAndIsDeletedFalse(
+                        userId, request.getTargetFolderId(), document.getName())
+                : documentRepository.existsByUserIdAndFolderIsNullAndNameAndIsDeletedFalse(
+                        userId, document.getName());
+        if (moveConflict) {
             throw new DuplicateResourceException("Document", document.getName());
         }
 
@@ -439,6 +484,17 @@ public class DocumentServiceImpl implements DocumentService {
             while ((bytesRead = inputStream.read(buffer)) != -1) {
                 digest.update(buffer, 0, bytesRead);
             }
+            return HexFormat.of().formatHex(digest.digest());
+        } catch (Exception e) {
+            log.warn("Failed to calculate checksum", e);
+            return null;
+        }
+    }
+
+    private String calculateChecksumFromBytes(byte[] bytes) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            digest.update(bytes);
             return HexFormat.of().formatHex(digest.digest());
         } catch (Exception e) {
             log.warn("Failed to calculate checksum", e);

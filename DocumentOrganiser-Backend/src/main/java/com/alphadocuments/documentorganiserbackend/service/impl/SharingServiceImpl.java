@@ -3,6 +3,7 @@ package com.alphadocuments.documentorganiserbackend.service.impl;
 import com.alphadocuments.documentorganiserbackend.dto.request.CreateShareLinkRequest;
 import com.alphadocuments.documentorganiserbackend.dto.request.ShareWithUserRequest;
 import com.alphadocuments.documentorganiserbackend.dto.response.DocumentResponse;
+import com.alphadocuments.documentorganiserbackend.dto.response.FolderResponse;
 import com.alphadocuments.documentorganiserbackend.dto.response.ShareLinkResponse;
 import com.alphadocuments.documentorganiserbackend.dto.response.SharedItemResponse;
 import com.alphadocuments.documentorganiserbackend.entity.*;
@@ -306,6 +307,28 @@ public class SharingServiceImpl implements SharingService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public DocumentResponse getDownloadMetadata(String token, String password) {
+        ShareLink shareLink = validateAndGetShareLink(token, password);
+
+        if (shareLink.getDocument() == null) {
+            throw new ValidationException("This link is not for a document");
+        }
+
+        Document document = shareLink.getDocument();
+        return DocumentResponse.builder()
+                .id(document.getId())
+                .name(document.getName())
+                .originalName(document.getOriginalName())
+                .fileSize(document.getFileSize())
+                .fileType(document.getFileType())
+                .mimeType(document.getMimeType())
+                .category(document.getCategory())
+                .createdAt(document.getCreatedAt())
+                .build();
+    }
+
+    @Override
     @Transactional
     public Resource downloadDocumentByShareLink(String token, String password) {
         ShareLink shareLink = validateAndGetShareLink(token, password);
@@ -314,12 +337,73 @@ public class SharingServiceImpl implements SharingService {
             throw new ValidationException("This link is not for a document");
         }
 
-        // Increment access count
-        shareLinkRepository.incrementAccessCount(shareLink.getId());
+        // Access count is NOT incremented here — it is already
+        // incremented once in getDocumentByShareLink() which the
+        // controller calls first.  Counting here as well would
+        // cause a double-increment for every download.
 
         Document document = shareLink.getDocument();
         InputStream inputStream = storageService.downloadFile(document.getStorageKey());
         return new InputStreamResource(inputStream);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String getShareLinkType(String token, String password) {
+        ShareLink shareLink = validateAndGetShareLink(token, password);
+        return shareLink.getDocument() != null ? "DOCUMENT" : "FOLDER";
+    }
+
+    @Override
+    @Transactional
+    public FolderResponse getFolderByShareLink(String token, String password) {
+        ShareLink shareLink = validateAndGetShareLink(token, password);
+
+        if (shareLink.getFolder() == null) {
+            throw new ValidationException("This link is not for a folder");
+        }
+
+        // Increment access count
+        shareLinkRepository.incrementAccessCount(shareLink.getId());
+
+        Folder folder = shareLink.getFolder();
+        return FolderResponse.builder()
+                .id(folder.getId())
+                .name(folder.getName())
+                .path(folder.getPath())
+                .color(folder.getColor())
+                .description(folder.getDescription())
+                .createdAt(folder.getCreatedAt())
+                .documentCount(folder.getDocuments() != null ? (int) folder.getDocuments().stream()
+                        .filter(d -> !d.getIsDeleted()).count() : 0)
+                .subFolderCount(folder.getSubFolders() != null ? (int) folder.getSubFolders().stream()
+                        .filter(sf -> !sf.getIsDeleted()).count() : 0)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DocumentResponse> getFolderDocumentsByShareLink(String token, String password) {
+        ShareLink shareLink = validateAndGetShareLink(token, password);
+
+        if (shareLink.getFolder() == null) {
+            throw new ValidationException("This link is not for a folder");
+        }
+
+        Folder folder = shareLink.getFolder();
+        return folder.getDocuments().stream()
+                .filter(d -> !d.getIsDeleted())
+                .map(document -> DocumentResponse.builder()
+                        .id(document.getId())
+                        .name(document.getName())
+                        .originalName(document.getOriginalName())
+                        .fileSize(document.getFileSize())
+                        .fileType(document.getFileType())
+                        .mimeType(document.getMimeType())
+                        .category(document.getCategory())
+                        .createdAt(document.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     private ShareLink validateAndGetShareLink(String token, String password) {
@@ -381,7 +465,7 @@ public class SharingServiceImpl implements SharingService {
         return ShareLinkResponse.builder()
                 .id(sl.getId())
                 .token(sl.getToken())
-                .url(baseUrl + "/api/share/" + sl.getToken())
+                .url(baseUrl + "/share/" + sl.getToken())
                 .itemType(itemType)
                 .itemId(itemId)
                 .itemName(itemName)

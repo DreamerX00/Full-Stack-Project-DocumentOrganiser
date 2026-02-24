@@ -105,7 +105,9 @@ apiClient.interceptors.response.use(
         localStorage.removeItem('refreshToken');
         // Clear any queued subscribers so they don't hang
         refreshSubscribers = [];
-        // Don't hard-redirect here — let React components handle auth state.
+        // Hard logout: clear Zustand auth store and redirect to login
+        useAuthStore.getState().logout();
+        window.location.replace('/login');
         return Promise.reject(error);
       } finally {
         isRefreshing = false;

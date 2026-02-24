@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -69,6 +69,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { login, isAuthenticated } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   // Redirect already-authenticated users to the dashboard
   useEffect(() => {
@@ -87,6 +88,8 @@ export default function LoginPage() {
   });
 
   const onEmailLogin = async (data: LoginFormValues) => {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     setIsLoading(true);
     try {
       const response = await authApi.login(data);
@@ -100,6 +103,7 @@ export default function LoginPage() {
         'Invalid email or password';
       toast.error(message);
     } finally {
+      isSubmittingRef.current = false;
       setIsLoading(false);
     }
   };

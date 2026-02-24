@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, use } from 'react';
+import { useEffect, useState, use } from 'react';
 import { sharesApi } from '@/lib/api/shares';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,8 +17,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import Image from 'next/image';
-import { Download, AlertTriangle, Eye, EyeOff, Loader2 } from 'lucide-react';
-import { formatFileSize, downloadBlob, getCategoryInfo } from '@/lib/utils/format';
+import { Download, AlertTriangle, Eye, EyeOff, Loader2, Folder, FileText } from 'lucide-react';
+import { formatFileSize, formatDate, downloadBlob, getCategoryInfo } from '@/lib/utils/format';
 import {
   getPreviewType,
   needsTextContent,
@@ -29,14 +29,17 @@ import {
 } from '@/lib/utils/preview';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import type { DocumentResponse } from '@/lib/types';
+import type { DocumentResponse, FolderResponse } from '@/lib/types';
 
 // Max file size (in bytes) to auto-load preview content
 const AUTO_PREVIEW_LIMIT = 15 * 1024 * 1024; // 15 MB
 
 export default function PublicSharePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
+  const [shareType, setShareType] = useState<'DOCUMENT' | 'FOLDER' | null>(null);
   const [doc, setDoc] = useState<DocumentResponse | null>(null);
+  const [folder, setFolder] = useState<FolderResponse | null>(null);
+  const [folderDocs, setFolderDocs] = useState<DocumentResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,12 +58,25 @@ export default function PublicSharePage({ params }: { params: Promise<{ token: s
   useEffect(() => {
     const fetchShare = async () => {
       try {
-        const data = await sharesApi.getPublicShare(token);
-        setDoc(data);
-        // Auto-show preview for small previewable files
-        const type = getPreviewType(data.mimeType, data.name);
-        if (type !== 'fallback' && type !== 'office' && data.fileSize <= AUTO_PREVIEW_LIMIT) {
-          setShowPreview(true);
+        // Detect link type first
+        const type = await sharesApi.getShareLinkType(token);
+        setShareType(type);
+
+        if (type === 'FOLDER') {
+          const [folderData, docsData] = await Promise.all([
+            sharesApi.getPublicFolderShare(token),
+            sharesApi.getPublicFolderDocuments(token),
+          ]);
+          setFolder(folderData);
+          setFolderDocs(docsData);
+        } else {
+          const data = await sharesApi.getPublicShare(token);
+          setDoc(data);
+          // Auto-show preview for small previewable files
+          const previewT = getPreviewType(data.mimeType, data.name);
+          if (previewT !== 'fallback' && previewT !== 'office' && data.fileSize <= AUTO_PREVIEW_LIMIT) {
+            setShowPreview(true);
+          }
         }
       } catch {
         setError('This share link is invalid or has expired.');
@@ -150,8 +166,61 @@ export default function PublicSharePage({ params }: { params: Promise<{ token: s
     );
   }
 
-  const categoryInfo = doc ? getCategoryInfo(doc.category) : null;
-  const CategoryIcon = categoryInfo?.icon;
+  // Folder share view
+  if (shareType === 'FOLDER' && folder) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-2xl">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 rounded-xl bg-primary/10 p-4 w-fit">
+              <Image src="/logo.svg" alt="DocOrganiser" width={40} height={40} className="h-10 w-10" />
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <Folder className="h-5 w-5 text-primary" />
+              <CardTitle className="text-xl">{folder.name}</CardTitle>
+            </div>
+            {folder.description && (
+              <p className="text-sm text-muted-foreground mt-1">{folder.description}</p>
+            )}
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-4 text-sm text-muted-foreground">
+              <span>{folder.documentCount} file{folder.documentCount !== 1 ? 's' : ''}</span>
+              {folder.createdAt && <span>Shared {formatDate(folder.createdAt as unknown as string)}</span>}
+            </div>
+            <Separator />
+            {folderDocs.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">This folder is empty.</p>
+            ) : (
+              <ScrollArea className="max-h-96">
+                <div className="space-y-2">
+                  {folderDocs.map((d) => {
+                    const info = getCategoryInfo(d.category);
+                    const Icon = info?.icon ?? FileText;
+                    return (
+                      <div
+                        key={d.id}
+                        className="flex items-center gap-3 rounded-lg border p-3 text-sm"
+                      >
+                        <div className={cn('rounded-md p-2', info?.bgColor)}>
+                          <Icon className={cn('h-4 w-4', info?.color)} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{d.name}</p>
+                          <p className="text-xs text-muted-foreground">{formatFileSize(d.fileSize)}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            )}
+            <p className="text-xs text-center text-muted-foreground">Powered by DocOrganiser</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">

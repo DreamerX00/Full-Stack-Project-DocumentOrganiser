@@ -65,6 +65,12 @@ public interface DocumentRepository extends JpaRepository<Document, UUID>, JpaSp
 
     boolean existsByUserIdAndFolderIdAndNameAndIsDeletedFalse(UUID userId, UUID folderId, String name);
 
+    boolean existsByUserIdAndFolderIsNullAndNameAndIsDeletedFalse(UUID userId, String name);
+
+    Optional<Document> findFirstByUserIdAndFolderIdAndNameAndIsDeletedFalse(UUID userId, UUID folderId, String name);
+
+    Optional<Document> findFirstByUserIdAndFolderIsNullAndNameAndIsDeletedFalse(UUID userId, String name);
+
     /**
      * Find existing document with same checksum for deduplication.
      */

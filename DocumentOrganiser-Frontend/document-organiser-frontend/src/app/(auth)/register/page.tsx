@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -75,6 +75,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const { login, isAuthenticated } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   // Redirect already-authenticated users to the dashboard
   useEffect(() => {
@@ -94,6 +95,8 @@ export default function RegisterPage() {
   });
 
   const onSubmit = async (data: RegisterFormValues) => {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     setIsLoading(true);
     try {
       const response = await authApi.register({
@@ -111,6 +114,7 @@ export default function RegisterPage() {
         'Failed to create account';
       toast.error(message);
     } finally {
+      isSubmittingRef.current = false;
       setIsLoading(false);
     }
   };

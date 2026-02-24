@@ -41,13 +41,19 @@ public class DocumentController {
     private final DocumentService documentService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Upload document", description = "Upload a new document")
+    @Operation(summary = "Upload document",
+            description = "Upload a document. On name conflict, the default is to return 409. "
+                    + "Pass conflictResolution=replace to overwrite the existing file, "
+                    + "or conflictResolution=keepBoth to rename the upload with a numeric suffix.")
     public ResponseEntity<ApiResponse<DocumentResponse>> uploadDocument(
             @CurrentUser UserPrincipal userPrincipal,
             @RequestParam(value = "folderId", required = false) UUID folderId,
-            @RequestParam("file") MultipartFile file) {
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "conflictResolution", required = false, defaultValue = "error")
+                    String conflictResolution) {
 
-        DocumentResponse document = documentService.uploadDocument(userPrincipal.getId(), folderId, file);
+        DocumentResponse document = documentService.uploadDocument(
+                userPrincipal.getId(), folderId, file, conflictResolution);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(document, "Document uploaded successfully"));
     }

@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify';
 import { getFileExtension } from './format';
 
 // ── Preview type classification ──────────────────────────────────────────────
@@ -363,6 +364,27 @@ export function renderMarkdownToHtml(src: string): string {
     /^(?!<[houlpbia]|<\/|<hr|<li|<block|<pre|<code|<img|<a )(.+)$/gm,
     '<p>$1</p>'
   );
+
+  // Final sanitization pass — allowlist only safe tags/attributes.
+  // This catches any XSS vectors the regex-based renderer may have missed.
+  if (typeof window !== 'undefined') {
+    text = DOMPurify.sanitize(text, {
+      ALLOWED_TAGS: [
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'p', 'br', 'hr',
+        'strong', 'em', 'code', 'pre',
+        'a', 'img',
+        'ul', 'ol', 'li',
+        'blockquote',
+        'table', 'thead', 'tbody', 'tr', 'th', 'td',
+      ],
+      ALLOWED_ATTR: [
+        'href', 'target', 'rel', 'src', 'alt', 'style', 'class',
+      ],
+      ALLOW_DATA_ATTR: false,
+      ADD_ATTR: ['target'],
+    });
+  }
 
   return text;
 }

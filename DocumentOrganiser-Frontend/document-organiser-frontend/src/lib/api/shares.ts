@@ -7,6 +7,7 @@ import type {
   ShareWithUserRequest,
   CreateShareLinkRequest,
   DocumentResponse,
+  FolderResponse,
 } from '@/lib/types';
 
 export const sharesApi = {
@@ -111,5 +112,32 @@ export const sharesApi = {
       responseType: 'blob',
     });
     return res.data;
+  },
+
+  // Public folder share (no auth)
+  getShareLinkType: async (token: string, password?: string): Promise<'DOCUMENT' | 'FOLDER'> => {
+    const res = await apiClient.get<ApiResponse<{ type: 'DOCUMENT' | 'FOLDER' }>>(
+      `/share/${token}/type`,
+      { params: { password } }
+    );
+    return res.data.data.type;
+  },
+
+  getPublicFolderShare: async (token: string, password?: string): Promise<FolderResponse> => {
+    const res = await apiClient.get<ApiResponse<FolderResponse>>(`/share/${token}/folder`, {
+      params: { password },
+    });
+    return res.data.data;
+  },
+
+  getPublicFolderDocuments: async (
+    token: string,
+    password?: string
+  ): Promise<DocumentResponse[]> => {
+    const res = await apiClient.get<ApiResponse<DocumentResponse[]>>(
+      `/share/${token}/folder/documents`,
+      { params: { password } }
+    );
+    return res.data.data;
   },
 };

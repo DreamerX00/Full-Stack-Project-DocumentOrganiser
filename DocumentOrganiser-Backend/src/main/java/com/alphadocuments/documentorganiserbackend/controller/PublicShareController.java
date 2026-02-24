@@ -2,6 +2,7 @@ package com.alphadocuments.documentorganiserbackend.controller;
 
 import com.alphadocuments.documentorganiserbackend.dto.response.ApiResponse;
 import com.alphadocuments.documentorganiserbackend.dto.response.DocumentResponse;
+import com.alphadocuments.documentorganiserbackend.dto.response.FolderResponse;
 import com.alphadocuments.documentorganiserbackend.service.SharingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -11,6 +12,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * REST controller for public share link access (no authentication required).
@@ -39,13 +43,46 @@ public class PublicShareController {
             @PathVariable String token,
             @RequestParam(required = false) String password) {
 
-        DocumentResponse document = sharingService.getDocumentByShareLink(token, password);
+        // downloadDocumentByShareLink validates the link, returns the file
+        // resource, and provides metadata — without incrementing the access
+        // count (the GET /{token} metadata endpoint already handles that).
+        DocumentResponse metadata = sharingService.getDownloadMetadata(token, password);
         Resource resource = sharingService.downloadDocumentByShareLink(token, password);
 
         return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(document.getMimeType()))
+                .contentType(MediaType.parseMediaType(metadata.getMimeType()))
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + document.getOriginalName() + "\"")
+                        "attachment; filename=\"" + metadata.getOriginalName() + "\"")
                 .body(resource);
+    }
+
+    @GetMapping("/{token}/type")
+    @Operation(summary = "Get share link type", description = "Returns whether a share link points to a DOCUMENT or FOLDER")
+    public ResponseEntity<ApiResponse<Map<String, String>>> getShareLinkType(
+            @PathVariable String token,
+            @RequestParam(required = false) String password) {
+
+        String type = sharingService.getShareLinkType(token, password);
+        return ResponseEntity.ok(ApiResponse.success(Map.of("type", type)));
+    }
+
+    @GetMapping("/{token}/folder")
+    @Operation(summary = "Get shared folder info", description = "Get folder information via share link")
+    public ResponseEntity<ApiResponse<FolderResponse>> getSharedFolder(
+            @PathVariable String token,
+            @RequestParam(required = false) String password) {
+
+        FolderResponse folder = sharingService.getFolderByShareLink(token, password);
+        return ResponseEntity.ok(ApiResponse.success(folder));
+    }
+
+    @GetMapping("/{token}/folder/documents")
+    @Operation(summary = "List folder documents", description = "List documents in a shared folder via share link")
+    public ResponseEntity<ApiResponse<List<DocumentResponse>>> getSharedFolderDocuments(
+            @PathVariable String token,
+            @RequestParam(required = false) String password) {
+
+        List<DocumentResponse> documents = sharingService.getFolderDocumentsByShareLink(token, password);
+        return ResponseEntity.ok(ApiResponse.success(documents));
     }
 }

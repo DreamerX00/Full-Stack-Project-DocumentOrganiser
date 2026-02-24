@@ -9,15 +9,21 @@ import com.alphadocuments.documentorganiserbackend.dto.response.AuthResponse;
 import com.alphadocuments.documentorganiserbackend.dto.response.UserResponse;
 import com.alphadocuments.documentorganiserbackend.security.CurrentUser;
 import com.alphadocuments.documentorganiserbackend.security.UserPrincipal;
+import com.alphadocuments.documentorganiserbackend.security.jwt.JwtTokenProvider;
 import com.alphadocuments.documentorganiserbackend.service.AuthService;
 import com.alphadocuments.documentorganiserbackend.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 /**
  * REST controller for authentication endpoints.
@@ -30,6 +36,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final UserService userService;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @PostMapping("/register")
     @Operation(summary = "Register new user", description = "Register a new user with email and password")
@@ -111,6 +118,62 @@ public class AuthController {
     public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser(@CurrentUser UserPrincipal userPrincipal) {
         UserResponse userResponse = userService.getUserProfile(userPrincipal.getId());
         return ResponseEntity.ok(ApiResponse.success(userResponse));
+    }
+
+    @PostMapping("/oauth2/exchange")
+    @Operation(summary = "Exchange OAuth2 cookies for tokens",
+            description = "Reads one-time httpOnly cookies set during OAuth2 redirect and returns tokens as JSON. Clears the cookies immediately.")
+    public ResponseEntity<ApiResponse<AuthResponse>> exchangeOAuth2Cookies(
+            HttpServletRequest request,
+            HttpServletResponse response) {
+
+        String accessToken = getCookieValue(request, "oauth2_access_token");
+        String refreshToken = getCookieValue(request, "oauth2_refresh_token");
+
+        // Always clear the cookies regardless of validity
+        clearOAuth2Cookie(response, "oauth2_access_token");
+        clearOAuth2Cookie(response, "oauth2_refresh_token");
+
+        if (accessToken == null || refreshToken == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("OAuth2 session expired or missing", "OAUTH2_EXCHANGE_FAILED"));
+        }
+
+        if (!jwtTokenProvider.validateToken(accessToken)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("Invalid access token", "OAUTH2_EXCHANGE_FAILED"));
+        }
+
+        UUID userId = jwtTokenProvider.getUserIdFromToken(accessToken);
+        UserResponse userResponse = userService.getUserProfile(userId);
+
+        AuthResponse authResponse = AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .user(userResponse)
+                .build();
+
+        return ResponseEntity.ok(ApiResponse.success(authResponse, "OAuth2 authentication successful"));
+    }
+
+    private String getCookieValue(HttpServletRequest request, String name) {
+        if (request.getCookies() == null) return null;
+        for (Cookie cookie : request.getCookies()) {
+            if (name.equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
+    }
+
+    private void clearOAuth2Cookie(HttpServletResponse response, String name) {
+        Cookie cookie = new Cookie(name, "");
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+        cookie.setAttribute("SameSite", "Lax");
+        response.addCookie(cookie);
     }
 
     private String getClientIp(HttpServletRequest request) {

@@ -130,7 +130,7 @@ public class AuthServiceImpl implements AuthService {
                 user = userRepository.save(user);
             } else {
                 try {
-                    user = createNewUser(email, name, pictureUrl, googleId, emailVerified);
+                    user = userRepository.saveAndFlush(createNewUser(email, name, pictureUrl, googleId, emailVerified));
                 } catch (DataIntegrityViolationException e) {
                     // Race condition: another request created the user concurrently
                     log.warn("Concurrent user creation detected for email {}, fetching existing user", email);
@@ -209,7 +209,7 @@ public class AuthServiceImpl implements AuthService {
                 .build();
 
         user.setUserSettings(settings);
-        return userRepository.saveAndFlush(user);
+        return user;
     }
 
     private AuthResponse generateAuthResponse(User user, String userAgent, String ipAddress) {

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const publicPaths = ['/', '/login', '/terms', '/privacy'];
+const publicPaths = ['/', '/login', '/register', '/terms', '/privacy', '/oauth2/callback'];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -21,10 +21,8 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check for NextAuth v5 session token
-  const sessionToken =
-    request.cookies.get('authjs.session-token')?.value ||
-    request.cookies.get('__Secure-authjs.session-token')?.value;
+  // Check for JWT auth cookie (set by authStore on login, cleared on logout)
+  const sessionToken = request.cookies.get('auth-token')?.value;
 
   // Redirect authenticated users away from login page
   if (pathname === '/login' && sessionToken) {
