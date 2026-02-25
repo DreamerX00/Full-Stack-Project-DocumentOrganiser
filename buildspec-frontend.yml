@@ -55,14 +55,12 @@ phases:
       - echo "=== Tagging images ==="
       - docker tag $IMAGE_REPO:$IMAGE_TAG $REGISTRY/$IMAGE_REPO:$IMAGE_TAG
       - docker tag $IMAGE_REPO:$IMAGE_TAG $REGISTRY/$IMAGE_REPO:$COMMIT_SHA
-      - docker tag $IMAGE_REPO:$IMAGE_TAG $REGISTRY/$IMAGE_REPO:latest
 
   post_build:
     commands:
       - echo "=== Pushing images to ECR ==="
       - docker push $REGISTRY/$IMAGE_REPO:$IMAGE_TAG
       - docker push $REGISTRY/$IMAGE_REPO:$COMMIT_SHA
-      - docker push $REGISTRY/$IMAGE_REPO:latest
       - echo "=== Writing image definitions file ==="
       - printf '[{"name":"doc-frontend","imageUri":"%s"}]' $REGISTRY/$IMAGE_REPO:$IMAGE_TAG > imagedefinitions.json
       - echo "Frontend build complete — pushed $REGISTRY/$IMAGE_REPO:$IMAGE_TAG"

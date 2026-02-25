@@ -108,15 +108,12 @@ jobs:
           docker build \
             -t $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
             -t $REGISTRY/$ECR_REPOSITORY:$COMMIT_SHA \
-            -t $REGISTRY/$ECR_REPOSITORY:latest \
             -f DocumentOrganiser-Backend/Dockerfile \
             DocumentOrganiser-Backend/
 
           docker push $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $REGISTRY/$ECR_REPOSITORY:$COMMIT_SHA
-          docker push $REGISTRY/$ECR_REPOSITORY:latest
 
           echo "### Backend image pushed :rocket:" >> $GITHUB_STEP_SUMMARY
           echo "- \`$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG\`" >> $GITHUB_STEP_SUMMARY
           echo "- \`$REGISTRY/$ECR_REPOSITORY:$COMMIT_SHA\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`$REGISTRY/$ECR_REPOSITORY:latest\`" >> $GITHUB_STEP_SUMMARY
