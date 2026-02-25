@@ -9,9 +9,11 @@ version: 0.2
 #   AWS_ACCOUNT_ID              – e.g. 154370341959
 #   AWS_DEFAULT_REGION          – e.g. us-east-1
 #   IMAGE_REPO                  – e.g. full-stack-docker/doc-frontend
-#   IMAGE_TAG                   – e.g. 3.0.6  (semantic version)
 #   NEXT_PUBLIC_GOOGLE_CLIENT_ID – Google OAuth client ID (build-time arg)
 #   BACKEND_INTERNAL_URL         – Internal backend URL for SSR rewrites
+#
+# IMAGE_TAG is derived automatically from the git tag (e.g. v3.0.8 → 3.0.8).
+# If no tag is present, falls back to the short commit SHA.
 # ============================================================================
 
 env:
@@ -19,7 +21,6 @@ env:
     AWS_DEFAULT_REGION: us-east-1
     AWS_ACCOUNT_ID: "154370341959"
     IMAGE_REPO: full-stack-docker/doc-frontend
-    IMAGE_TAG: "3.0.8"
     BACKEND_INTERNAL_URL: http://backend:8080/api/v1
 
 phases:
@@ -29,6 +30,16 @@ phases:
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
       - REGISTRY=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
       - COMMIT_SHA=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-8)
+      - |
+        # Derive IMAGE_TAG from git tag (strip "v" prefix) or fall back to short commit SHA
+        GIT_TAG=$(git describe --tags --exact-match 2>/dev/null || echo "")
+        if [ -n "$GIT_TAG" ]; then
+          IMAGE_TAG="${GIT_TAG#v}"
+        else
+          IMAGE_TAG="$COMMIT_SHA"
+        fi
+        export IMAGE_TAG
+        echo "IMAGE_TAG=$IMAGE_TAG" >> $CODEBUILD_ENV_FILE
       - echo "Building frontend image — version $IMAGE_TAG (commit $COMMIT_SHA)"
 
   build:
@@ -44,12 +55,14 @@ phases:
       - echo "=== Tagging images ==="
       - docker tag $IMAGE_REPO:$IMAGE_TAG $REGISTRY/$IMAGE_REPO:$IMAGE_TAG
       - docker tag $IMAGE_REPO:$IMAGE_TAG $REGISTRY/$IMAGE_REPO:$COMMIT_SHA
+      - docker tag $IMAGE_REPO:$IMAGE_TAG $REGISTRY/$IMAGE_REPO:latest
 
   post_build:
     commands:
       - echo "=== Pushing images to ECR ==="
       - docker push $REGISTRY/$IMAGE_REPO:$IMAGE_TAG
       - docker push $REGISTRY/$IMAGE_REPO:$COMMIT_SHA
+      - docker push $REGISTRY/$IMAGE_REPO:latest
       - echo "=== Writing image definitions file ==="
       - printf '[{"name":"doc-frontend","imageUri":"%s"}]' $REGISTRY/$IMAGE_REPO:$IMAGE_TAG > imagedefinitions.json
       - echo "Frontend build complete — pushed $REGISTRY/$IMAGE_REPO:$IMAGE_TAG"

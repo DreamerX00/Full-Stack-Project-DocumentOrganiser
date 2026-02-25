@@ -58,6 +58,7 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
+          # Tag is like "v3.0.8" → strip the "v" prefix → "3.0.8"
           VERSION=${GITHUB_REF_NAME#v}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Deploying version: $VERSION"
@@ -87,12 +88,15 @@ jobs:
             --build-arg BACKEND_INTERNAL_URL=${BACKEND_INTERNAL_URL:-http://backend:8080/api/v1} \
             -t $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
             -t $REGISTRY/$ECR_REPOSITORY:$COMMIT_SHA \
+            -t $REGISTRY/$ECR_REPOSITORY:latest \
             -f DocumentOrganiser-Frontend/document-organiser-frontend/Dockerfile \
             DocumentOrganiser-Frontend/document-organiser-frontend/
 
           docker push $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $REGISTRY/$ECR_REPOSITORY:$COMMIT_SHA
+          docker push $REGISTRY/$ECR_REPOSITORY:latest
 
           echo "### Frontend image pushed :rocket:" >> $GITHUB_STEP_SUMMARY
           echo "- \`$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG\`" >> $GITHUB_STEP_SUMMARY
           echo "- \`$REGISTRY/$ECR_REPOSITORY:$COMMIT_SHA\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`$REGISTRY/$ECR_REPOSITORY:latest\`" >> $GITHUB_STEP_SUMMARY

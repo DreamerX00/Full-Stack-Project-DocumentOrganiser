@@ -1,6 +1,10 @@
 name: CI – Backend
 
 on:
+  push:
+    branches: [master]
+    paths:
+      - "DocumentOrganiser-Backend/**"
   pull_request:
     branches: [master]
     paths:

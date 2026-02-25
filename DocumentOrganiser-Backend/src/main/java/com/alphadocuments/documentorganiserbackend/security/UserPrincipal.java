@@ -28,6 +28,7 @@ public class UserPrincipal implements UserDetails, OAuth2User {
     private String email;
     private String name;
     private String profilePicture;
+    private String password;
     private Collection<? extends GrantedAuthority> authorities;
     private Map<String, Object> attributes;
 
@@ -37,6 +38,7 @@ public class UserPrincipal implements UserDetails, OAuth2User {
                 .email(user.getEmail())
                 .name(user.getName())
                 .profilePicture(user.getProfilePicture())
+                .password(user.getPassword())
                 .authorities(Collections.singletonList(
                         new SimpleGrantedAuthority("ROLE_" + user.getRole().name())))
                 .build();
@@ -50,7 +52,7 @@ public class UserPrincipal implements UserDetails, OAuth2User {
 
     @Override
     public String getPassword() {
-        return null; // No password for OAuth2 users
+        return password;
     }
 
     @Override
