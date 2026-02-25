@@ -74,7 +74,11 @@ export default function PublicSharePage({ params }: { params: Promise<{ token: s
           setDoc(data);
           // Auto-show preview for small previewable files
           const previewT = getPreviewType(data.mimeType, data.name);
-          if (previewT !== 'fallback' && previewT !== 'office' && data.fileSize <= AUTO_PREVIEW_LIMIT) {
+          if (
+            previewT !== 'fallback' &&
+            previewT !== 'office' &&
+            data.fileSize <= AUTO_PREVIEW_LIMIT
+          ) {
             setShowPreview(true);
           }
         }
@@ -173,7 +177,13 @@ export default function PublicSharePage({ params }: { params: Promise<{ token: s
         <Card className="w-full max-w-2xl">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 rounded-xl bg-primary/10 p-4 w-fit">
-              <Image src="/logo.svg" alt="DocOrganiser" width={40} height={40} className="h-10 w-10" />
+              <Image
+                src="/logo.svg"
+                alt="DocOrganiser"
+                width={40}
+                height={40}
+                className="h-10 w-10"
+              />
             </div>
             <div className="flex items-center justify-center gap-2">
               <Folder className="h-5 w-5 text-primary" />
@@ -185,12 +195,18 @@ export default function PublicSharePage({ params }: { params: Promise<{ token: s
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-4 text-sm text-muted-foreground">
-              <span>{folder.documentCount} file{folder.documentCount !== 1 ? 's' : ''}</span>
-              {folder.createdAt && <span>Shared {formatDate(folder.createdAt as unknown as string)}</span>}
+              <span>
+                {folder.documentCount} file{folder.documentCount !== 1 ? 's' : ''}
+              </span>
+              {folder.createdAt && (
+                <span>Shared {formatDate(folder.createdAt as unknown as string)}</span>
+              )}
             </div>
             <Separator />
             {folderDocs.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">This folder is empty.</p>
+              <p className="text-sm text-muted-foreground text-center py-6">
+                This folder is empty.
+              </p>
             ) : (
               <ScrollArea className="max-h-96">
                 <div className="space-y-2">
@@ -207,7 +223,9 @@ export default function PublicSharePage({ params }: { params: Promise<{ token: s
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{d.name}</p>
-                          <p className="text-xs text-muted-foreground">{formatFileSize(d.fileSize)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatFileSize(d.fileSize)}
+                          </p>
                         </div>
                       </div>
                     );
