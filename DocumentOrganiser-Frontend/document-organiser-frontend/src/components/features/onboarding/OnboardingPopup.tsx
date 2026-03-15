@@ -138,7 +138,10 @@ export function OnboardingPopup({ open, onComplete, onSkip }: OnboardingPopupPro
                 checked={dontAskAgain}
                 onCheckedChange={(checked) => setDontAskAgain(checked === true)}
               />
-              <label htmlFor="dont-ask" className="text-xs text-muted-foreground cursor-pointer select-none">
+              <label
+                htmlFor="dont-ask"
+                className="text-xs text-muted-foreground cursor-pointer select-none"
+              >
                 Don&apos;t ask me again
               </label>
             </div>
