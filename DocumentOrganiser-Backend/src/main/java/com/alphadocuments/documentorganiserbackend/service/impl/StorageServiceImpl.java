@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
@@ -20,6 +22,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 import java.io.InputStream;
 import java.net.URI;
 import java.time.Duration;
+import java.util.Locale;
 
 /**
  * Implementation of StorageService using AWS S3 / MinIO.
@@ -35,17 +38,14 @@ public class StorageServiceImpl implements StorageService {
 
     @PostConstruct
     public void init() {
-        AwsBasicCredentials credentials = AwsBasicCredentials.create(
-                storageProperties.getAccessKey(),
-                storageProperties.getSecretKey()
-        );
+        AwsCredentialsProvider credentialsProvider = resolveCredentialsProvider();
 
         var clientBuilder = S3Client.builder()
-                .credentialsProvider(StaticCredentialsProvider.create(credentials))
+                .credentialsProvider(credentialsProvider)
                 .region(Region.of(storageProperties.getRegion()));
 
         var presignerBuilder = S3Presigner.builder()
-                .credentialsProvider(StaticCredentialsProvider.create(credentials))
+                .credentialsProvider(credentialsProvider)
                 .region(Region.of(storageProperties.getRegion()));
 
         // For MinIO or custom S3 endpoints
@@ -59,6 +59,53 @@ public class StorageServiceImpl implements StorageService {
         this.s3Presigner = presignerBuilder.build();
 
         initializeBucket();
+    }
+
+    private AwsCredentialsProvider resolveCredentialsProvider() {
+        String accessKey = normalize(storageProperties.getAccessKey());
+        String secretKey = normalize(storageProperties.getSecretKey());
+        boolean hasAccessKey = accessKey != null;
+        boolean hasSecretKey = secretKey != null;
+        boolean customEndpointConfigured = normalize(storageProperties.getEndpoint()) != null;
+        String storageType = normalize(storageProperties.getType());
+
+        if (hasAccessKey != hasSecretKey) {
+            throw new IllegalStateException(
+                    "Invalid storage configuration: both storage.access-key and storage.secret-key must be set together."
+            );
+        }
+
+        if (hasAccessKey) {
+            log.info("Using explicit S3 credentials");
+            return StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey));
+        }
+
+        if ("minio".equalsIgnoreCase(storageType) || customEndpointConfigured) {
+            throw new IllegalStateException(
+                    "Invalid storage configuration: explicit credentials are required for MinIO or custom S3 endpoints."
+            );
+        }
+
+        log.info("Using default AWS credentials chain");
+        return DefaultCredentialsProvider.create();
+    }
+
+    private String normalize(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+
+        String lowerCased = trimmed.toLowerCase(Locale.ROOT);
+        if (lowerCased.startsWith("${") && lowerCased.endsWith("}")) {
+            return null;
+        }
+
+        return trimmed;
     }
 
     @Override

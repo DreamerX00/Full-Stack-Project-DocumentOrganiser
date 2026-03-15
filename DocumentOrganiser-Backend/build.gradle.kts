@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.alphaDocuments"
-version = "0.0.1-SNAPSHOT"
+version = "3.1.6"
 description = "DocumentOrganiser-Backend"
 
 java {
@@ -17,6 +17,9 @@ java {
 configurations {
     compileOnly {
         extendsFrom(configurations.annotationProcessor.get())
+    }
+    all {
+        exclude(group = "commons-logging", module = "commons-logging")
     }
 }
 
@@ -128,4 +131,3 @@ tasks.withType<JavaCompile> {
         "-Amapstruct.unmappedTargetPolicy=IGNORE"
     ))
 }
-
