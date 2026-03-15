@@ -104,7 +104,7 @@ export function AppSidebar({ className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'flex h-screen flex-col border-r bg-card transition-all duration-300',
+        'flex h-screen flex-col border-r bg-card transition-all duration-300 overflow-hidden',
         sidebarCollapsed ? 'w-16' : 'w-64',
         className
       )}
@@ -142,7 +142,7 @@ export function AppSidebar({ className }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <ScrollArea className="flex-1 px-3">
+      <ScrollArea className="flex-1 overflow-hidden px-3">
         <nav className="flex flex-col gap-1">
           {navItems.map((item) => (
             <NavLink key={item.href} {...item} />

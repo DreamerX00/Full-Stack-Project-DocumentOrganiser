@@ -170,7 +170,7 @@ export function FileCard({
                 <DropdownMenuItem onClick={() => onRename?.(doc)}>
                   <Pencil className="mr-2 h-4 w-4" /> Rename
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onShare?.(doc)}>
+                <DropdownMenuItem onClick={() => setTimeout(() => onShare?.(doc), 0)}>
                   <Share2 className="mr-2 h-4 w-4" /> Share
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onMove?.(doc)}>
@@ -200,7 +200,7 @@ export function FileCard({
         <ContextMenuItem onClick={() => onRename?.(doc)}>
           <Pencil className="mr-2 h-4 w-4" /> Rename
         </ContextMenuItem>
-        <ContextMenuItem onClick={() => onShare?.(doc)}>
+        <ContextMenuItem onClick={() => setTimeout(() => onShare?.(doc), 0)}>
           <Share2 className="mr-2 h-4 w-4" /> Share
         </ContextMenuItem>
         <ContextMenuItem onClick={() => onMove?.(doc)}>

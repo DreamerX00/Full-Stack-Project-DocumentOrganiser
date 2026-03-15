@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,7 @@ export function OnboardingPopup({ open, onComplete, onSkip }: OnboardingPopupPro
   const [profession, setProfession] = useState<string | undefined>();
   const [subcategory, setSubcategory] = useState<string | undefined>();
   const [specialization, setSpecialization] = useState<string | undefined>();
+  const [dontAskAgain, setDontAskAgain] = useState(false);
 
   const handleNext = () => {
     if (step === 1 && profession) setStep(2);
@@ -129,14 +131,26 @@ export function OnboardingPopup({ open, onComplete, onSkip }: OnboardingPopupPro
         )}
 
         <DialogFooter className="flex justify-between mt-4">
-          <Button
-            variant="ghost"
-            onClick={handleSkip}
-            type="button"
-            className="text-muted-foreground"
-          >
-            Skip for now
-          </Button>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="dont-ask"
+                checked={dontAskAgain}
+                onCheckedChange={(checked) => setDontAskAgain(checked === true)}
+              />
+              <label htmlFor="dont-ask" className="text-xs text-muted-foreground cursor-pointer select-none">
+                Don&apos;t ask me again
+              </label>
+            </div>
+            <Button
+              variant="ghost"
+              onClick={handleSkip}
+              type="button"
+              className="text-muted-foreground"
+            >
+              Skip
+            </Button>
+          </div>
           <div className="flex gap-2">
             {step > 1 && (
               <Button variant="outline" onClick={handleBack} type="button">

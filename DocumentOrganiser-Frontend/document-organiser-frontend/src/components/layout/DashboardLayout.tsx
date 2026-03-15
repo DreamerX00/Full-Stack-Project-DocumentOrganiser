@@ -38,7 +38,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   // Show onboarding popup for new users (onboardingComplete not set)
   useEffect(() => {
-    if (user && user.settings && user.settings.onboardingComplete !== true) {
+    const dismissed = typeof window !== 'undefined' && localStorage.getItem('onboarding-dismissed');
+    if (user && user.settings && user.settings.onboardingComplete !== true && !dismissed) {
       setOnboardingOpen(true);
     }
   }, [user]);
@@ -46,6 +47,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   // Handle onboarding completion
   const handleOnboardingComplete = async (data: OnboardingData) => {
     setOnboardingOpen(false);
+    if (typeof window !== 'undefined') localStorage.setItem('onboarding-dismissed', 'true');
     try {
       const updatedUser = await completeOnboarding({
         profession: data.profession,
@@ -64,6 +66,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   // Handle onboarding skip
   const handleOnboardingSkip = async () => {
     setOnboardingOpen(false);
+    if (typeof window !== 'undefined') localStorage.setItem('onboarding-dismissed', 'true');
     try {
       const updatedUser = await completeOnboarding({});
       updateUser({ settings: updatedUser.settings });

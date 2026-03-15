@@ -260,7 +260,7 @@ export function FileList({
                     <DropdownMenuItem onClick={() => onRename?.(doc)}>
                       <Pencil className="mr-2 h-4 w-4" /> Rename
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onShare?.(doc)}>
+                    <DropdownMenuItem onClick={() => setTimeout(() => onShare?.(doc), 0)}>
                       <Share2 className="mr-2 h-4 w-4" /> Share
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onMove?.(doc)}>
