@@ -132,7 +132,7 @@ pipeline {
             steps {
                 script {
                     def cluster = "full-stack-doc-organiser"
-                    def service = "Backedn-TD-service "
+                    def service = "Backedn-TD-service"
                     def taskDef = "Backedn-TD"
 
                     echo "🚀 Deploying backend to ECS..."
@@ -163,6 +163,7 @@ pipeline {
                         aws ecs update-service \
                             --cluster ${cluster} \
                             --service ${service} \
+                            --task-definition ${taskDef} \
                             --force-new-deployment
                     """
 

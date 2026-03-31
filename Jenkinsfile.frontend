@@ -183,6 +183,7 @@ pipeline {
                         aws ecs update-service \
                             --cluster ${cluster} \
                             --service ${service} \
+                            --task-definition ${taskDef} \
                             --force-new-deployment
                     """
 
