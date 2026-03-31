@@ -132,8 +132,8 @@ pipeline {
             steps {
                 script {
                     def cluster = "full-stack-doc-organiser"
-                    def service = "Backend-TD-service"
-                    def taskDef = "Backend-TD"
+                    def service = "Backden-TD-service"
+                    def taskDef = "Backden-TD"
 
                     echo "🚀 Deploying backend to ECS..."
 
