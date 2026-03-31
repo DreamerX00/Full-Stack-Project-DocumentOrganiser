@@ -22,42 +22,10 @@ pipeline {
 
     stages {
 
-        // ───────────── DETECT CHANGES ─────────────
-        stage('Detect Changes') {
-            steps {
-                script {
-                    sh 'git fetch --depth=2 origin $(echo $GIT_BRANCH | sed "s|origin/||") || true'
 
-                    def hasParent = sh(
-                        script: 'git rev-parse --verify HEAD~1 >/dev/null 2>&1',
-                        returnStatus: true
-                    ) == 0
-
-                    if (hasParent) {
-                        env.BACKEND_CHANGED = sh(
-                            script: """
-                                git diff --name-only HEAD~1 HEAD \
-                                | grep -q '^DocumentOrganiser-Backend/' \
-                                && echo true || echo false
-                            """,
-                            returnStdout: true
-                        ).trim()
-                    } else {
-                        env.BACKEND_CHANGED = 'true'
-                    }
-
-                    env.IS_TAG = env.TAG_NAME ? 'true' : 'false'
-
-                    echo "📦 BACKEND_CHANGED=${env.BACKEND_CHANGED}, IS_TAG=${env.IS_TAG}"
-                }
-            }
-        }
 
         // ───────────── VALIDATE ─────────────
         stage('Validate Docker Context') {
-            when {
-                expression { env.BACKEND_CHANGED == 'true' || env.IS_TAG == 'true' }
-            }
             steps {
                 sh """
                     set -e
@@ -81,9 +49,6 @@ pipeline {
 
         // ───────────── BUILD IMAGE ─────────────
         stage('Build Docker Image') {
-            when {
-                expression { env.BACKEND_CHANGED == 'true' || env.IS_TAG == 'true' }
-            }
             steps {
                 script {
                     env.COMMIT_SHA = sh(
@@ -117,9 +82,6 @@ pipeline {
 
         // ───────────── ECR LOGIN ─────────────
         stage('Login to ECR') {
-            when {
-                expression { env.BACKEND_CHANGED == 'true' || env.IS_TAG == 'true' }
-            }
             steps {
                 script {
                     def accountId = sh(
@@ -145,9 +107,6 @@ pipeline {
 
         // ───────────── PUSH IMAGE ─────────────
         stage('Push Backend Image') {
-            when {
-                expression { env.BACKEND_CHANGED == 'true' || env.IS_TAG == 'true' }
-            }
             steps {
                 script {
                     echo "📤 Pushing backend image..."
@@ -168,10 +127,8 @@ pipeline {
                 }
             }
         }
+        // ───────────── DEPLOY TO ECS ─────────────
         stage('Deploy Backend to ECS') {
-            when {
-                expression { env.BACKEND_CHANGED == 'true' || env.IS_TAG == 'true' }
-            }
             steps {
                 script {
                     def cluster = "full-stack-doc-organiser"
