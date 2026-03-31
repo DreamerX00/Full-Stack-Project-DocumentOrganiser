@@ -60,14 +60,7 @@ pipeline {
                         env.TAG_NAME.replaceFirst(/^v/, '') : 
                         "build-${env.BUILD_NUMBER}"
 
-                    echo "🐳 Building backend image..."
-
-                    echo "🔨 Building JAR with Gradle..."
-                    dir(APP_DIR) {
-                        sh 'chmod +x gradlew && ./gradlew bootJar --no-daemon -x test'
-                    }
-
-                    echo "🐳 Building backend Docker image..."
+                    echo "🐳 Building backend Docker image (version: ${env.VERSION})..."
 
                     retry(2) {
                         sh """

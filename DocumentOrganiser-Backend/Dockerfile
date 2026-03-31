@@ -1,11 +1,25 @@
-# -------- RUNTIME STAGE (pre-built JAR) --------
-FROM eclipse-temurin:21-jre
+# ─────────────── BUILD STAGE ───────────────
+FROM eclipse-temurin:21-jdk-alpine AS builder
 WORKDIR /app
 
-RUN addgroup --system appgroup && \
-    adduser --system --ingroup appgroup appuser
+# Copy gradle wrapper and build files first (for layer caching)
+COPY gradlew gradlew.bat settings.gradle.kts build.gradle.kts ./
+COPY gradle/ gradle/
 
-COPY build/libs/*.jar app.jar
+# Download dependencies (cached layer if build files unchanged)
+RUN chmod +x gradlew && ./gradlew dependencies --no-daemon -q || true
+
+# Copy source and build the JAR
+COPY src/ src/
+RUN ./gradlew bootJar --no-daemon -x test
+
+# ─────────────── RUNTIME STAGE ───────────────
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+COPY --from=builder /app/build/libs/*.jar app.jar
 
 USER appuser
 
