@@ -62,6 +62,13 @@ pipeline {
 
                     echo "🐳 Building backend image..."
 
+                    echo "🔨 Building JAR with Gradle..."
+                    dir(APP_DIR) {
+                        sh 'chmod +x gradlew && ./gradlew bootJar --no-daemon -x test'
+                    }
+
+                    echo "🐳 Building backend Docker image..."
+
                     retry(2) {
                         sh """
                             set -e
@@ -148,7 +155,7 @@ pipeline {
                     sh """
                         cat task-def.json | jq '
                             .containerDefinitions[0].image = "${REGISTRY}/${ECR_REPO_BE}:${VERSION}" |
-                            del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities)
+                            del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)
                         ' > new-task-def.json
                     """
 

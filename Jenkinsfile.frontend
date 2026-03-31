@@ -170,7 +170,7 @@ pipeline {
                     sh """
                         cat task-def.json | jq '
                             .containerDefinitions[0].image = "${REGISTRY}/${ECR_REPO_FE}:${VERSION}" |
-                            del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities)
+                            del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)
                         ' > new-task-def.json
                     """
 
