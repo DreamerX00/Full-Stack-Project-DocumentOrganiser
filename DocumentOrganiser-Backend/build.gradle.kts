@@ -1,6 +1,6 @@
 plugins {
     java
-    id("org.springframework.boot") version "3.4.2"
+    id("org.springframework.boot") version "3.5.11"
     id("io.spring.dependency-management") version "1.1.7"
 }
 
@@ -31,13 +31,13 @@ repositories {
 // Version Management - All versions defined in one place
 // =============================================================================
 val versions = mapOf(
-    "springCloud" to "2024.0.0",
-    "jjwt" to "0.12.6",
-    "googleApiClient" to "2.7.0",
-    "awsSdk" to "2.29.51",
-    "tika" to "3.1.0",  // Updated from 3.0.0 to fix CVE-2025-66516
-    "springdocOpenapi" to "2.8.4",
-    "lombok" to "1.18.36",
+    "springCloud" to "2025.0.0",
+    "jjwt" to "0.13.0",
+    "googleApiClient" to "2.8.0",
+    "awsSdk" to "2.31.74",
+    "tika" to "3.2.3",
+    "springdocOpenapi" to "2.8.16",
+    "lombok" to "1.18.42",
     "mapstruct" to "1.6.3"
 )
 

@@ -131,8 +131,8 @@ public class AuthController {
         String refreshToken = getCookieValue(request, "oauth2_refresh_token");
 
         // Always clear the cookies regardless of validity
-        clearOAuth2Cookie(response, "oauth2_access_token");
-        clearOAuth2Cookie(response, "oauth2_refresh_token");
+        clearOAuth2Cookie(request, response, "oauth2_access_token");
+        clearOAuth2Cookie(request, response, "oauth2_refresh_token");
 
         if (accessToken == null || refreshToken == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -166,14 +166,18 @@ public class AuthController {
         return null;
     }
 
-    private void clearOAuth2Cookie(HttpServletResponse response, String name) {
+    private void clearOAuth2Cookie(HttpServletRequest request, HttpServletResponse response, String name) {
         Cookie cookie = new Cookie(name, "");
         cookie.setHttpOnly(true);
-        cookie.setSecure(true);
+        cookie.setSecure(isSecureRequest(request));
         cookie.setPath("/");
         cookie.setMaxAge(0);
         cookie.setAttribute("SameSite", "Lax");
         response.addCookie(cookie);
+    }
+
+    private boolean isSecureRequest(HttpServletRequest request) {
+        return request.isSecure() || "https".equalsIgnoreCase(request.getHeader("X-Forwarded-Proto"));
     }
 
     private String getClientIp(HttpServletRequest request) {

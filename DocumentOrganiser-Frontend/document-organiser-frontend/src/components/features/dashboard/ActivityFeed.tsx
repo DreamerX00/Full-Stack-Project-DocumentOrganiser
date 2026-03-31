@@ -11,7 +11,7 @@ interface ActivityFeedProps {
 
 export function ActivityFeed({ activities }: ActivityFeedProps) {
   return (
-    <Card>
+    <Card className="border-white/10">
       <CardHeader>
         <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
       </CardHeader>
@@ -24,8 +24,8 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
         ) : (
           <div className="space-y-3">
             {activities.slice(0, 8).map((activity, idx) => (
-              <div key={idx} className="flex items-start gap-3 text-sm">
-                <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" />
+              <div key={idx} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 text-sm">
+                <div className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-primary" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm">{activity.description}</p>
                   <p className="text-xs text-muted-foreground">

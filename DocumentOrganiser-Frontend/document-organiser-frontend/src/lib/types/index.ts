@@ -68,6 +68,8 @@ export type SortField = 'name' | 'date' | 'size' | 'type';
 export type SortDirection = 'asc' | 'desc';
 export type Theme = 'light' | 'dark';
 export type ItemType = 'DOCUMENT' | 'FOLDER';
+export type WorkspaceRole = 'OWNER' | 'ADMIN' | 'EDITOR' | 'COMMENTER' | 'VIEWER';
+export type TaskStatus = 'open' | 'in_review' | 'approved' | 'blocked';
 
 // ============================================================
 // API Response Wrappers
@@ -157,6 +159,46 @@ export interface UserResponse {
   storageLimitBytes: number;
   createdAt: string;
   settings?: UserSettingsResponse;
+}
+
+export interface Workspace {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  role: WorkspaceRole;
+  memberCount: number;
+  storageUsedBytes?: number;
+  storageLimitBytes?: number;
+  accent?: string;
+  visibility?: 'private' | 'shared' | 'public';
+}
+
+export interface Member {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+  role: WorkspaceRole;
+  presence?: 'online' | 'away' | 'offline';
+}
+
+export interface ActivityThread {
+  id: string;
+  documentId?: string;
+  title: string;
+  summary?: string;
+  participantCount: number;
+  unreadCount: number;
+  lastActivityAt: string;
+}
+
+export interface ApprovalTask {
+  id: string;
+  title: string;
+  assigneeName?: string;
+  dueDate?: string;
+  status: TaskStatus;
 }
 
 export interface UserSettingsResponse {

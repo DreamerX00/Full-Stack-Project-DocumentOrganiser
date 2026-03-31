@@ -257,7 +257,11 @@ public class StorageServiceImpl implements StorageService {
             s3Client.createBucket(createBucketRequest);
             log.info("Bucket '{}' created successfully", storageProperties.getBucketName());
         } catch (Exception e) {
-            log.warn("Could not verify bucket existence: {}", e.getMessage());
+            String message = "Could not verify bucket existence for '" + storageProperties.getBucketName() + "'";
+            if (storageProperties.isFailFast()) {
+                throw new IllegalStateException(message, e);
+            }
+            log.warn("{}: {}", message, e.getMessage());
         }
     }
 }

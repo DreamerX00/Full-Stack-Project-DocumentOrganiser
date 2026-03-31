@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { AppSidebar } from './Sidebar';
 import { TopNav } from './TopNav';
 import { MobileNav } from './MobileNav';
@@ -129,7 +130,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         onSkip={handleOnboardingSkip}
       />
       <DragDropZone onFilesDropped={handleFilesDropped}>
-        <div className="flex h-screen overflow-hidden">
+        <div className="app-shell flex min-h-screen overflow-hidden bg-transparent">
           {/* Desktop Sidebar */}
           <div className="hidden md:block">
             <AppSidebar />
@@ -143,10 +144,19 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </Sheet>
 
           {/* Main Content */}
-          <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="relative flex flex-1 flex-col overflow-hidden">
             <TopNav onUploadClick={handleUploadClick} onMenuClick={() => setMobileMenuOpen(true)} />
 
-            <main className="flex-1 overflow-y-auto pb-16 md:pb-0">{children}</main>
+            <main className="relative flex-1 overflow-y-auto pb-20 md:pb-0">
+              <motion.div
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, ease: 'easeOut' }}
+                className="min-h-full"
+              >
+                {children}
+              </motion.div>
+            </main>
 
             {/* Mobile Bottom Nav */}
             <MobileNav />

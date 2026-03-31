@@ -2,6 +2,17 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { UserResponse } from '@/lib/types';
 
+function syncSessionHintCookie(isAuthenticated: boolean) {
+  if (typeof document === 'undefined') return;
+
+  if (isAuthenticated) {
+    document.cookie = 'auth-token=1; path=/; SameSite=Lax';
+    return;
+  }
+
+  document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+}
+
 interface AuthState {
   user: UserResponse | null;
   accessToken: string | null;
@@ -26,21 +37,24 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
 
-      setUser: (user) => set({ user, isAuthenticated: !!user }),
+      setUser: (user) => {
+        syncSessionHintCookie(!!user);
+        set({ user, isAuthenticated: !!user });
+      },
       setTokens: (accessToken, refreshToken) => {
         if (typeof window !== 'undefined') {
           localStorage.setItem('accessToken', accessToken);
           localStorage.setItem('refreshToken', refreshToken);
+          syncSessionHintCookie(true);
         }
-        set({ accessToken, refreshToken });
+        set({ accessToken, refreshToken, isAuthenticated: true });
       },
       setLoading: (isLoading) => set({ isLoading }),
       login: (user, accessToken, refreshToken) => {
         if (typeof window !== 'undefined') {
           localStorage.setItem('accessToken', accessToken);
           localStorage.setItem('refreshToken', refreshToken);
-          // Set a cookie so the middleware can detect authentication
-          document.cookie = 'auth-token=1; path=/; SameSite=Lax';
+          syncSessionHintCookie(true);
         }
         set({
           user,
@@ -58,8 +72,7 @@ export const useAuthStore = create<AuthState>()(
         if (typeof window !== 'undefined') {
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
-          // Clear the auth cookie so middleware redirects to login
-          document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+          syncSessionHintCookie(false);
         }
         set({
           user: null,
@@ -78,6 +91,9 @@ export const useAuthStore = create<AuthState>()(
         refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        syncSessionHintCookie(!!state?.accessToken && !!state?.isAuthenticated);
+      },
     }
   )
 );

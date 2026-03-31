@@ -19,6 +19,7 @@ public class StorageProperties {
     private String bucketName = "documents";
     private String region = "us-east-1";
     private long defaultQuotaMb = 100; // Default storage quota in MB
+    private boolean failFast = true;
 
     public long getDefaultQuotaBytes() {
         return defaultQuotaMb * 1024 * 1024;

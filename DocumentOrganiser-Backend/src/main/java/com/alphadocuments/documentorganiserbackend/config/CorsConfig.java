@@ -9,6 +9,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * CORS configuration for the application.
@@ -32,9 +33,9 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
-        configuration.setAllowedMethods(Arrays.asList(allowedMethods.split(",")));
-        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowedOrigins(parseCsv(allowedOrigins));
+        configuration.setAllowedMethods(parseCsv(allowedMethods));
+        configuration.setAllowedHeaders(parseCsv(allowedHeaders));
         configuration.setAllowCredentials(allowCredentials);
         configuration.setExposedHeaders(Arrays.asList(
                 "Authorization",
@@ -49,5 +50,12 @@ public class CorsConfig {
         source.registerCorsConfiguration("/**", configuration);
 
         return source;
+    }
+
+    private List<String> parseCsv(String value) {
+        return Arrays.stream(value.split(","))
+                .map(String::trim)
+                .filter(entry -> !entry.isEmpty())
+                .collect(Collectors.toList());
     }
 }

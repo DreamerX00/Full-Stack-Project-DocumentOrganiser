@@ -8,7 +8,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, Mail, Lock } from 'lucide-react';
 import { toast } from 'sonner';
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -23,14 +22,11 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
-
 import { authApi } from '@/lib/api/auth';
 import { useAuthStore } from '@/lib/store/authStore';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { AuthShell } from '@/components/auth/AuthShell';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -111,95 +107,110 @@ export default function LoginPage() {
   const hasGoogleClientId = !!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-          <CardDescription>Enter your email to sign in to your account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onEmailLogin)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            placeholder="name@example.com"
-                            type="email"
-                            className="pl-9"
-                            {...field}
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                          <Input placeholder="••••••" type="password" className="pl-9" {...field} />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Sign In
-                </Button>
-              </form>
-            </Form>
-
-            {hasGoogleClientId && (
-              <>
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
-                      Or continue with
-                    </span>
-                  </div>
-                </div>
-
-                <GoogleLoginButton disabled={isLoading} />
-              </>
-            )}
-          </div>
-        </CardContent>
-        <CardFooter className="flex flex-col gap-2 border-t p-4 text-center text-sm text-muted-foreground">
+    <AuthShell
+      eyebrow="Secure entry point"
+      title="Sign into your workspace and pick up where the team left off."
+      description="Access live review queues, shared spaces, notifications, and document intelligence from a premium collaborative surface."
+      footer={
+        <div className="flex flex-col gap-3 border-t border-white/10 pt-5 text-sm text-muted-foreground">
           <p>
             Don&apos;t have an account?{' '}
-            <Link href="/register" className="text-primary hover:underline">
-              Sign up
+            <Link href="/register" className="font-medium text-primary transition hover:text-primary/80">
+              Create one now
             </Link>
           </p>
-          <div className="flex justify-center gap-4 text-xs">
-            <Link href="/terms" className="hover:underline">
+          <div className="flex flex-wrap gap-4 text-xs">
+            <Link href="/terms" className="transition hover:text-foreground">
               Terms of Service
             </Link>
-            <Link href="/privacy" className="hover:underline">
+            <Link href="/privacy" className="transition hover:text-foreground">
               Privacy Policy
             </Link>
           </div>
-        </CardFooter>
-      </Card>
-    </div>
+        </div>
+      }
+    >
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <p className="text-xs uppercase tracking-[0.3em] text-primary/80">Welcome back</p>
+          <h2 className="text-3xl font-semibold">Sign in</h2>
+          <CardDescription className="text-base leading-7">
+            Enter your email and password to continue into your dashboard.
+          </CardDescription>
+        </div>
+
+        <Card className="border-white/10 bg-white/5 shadow-none">
+          <CardContent className="p-0">
+            <div className="grid gap-5">
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onEmailLogin)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              placeholder="name@example.com"
+                              type="email"
+                              className="h-12 rounded-2xl border-white/10 bg-background/60 pl-10"
+                              {...field}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              placeholder="••••••••"
+                              type="password"
+                              className="h-12 rounded-2xl border-white/10 bg-background/60 pl-10"
+                              {...field}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Enter workspace
+                  </Button>
+                </form>
+              </Form>
+
+              {hasGoogleClientId && (
+                <>
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t border-white/10" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase tracking-[0.28em]">
+                      <span className="bg-background px-3 text-muted-foreground">or continue with</span>
+                    </div>
+                  </div>
+
+                  <GoogleLoginButton disabled={isLoading} />
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </AuthShell>
   );
 }

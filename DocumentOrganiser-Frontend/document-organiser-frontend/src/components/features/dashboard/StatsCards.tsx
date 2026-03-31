@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { FileText, FolderOpen, HardDrive, Star, Share2, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatFileSize } from '@/lib/utils/format';
@@ -57,14 +58,20 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
   ];
 
   return (
-    <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-      {cards.map((card) => (
-        <Card key={card.title}>
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
+      {cards.map((card, index) => (
+        <motion.div
+          key={card.title}
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: index * 0.05 }}
+        >
+        <Card className="border-white/10">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-medium text-muted-foreground">
               {card.title}
             </CardTitle>
-            <div className={`rounded-md p-1.5 ${card.bgColor}`}>
+            <div className={`rounded-2xl p-2 ${card.bgColor}`}>
               <card.icon className={`h-3.5 w-3.5 ${card.color}`} />
             </div>
           </CardHeader>
@@ -72,6 +79,7 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
             <div className="text-xl font-bold">{isLoading ? '—' : card.value}</div>
           </CardContent>
         </Card>
+        </motion.div>
       ))}
     </div>
   );
