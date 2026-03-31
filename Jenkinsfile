@@ -47,7 +47,7 @@ pipeline {
                         beforeAgent true
                         expression { env.BACKEND_CHANGED == 'true' || env.IS_TAG == 'true' }
                     }
-                    agent { label 'jenkins-agent-ec2' }
+                    agent { label 'ec2-static-agent' }
                     stages {
                         stage('Backend Build') {
                             steps {
@@ -78,7 +78,7 @@ pipeline {
                         beforeAgent true
                         expression { env.FRONTEND_CHANGED == 'true' || env.IS_TAG == 'true' }
                     }
-                    agent { label 'jenkins-agent-ec2' }
+                    agent { label 'ec2-static-agent' }
                     stages {
                         stage('Frontend Install') {
                             steps {

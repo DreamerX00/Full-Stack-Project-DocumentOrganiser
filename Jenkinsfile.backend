@@ -1,6 +1,11 @@
 pipeline {
     agent { label 'ec2-static-agent' }
 
+    parameters {
+        string(name: 'GIT_REPO', defaultValue: 'https://github.com/DreamerX00/Full-Stack-Project-DocumentOrganiser', description: 'Git repo URL')
+        string(name: 'GIT_BRANCH', defaultValue: 'master', description: 'Branch name')
+    }
+
     environment {
         AWS_REGION      = 'us-east-1'
         ECR_REPO_BE     = 'full-stack-docker/doc-backend'
@@ -160,6 +165,51 @@ pipeline {
                     """
 
                     echo "✅ Backend image pushed"
+                }
+            }
+        }
+        stage('Deploy Backend to ECS') {
+            when {
+                expression { env.BACKEND_CHANGED == 'true' || env.IS_TAG == 'true' }
+            }
+            steps {
+                script {
+                    def cluster = "full-stack-doc-organiser"
+                    def service = "Backend-TD-service"
+                    def taskDef = "Backend-TD"
+
+                    echo "🚀 Deploying backend to ECS..."
+
+                    // 1. Get current task definition
+                    sh """
+                        aws ecs describe-task-definition \
+                            --task-definition ${taskDef} \
+                            --query 'taskDefinition' > task-def.json
+                    """
+
+                    // 2. Replace image
+                    sh """
+                        cat task-def.json | jq '
+                            .containerDefinitions[0].image = "${REGISTRY}/${ECR_REPO_BE}:${VERSION}" |
+                            del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities)
+                        ' > new-task-def.json
+                    """
+
+                    // 3. Register new revision
+                    sh """
+                        aws ecs register-task-definition \
+                            --cli-input-json file://new-task-def.json
+                    """
+
+                    // 4. Update service
+                    sh """
+                        aws ecs update-service \
+                            --cluster ${cluster} \
+                            --service ${service} \
+                            --force-new-deployment
+                    """
+
+                    echo "✅ Backend deployed"
                 }
             }
         }

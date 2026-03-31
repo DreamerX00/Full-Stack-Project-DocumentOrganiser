@@ -43,8 +43,42 @@ pipeline {
             }
         }
 
+        // ───────────── DETECT CHANGES ─────────────
+        stage('Detect Changes') {
+            steps {
+                script {
+                    sh 'git fetch --depth=2 origin $(echo $GIT_BRANCH | sed "s|origin/||") || true'
+
+                    def hasParent = sh(
+                        script: 'git rev-parse --verify HEAD~1 >/dev/null 2>&1',
+                        returnStatus: true
+                    ) == 0
+
+                    if (hasParent) {
+                        env.FRONTEND_CHANGED = sh(
+                            script: """
+                                git diff --name-only HEAD~1 HEAD \
+                                | grep -q '^DocumentOrganiser-Frontend/' \
+                                && echo true || echo false
+                            """,
+                            returnStdout: true
+                        ).trim()
+                    } else {
+                        env.FRONTEND_CHANGED = 'true'
+                    }
+
+                    env.IS_TAG = env.TAG_NAME ? 'true' : 'false'
+
+                    echo "📦 FRONTEND_CHANGED=${env.FRONTEND_CHANGED}, IS_TAG=${env.IS_TAG}"
+                }
+            }
+        }
+
         // ───────────── VALIDATION ─────────────
         stage('Validate Docker Context') {
+            when {
+                expression { env.FRONTEND_CHANGED == 'true' || env.IS_TAG == 'true' }
+            }
             steps {
                 script {
                     sh """
@@ -70,15 +104,21 @@ pipeline {
 
         // ───────────── BUILD IMAGE ─────────────
         stage('Build Docker Image') {
+            when {
+                expression { env.FRONTEND_CHANGED == 'true' || env.IS_TAG == 'true' }
+            }
             steps {
                 script {
-                    env.IMAGE_TAG = "build-${env.BUILD_NUMBER}"
                     env.COMMIT_SHA = sh(
                         script: 'git rev-parse --short=8 HEAD',
                         returnStdout: true
                     ).trim()
 
-                    echo "🐳 Building Docker image..."
+                    env.VERSION = env.TAG_NAME ? 
+                        env.TAG_NAME.replaceFirst(/^v/, '') : 
+                        "build-${env.BUILD_NUMBER}"
+
+                    echo "🐳 Building Docker image (version: ${env.VERSION})..."
 
                     retry(2) {
                         sh """
@@ -86,7 +126,7 @@ pipeline {
 
                             docker build \\
                                 --pull \\
-                                -t ${ECR_REPO_FE}:${IMAGE_TAG} \\
+                                -t ${ECR_REPO_FE}:${VERSION} \\
                                 -t ${ECR_REPO_FE}:${COMMIT_SHA} \\
                                 -t ${ECR_REPO_FE}:latest \\
                                 -f ${APP_DIR}/Dockerfile ${APP_DIR}/
@@ -100,6 +140,9 @@ pipeline {
 
         // ───────────── ECR LOGIN ─────────────
         stage('Login to ECR') {
+            when {
+                expression { env.FRONTEND_CHANGED == 'true' || env.IS_TAG == 'true' }
+            }
             steps {
                 script {
                     def accountId = sh(
@@ -125,6 +168,9 @@ pipeline {
 
         // ───────────── TAG + PUSH ─────────────
         stage('Tag & Push Image') {
+            when {
+                expression { env.FRONTEND_CHANGED == 'true' || env.IS_TAG == 'true' }
+            }
             steps {
                 script {
                     echo "📤 Tagging & pushing image..."
@@ -132,16 +178,59 @@ pipeline {
                     sh """
                         set -e
 
-                        docker tag ${ECR_REPO_FE}:${IMAGE_TAG} ${REGISTRY}/${ECR_REPO_FE}:${IMAGE_TAG}
+                        docker tag ${ECR_REPO_FE}:${VERSION} ${REGISTRY}/${ECR_REPO_FE}:${VERSION}
                         docker tag ${ECR_REPO_FE}:${COMMIT_SHA} ${REGISTRY}/${ECR_REPO_FE}:${COMMIT_SHA}
                         docker tag ${ECR_REPO_FE}:latest ${REGISTRY}/${ECR_REPO_FE}:latest
 
-                        docker push ${REGISTRY}/${ECR_REPO_FE}:${IMAGE_TAG}
+                        docker push ${REGISTRY}/${ECR_REPO_FE}:${VERSION}
                         docker push ${REGISTRY}/${ECR_REPO_FE}:${COMMIT_SHA}
                         docker push ${REGISTRY}/${ECR_REPO_FE}:latest
                     """
 
                     echo "✅ Image pushed to ECR"
+                }
+            }
+        }
+
+        // ───────────── DEPLOY TO ECS ─────────────
+        stage('Deploy Frontend to ECS') {
+            when {
+                expression { env.FRONTEND_CHANGED == 'true' || env.IS_TAG == 'true' }
+            }
+            steps {
+                script {
+                    def cluster = "full-stack-doc-organiser"
+                    def service = "Frontend-TD-service"
+                    def taskDef = "Frontend-TD"
+
+                    echo "🚀 Deploying frontend to ECS..."
+
+                    sh """
+                        aws ecs describe-task-definition \
+                            --task-definition ${taskDef} \
+                            --query 'taskDefinition' > task-def.json
+                    """
+
+                    sh """
+                        cat task-def.json | jq '
+                            .containerDefinitions[0].image = "${REGISTRY}/${ECR_REPO_FE}:${VERSION}" |
+                            del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities)
+                        ' > new-task-def.json
+                    """
+
+                    sh """
+                        aws ecs register-task-definition \
+                            --cli-input-json file://new-task-def.json
+                    """
+
+                    sh """
+                        aws ecs update-service \
+                            --cluster ${cluster} \
+                            --service ${service} \
+                            --force-new-deployment
+                    """
+
+                    echo "✅ Frontend deployed"
                 }
             }
         }
