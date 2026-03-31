@@ -1,7 +1,21 @@
 HELP.md
+
+### Gradle ###
 .gradle
+.gradle-home/
+gradle-home/
 build/
+**/build/
 !gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### Gradle caches & dists (never commit) ###
+**/caches/
+**/wrapper/dists/
+**/daemon/
+**/native/
+**/notifications/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
