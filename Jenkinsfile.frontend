@@ -1,0 +1,163 @@
+pipeline {
+    agent { label 'ec2-static-agent' }
+
+    parameters {
+        string(name: 'GIT_REPO', defaultValue: 'https://github.com/DreamerX00/Full-Stack-Project-DocumentOrganiser', description: 'Git repo URL')
+        string(name: 'GIT_BRANCH', defaultValue: 'master', description: 'Branch name')
+    }
+
+    environment {
+        AWS_REGION  = 'us-east-1'
+        ECR_REPO_FE = 'full-stack-docker/doc-frontend'
+        APP_DIR     = 'DocumentOrganiser-Frontend/document-organiser-frontend'
+    }
+
+    options {
+        disableConcurrentBuilds()
+        buildDiscarder(logRotator(numToKeepStr: '15'))
+        timestamps()
+        timeout(time: 30, unit: 'MINUTES')
+    }
+
+    stages {
+
+        // ───────────── CHECKOUT ─────────────
+        stage('Checkout Code') {
+            steps {
+                script {
+                    echo "📥 Cloning ${params.GIT_REPO} (${params.GIT_BRANCH})"
+
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: "${params.GIT_BRANCH}"]],
+                        userRemoteConfigs: [[
+                            url: params.GIT_REPO,
+                            refspec: '+refs/heads/*:refs/remotes/origin/*'
+                        ]],
+                        extensions: [
+                            [$class: 'CleanBeforeCheckout'],
+                            [$class: 'CloneOption', shallow: true, depth: 2]
+                        ]
+                    ])
+                }
+            }
+        }
+
+        // ───────────── VALIDATION ─────────────
+        stage('Validate Docker Context') {
+            steps {
+                script {
+                    sh """
+                        set -e
+                        echo "🔍 Validating Docker context..."
+
+                        if [ ! -d "${APP_DIR}" ]; then
+                            echo "❌ APP_DIR not found: ${APP_DIR}"
+                            ls -la
+                            exit 1
+                        fi
+
+                        if [ ! -f "${APP_DIR}/Dockerfile" ]; then
+                            echo "❌ Dockerfile missing in ${APP_DIR}"
+                            exit 1
+                        fi
+
+                        echo "✅ Docker context valid"
+                    """
+                }
+            }
+        }
+
+        // ───────────── BUILD IMAGE ─────────────
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    env.IMAGE_TAG = "build-${env.BUILD_NUMBER}"
+                    env.COMMIT_SHA = sh(
+                        script: 'git rev-parse --short=8 HEAD',
+                        returnStdout: true
+                    ).trim()
+
+                    echo "🐳 Building Docker image..."
+
+                    retry(2) {
+                        sh """
+                            set -e
+
+                            docker build \\
+                                --pull \\
+                                -t ${ECR_REPO_FE}:${IMAGE_TAG} \\
+                                -t ${ECR_REPO_FE}:${COMMIT_SHA} \\
+                                -t ${ECR_REPO_FE}:latest \\
+                                -f ${APP_DIR}/Dockerfile ${APP_DIR}/
+                        """
+                    }
+
+                    echo "✅ Docker image built locally"
+                }
+            }
+        }
+
+        // ───────────── ECR LOGIN ─────────────
+        stage('Login to ECR') {
+            steps {
+                script {
+                    def accountId = sh(
+                        script: 'aws sts get-caller-identity --query Account --output text',
+                        returnStdout: true
+                    ).trim()
+
+                    env.REGISTRY = "${accountId}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+
+                    echo "🔐 Logging into ECR..."
+
+                    retry(3) {
+                        sh """
+                            aws ecr get-login-password --region ${AWS_REGION} \
+                            | docker login --username AWS --password-stdin ${REGISTRY}
+                        """
+                    }
+
+                    echo "✅ ECR login successful"
+                }
+            }
+        }
+
+        // ───────────── TAG + PUSH ─────────────
+        stage('Tag & Push Image') {
+            steps {
+                script {
+                    echo "📤 Tagging & pushing image..."
+
+                    sh """
+                        set -e
+
+                        docker tag ${ECR_REPO_FE}:${IMAGE_TAG} ${REGISTRY}/${ECR_REPO_FE}:${IMAGE_TAG}
+                        docker tag ${ECR_REPO_FE}:${COMMIT_SHA} ${REGISTRY}/${ECR_REPO_FE}:${COMMIT_SHA}
+                        docker tag ${ECR_REPO_FE}:latest ${REGISTRY}/${ECR_REPO_FE}:latest
+
+                        docker push ${REGISTRY}/${ECR_REPO_FE}:${IMAGE_TAG}
+                        docker push ${REGISTRY}/${ECR_REPO_FE}:${COMMIT_SHA}
+                        docker push ${REGISTRY}/${ECR_REPO_FE}:latest
+                    """
+
+                    echo "✅ Image pushed to ECR"
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "🧹 Cleaning up..."
+            sh 'docker system prune -af || true'
+            cleanWs()
+        }
+        success {
+            echo "✅ Pipeline completed successfully"
+        }
+        failure {
+            echo "❌ Pipeline failed"
+        }
+    }
+}

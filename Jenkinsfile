@@ -2,13 +2,15 @@ pipeline {
     agent { label 'docker-agent' }
 
     environment {
-        AWS_REGION  = 'us-east-1'
-        ECR_REPO_BE = 'full-stack-docker/doc-backend'
-        ECR_REPO_FE = 'full-stack-docker/doc-frontend'
+        AWS_REGION       = 'us-east-1'
+        ECR_REPO_BE      = 'full-stack-docker/doc-backend'
+        ECR_REPO_FE      = 'full-stack-docker/doc-frontend'
+        DOCKER_BUILDKIT  = '1'
     }
 
     options {
         skipDefaultCheckout(false)
+        disableConcurrentBuilds()
         buildDiscarder(logRotator(numToKeepStr: '15'))
         timestamps()
         timeout(time: 45, unit: 'MINUTES')
@@ -20,7 +22,7 @@ pipeline {
             steps {
                 script {
                     // Handle shallow clones or first commit
-                    sh 'git fetch --depth=2 origin ${GIT_BRANCH} || true'
+                    sh 'git fetch --depth=2 origin $(echo $GIT_BRANCH | sed "s|origin/||") || true'
                     def hasParent = sh(script: 'git rev-parse --verify HEAD~1 >/dev/null 2>&1', returnStatus: true) == 0
                     if (hasParent) {
                         env.BACKEND_CHANGED  = sh(script: "git diff --name-only HEAD~1 HEAD | grep -q 'DocumentOrganiser-Backend/' && echo true || echo false", returnStdout: true).trim()
@@ -68,6 +70,7 @@ pipeline {
                             }
                         }
                     }
+                    post { always { cleanWs() } }
                 }
 
                 stage('CI – Frontend') {
@@ -102,6 +105,7 @@ pipeline {
                             }
                         }
                     }
+                    post { always { cleanWs() } }
                 }
             }
         }
@@ -137,9 +141,11 @@ pipeline {
                                     docker build \
                                         -t ${REGISTRY}/${ECR_REPO_BE}:${VERSION} \
                                         -t ${REGISTRY}/${ECR_REPO_BE}:${COMMIT_SHA} \
+                                        -t ${REGISTRY}/${ECR_REPO_BE}:latest \
                                         -f DocumentOrganiser-Backend/Dockerfile DocumentOrganiser-Backend/
                                     docker push ${REGISTRY}/${ECR_REPO_BE}:${VERSION}
                                     docker push ${REGISTRY}/${ECR_REPO_BE}:${COMMIT_SHA}
+                                    docker push ${REGISTRY}/${ECR_REPO_BE}:latest
                                 """
                                 echo "Backend pushed: ${REGISTRY}/${ECR_REPO_BE}:${VERSION}"
                             }
@@ -160,9 +166,11 @@ pipeline {
                                                 --build-arg BACKEND_INTERNAL_URL=${backendUrl} \
                                                 -t ${REGISTRY}/${ECR_REPO_FE}:${VERSION} \
                                                 -t ${REGISTRY}/${ECR_REPO_FE}:${COMMIT_SHA} \
+                                                -t ${REGISTRY}/${ECR_REPO_FE}:latest \
                                                 -f ${feDir}/Dockerfile ${feDir}/
                                             docker push ${REGISTRY}/${ECR_REPO_FE}:${VERSION}
                                             docker push ${REGISTRY}/${ECR_REPO_FE}:${COMMIT_SHA}
+                                            docker push ${REGISTRY}/${ECR_REPO_FE}:latest
                                         """
                                         echo "Frontend pushed: ${REGISTRY}/${ECR_REPO_FE}:${VERSION}"
                                     }

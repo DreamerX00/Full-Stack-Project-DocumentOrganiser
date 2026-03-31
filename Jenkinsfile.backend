@@ -1,0 +1,181 @@
+pipeline {
+    agent { label 'docker-agent' }
+
+    environment {
+        AWS_REGION      = 'us-east-1'
+        ECR_REPO_BE     = 'full-stack-docker/doc-backend'
+        DOCKER_BUILDKIT = '1'
+        APP_DIR         = 'DocumentOrganiser-Backend'
+    }
+
+    options {
+        disableConcurrentBuilds()
+        buildDiscarder(logRotator(numToKeepStr: '15'))
+        timestamps()
+        timeout(time: 30, unit: 'MINUTES')
+    }
+
+    stages {
+
+        // ───────────── DETECT CHANGES ─────────────
+        stage('Detect Changes') {
+            steps {
+                script {
+                    sh 'git fetch --depth=2 origin $(echo $GIT_BRANCH | sed "s|origin/||") || true'
+
+                    def hasParent = sh(
+                        script: 'git rev-parse --verify HEAD~1 >/dev/null 2>&1',
+                        returnStatus: true
+                    ) == 0
+
+                    if (hasParent) {
+                        env.BACKEND_CHANGED = sh(
+                            script: """
+                                git diff --name-only HEAD~1 HEAD \
+                                | grep -q '^DocumentOrganiser-Backend/' \
+                                && echo true || echo false
+                            """,
+                            returnStdout: true
+                        ).trim()
+                    } else {
+                        env.BACKEND_CHANGED = 'true'
+                    }
+
+                    env.IS_TAG = env.TAG_NAME ? 'true' : 'false'
+
+                    echo "📦 BACKEND_CHANGED=${env.BACKEND_CHANGED}, IS_TAG=${env.IS_TAG}"
+                }
+            }
+        }
+
+        // ───────────── VALIDATE ─────────────
+        stage('Validate Docker Context') {
+            when {
+                expression { env.BACKEND_CHANGED == 'true' || env.IS_TAG == 'true' }
+            }
+            steps {
+                sh """
+                    set -e
+                    echo "🔍 Validating backend Docker context..."
+
+                    if [ ! -d "${APP_DIR}" ]; then
+                        echo "❌ Backend directory missing"
+                        ls -la
+                        exit 1
+                    fi
+
+                    if [ ! -f "${APP_DIR}/Dockerfile" ]; then
+                        echo "❌ Dockerfile missing in backend"
+                        exit 1
+                    fi
+
+                    echo "✅ Backend context valid"
+                """
+            }
+        }
+
+        // ───────────── BUILD IMAGE ─────────────
+        stage('Build Docker Image') {
+            when {
+                expression { env.BACKEND_CHANGED == 'true' || env.IS_TAG == 'true' }
+            }
+            steps {
+                script {
+                    env.COMMIT_SHA = sh(
+                        script: 'git rev-parse --short=8 HEAD',
+                        returnStdout: true
+                    ).trim()
+
+                    env.VERSION = env.TAG_NAME ? 
+                        env.TAG_NAME.replaceFirst(/^v/, '') : 
+                        "build-${env.BUILD_NUMBER}"
+
+                    echo "🐳 Building backend image..."
+
+                    retry(2) {
+                        sh """
+                            set -e
+
+                            docker build \\
+                                --pull \\
+                                -t ${ECR_REPO_BE}:${VERSION} \\
+                                -t ${ECR_REPO_BE}:${COMMIT_SHA} \\
+                                -t ${ECR_REPO_BE}:latest \\
+                                -f ${APP_DIR}/Dockerfile ${APP_DIR}/
+                        """
+                    }
+
+                    echo "✅ Backend image built"
+                }
+            }
+        }
+
+        // ───────────── ECR LOGIN ─────────────
+        stage('Login to ECR') {
+            when {
+                expression { env.BACKEND_CHANGED == 'true' || env.IS_TAG == 'true' }
+            }
+            steps {
+                script {
+                    def accountId = sh(
+                        script: 'aws sts get-caller-identity --query Account --output text',
+                        returnStdout: true
+                    ).trim()
+
+                    env.REGISTRY = "${accountId}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+
+                    echo "🔐 Logging into ECR..."
+
+                    retry(3) {
+                        sh """
+                            aws ecr get-login-password --region ${AWS_REGION} \
+                            | docker login --username AWS --password-stdin ${REGISTRY}
+                        """
+                    }
+
+                    echo "✅ ECR login success"
+                }
+            }
+        }
+
+        // ───────────── PUSH IMAGE ─────────────
+        stage('Push Backend Image') {
+            when {
+                expression { env.BACKEND_CHANGED == 'true' || env.IS_TAG == 'true' }
+            }
+            steps {
+                script {
+                    echo "📤 Pushing backend image..."
+
+                    sh """
+                        set -e
+
+                        docker tag ${ECR_REPO_BE}:${VERSION} ${REGISTRY}/${ECR_REPO_BE}:${VERSION}
+                        docker tag ${ECR_REPO_BE}:${COMMIT_SHA} ${REGISTRY}/${ECR_REPO_BE}:${COMMIT_SHA}
+                        docker tag ${ECR_REPO_BE}:latest ${REGISTRY}/${ECR_REPO_BE}:latest
+
+                        docker push ${REGISTRY}/${ECR_REPO_BE}:${VERSION}
+                        docker push ${REGISTRY}/${ECR_REPO_BE}:${COMMIT_SHA}
+                        docker push ${REGISTRY}/${ECR_REPO_BE}:latest
+                    """
+
+                    echo "✅ Backend image pushed"
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "🧹 Cleaning workspace..."
+            sh 'docker system prune -af || true'
+            cleanWs()
+        }
+        success {
+            echo '✅ Backend pipeline completed successfully!'
+        }
+        failure {
+            echo '❌ Backend pipeline failed'
+        }
+    }
+}
