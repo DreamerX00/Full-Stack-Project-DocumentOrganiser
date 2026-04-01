@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { ShieldCheck, Sparkles, Users, Workflow } from 'lucide-react';
+import { FileText, FolderOpen, ShieldCheck, Sparkles } from 'lucide-react';
 import { AmbientBackdrop } from '@/components/brand/AmbientBackdrop';
 import { cn } from '@/lib/utils';
 
@@ -16,9 +16,9 @@ interface AuthShellProps {
 }
 
 const signals = [
-  { icon: Workflow, label: 'Approval-ready workflows' },
-  { icon: Users, label: 'Team spaces and live collaboration' },
-  { icon: ShieldCheck, label: 'Enterprise-grade governance' },
+  { icon: FolderOpen, label: '7 smart document categories' },
+  { icon: FileText, label: 'Full-text search and discovery' },
+  { icon: ShieldCheck, label: 'Version history and secure storage' },
 ];
 
 export function AuthShell({ title, description, eyebrow, children, footer }: AuthShellProps) {
@@ -36,7 +36,7 @@ export function AuthShell({ title, description, eyebrow, children, footer }: Aut
               <p className="text-sm font-medium uppercase tracking-[0.24em] text-primary/75">
                 DocOrganiser
               </p>
-              <p className="text-sm text-muted-foreground">Collaborative document intelligence</p>
+              <p className="text-sm text-muted-foreground">Document workspace</p>
             </div>
           </Link>
 
@@ -81,29 +81,21 @@ export function AuthShell({ title, description, eyebrow, children, footer }: Aut
             <div className="glass-panel surface-outline max-w-2xl rounded-[2rem] p-5">
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium">Live workspace pulse</p>
+                  <p className="text-sm font-medium">Document workspace</p>
                   <p className="text-xs text-muted-foreground">
-                    Review queues, version history, shared spaces, and team context in one surface.
+                    Organize, search, and manage your documents from one place.
                   </p>
-                </div>
-                <div className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-primary">
-                  Future-ready
                 </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
                 <div className="rounded-3xl border border-white/10 bg-background/50 p-4">
-                  <div className="mb-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">Contracts workspace</p>
-                      <p className="text-xs text-muted-foreground">12 docs · 3 reviewers active</p>
-                    </div>
-                    <span className="rounded-full bg-primary/15 px-2.5 py-1 text-[11px] text-primary">
-                      In review
-                    </span>
+                  <div className="mb-4">
+                    <p className="text-sm font-medium">Recent activity</p>
+                    <p className="text-xs text-muted-foreground">Your latest document updates</p>
                   </div>
                   <div className="space-y-3">
-                    {['Risk summary updated', '2 comments waiting', 'Approval due tomorrow'].map(
+                    {['Upload any file type — PDF, images, docs', 'Organize into folders and categories', 'Search by name, category, or tags'].map(
                       (item) => (
                         <div
                           key={item}
@@ -118,30 +110,19 @@ export function AuthShell({ title, description, eyebrow, children, footer }: Aut
                 </div>
 
                 <div className="space-y-3 rounded-3xl border border-white/10 bg-background/50 p-4">
-                  <div className="flex items-center justify-between rounded-2xl bg-white/5 px-3 py-3">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                        Presence
-                      </p>
-                      <p className="text-sm font-medium">7 collaborators online</p>
-                    </div>
-                    <div className="flex -space-x-2">
-                      {['AL', 'RK', 'NV'].map((name) => (
-                        <div
-                          key={name}
-                          className="flex h-9 w-9 items-center justify-center rounded-full border border-background bg-primary/20 text-xs font-medium text-primary"
-                        >
-                          {name}
-                        </div>
-                      ))}
-                    </div>
+                  <div className="rounded-2xl bg-white/5 px-3 py-4">
+                    <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
+                      Storage
+                    </p>
+                    <p className="mt-2 text-3xl font-semibold">100 MB</p>
+                    <p className="text-xs text-muted-foreground">Free storage per account</p>
                   </div>
                   <div className="rounded-2xl bg-white/5 px-3 py-4">
                     <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                      Search velocity
+                      File types
                     </p>
-                    <p className="mt-2 text-3xl font-semibold">81%</p>
-                    <p className="text-xs text-muted-foreground">Faster discovery with saved views</p>
+                    <p className="mt-2 text-3xl font-semibold">All</p>
+                    <p className="text-xs text-muted-foreground">PDF, images, docs, and more</p>
                   </div>
                 </div>
               </div>

@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import {
-  BriefcaseBusiness,
   Home,
   FileText,
   Star,
@@ -18,7 +17,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Upload,
-  Users2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -28,6 +26,8 @@ import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useNavigationStore } from '@/lib/store/navigationStore';
 import { useAuthStore } from '@/lib/store/authStore';
+import { useDashboardStats } from '@/lib/hooks/useDashboard';
+import { useUnreadNotificationCount } from '@/lib/hooks/useNotifications';
 import { formatFileSize } from '@/lib/utils/format';
 import { UserDropdown } from '@/components/features/auth/UserDropdown';
 import { FolderTree } from '@/components/features/folders/FolderTree';
@@ -51,11 +51,6 @@ const navItems3 = [
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 
-const workspaces = [
-  { name: 'Executive Core', role: 'Owner', members: '12 members' },
-  { name: 'Contracts Hub', role: 'Admin', members: '7 members' },
-];
-
 interface SidebarProps {
   className?: string;
 }
@@ -65,6 +60,16 @@ export function AppSidebar({ className }: SidebarProps) {
   const { sidebarCollapsed, setSidebarCollapsed } = useNavigationStore();
   const user = useAuthStore((s) => s.user);
 
+  const { data: stats } = useDashboardStats();
+  const { data: unreadCount } = useUnreadNotificationCount();
+
+  const countMap: Record<string, number | undefined> = {
+    '/dashboard/documents': stats?.totalDocuments,
+    '/dashboard/favorites': stats?.favoriteCount,
+    '/dashboard/shared': stats?.sharedWithMeCount,
+    '/dashboard/notifications': unreadCount,
+  };
+
   const storageUsed = user?.storageUsedBytes ?? 0;
   const storageQuota = user?.storageLimitBytes ?? 104857600; // 100MB default
   const storagePercent = Math.round((storageUsed / storageQuota) * 100);
@@ -73,10 +78,12 @@ export function AppSidebar({ className }: SidebarProps) {
     href,
     label,
     icon: Icon,
+    count,
   }: {
     href: string;
     label: string;
     icon: React.ComponentType<{ className?: string }>;
+    count?: number;
   }) => {
     const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
 
@@ -91,8 +98,22 @@ export function AppSidebar({ className }: SidebarProps) {
           sidebarCollapsed && 'justify-center px-2'
         )}
       >
-        <Icon className="h-4 w-4 shrink-0" />
-        {!sidebarCollapsed && <span>{label}</span>}
+        <span className="relative">
+          <Icon className="h-4 w-4 shrink-0" />
+          {sidebarCollapsed && count != null && count > 0 && (
+            <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-primary" />
+          )}
+        </span>
+        {!sidebarCollapsed && (
+          <>
+            <span className="flex-1">{label}</span>
+            {count != null && count > 0 && (
+              <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
+                {count}
+              </span>
+            )}
+          </>
+        )}
       </Link>
     );
 
@@ -127,7 +148,7 @@ export function AppSidebar({ className }: SidebarProps) {
               <span className="block text-sm font-medium uppercase tracking-[0.28em] text-primary/80">
                 DocOrganiser
               </span>
-              <span className="block text-xs text-muted-foreground">Workspace shell</span>
+              <span className="block text-xs text-muted-foreground">Document workspace</span>
             </div>
           </Link>
         )}
@@ -150,54 +171,16 @@ export function AppSidebar({ className }: SidebarProps) {
         <Link href="/dashboard/documents">
           <Button className={cn('w-full gap-2', sidebarCollapsed && 'px-2')}>
             <Upload className="h-4 w-4" />
-            {!sidebarCollapsed && 'Upload to workspace'}
+            {!sidebarCollapsed && 'Upload document'}
           </Button>
         </Link>
       </div>
-
-      {!sidebarCollapsed && (
-        <div className="px-3 pb-3">
-          <div className="rounded-[1.4rem] border border-white/10 bg-white/5 p-3">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/12">
-                  <BriefcaseBusiness className="h-4 w-4 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Workspaces</p>
-                  <p className="text-xs text-muted-foreground">Future collaboration model</p>
-                </div>
-              </div>
-              <div className="rounded-full bg-primary/10 px-2 py-1 text-[11px] text-primary">Beta</div>
-            </div>
-            <div className="space-y-2">
-              {workspaces.map((workspace, index) => (
-                <div
-                  key={workspace.name}
-                  className={cn(
-                    'rounded-2xl border border-white/10 px-3 py-3',
-                    index === 0 ? 'bg-primary/10' : 'bg-white/5'
-                  )}
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium">{workspace.name}</p>
-                    <Users2 className="h-4 w-4 text-primary" />
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {workspace.role} · {workspace.members}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Navigation */}
       <ScrollArea className="flex-1 overflow-hidden px-3">
         <nav className="flex flex-col gap-1">
           {navItems.map((item) => (
-            <NavLink key={item.href} {...item} />
+            <NavLink key={item.href} {...item} count={countMap[item.href]} />
           ))}
 
           {/* Folder Tree */}
@@ -214,13 +197,13 @@ export function AppSidebar({ className }: SidebarProps) {
           <Separator className="my-2" />
 
           {navItems2.map((item) => (
-            <NavLink key={item.href} {...item} />
+            <NavLink key={item.href} {...item} count={countMap[item.href]} />
           ))}
 
           <Separator className="my-2" />
 
           {navItems3.map((item) => (
-            <NavLink key={item.href} {...item} />
+            <NavLink key={item.href} {...item} count={countMap[item.href]} />
           ))}
         </nav>
       </ScrollArea>

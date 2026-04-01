@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { LayoutGrid, List, Menu, Search, SortAsc, Sparkles, Upload, Users2, Workflow } from 'lucide-react';
+import { LayoutGrid, List, Menu, Search, SortAsc, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -13,6 +13,7 @@ import { NotificationBell } from '@/components/features/notifications/Notificati
 import { CommandPalette } from '@/components/features/search/CommandPalette';
 import { cn } from '@/lib/utils';
 import { useNavigationStore } from '@/lib/store/navigationStore';
+import { useAuthStore } from '@/lib/store/authStore';
 import type { SortField } from '@/lib/types';
 
 interface TopNavProps {
@@ -23,6 +24,7 @@ interface TopNavProps {
 export function TopNav({ onUploadClick, onMenuClick }: TopNavProps) {
   const [commandOpen, setCommandOpen] = useState(false);
   const { viewMode, setViewMode, sortBy, setSortBy } = useNavigationStore();
+  const user = useAuthStore((s) => s.user);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -55,23 +57,13 @@ export function TopNav({ onUploadClick, onMenuClick }: TopNavProps) {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-10 py-3 text-sm text-muted-foreground backdrop-blur">
-                <span>Search documents, spaces, people, or activity...</span>
+                <span>Search {user?.name ? `${user.name}'s` : 'your'} documents...</span>
                 <kbd className="hidden pointer-events-none items-center gap-1 rounded-lg border border-white/10 bg-background/60 px-2 py-1 font-mono text-[10px] font-medium text-muted-foreground sm:inline-flex">
                   <span className="text-xs">⌘</span>K
                 </kbd>
               </div>
             </div>
           </button>
-
-          <div className="hidden xl:flex items-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-3 py-2 text-sm text-muted-foreground backdrop-blur">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <span>Future-ready shell</span>
-          </div>
-
-          <div className="hidden xl:flex items-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-3 py-2 text-sm text-muted-foreground backdrop-blur">
-            <Users2 className="h-4 w-4 text-primary" />
-            <span>7 collaborators online</span>
-          </div>
 
           <div className="flex items-center gap-2">
             <div className="hidden items-center rounded-lg border border-white/10 bg-white/5 p-0.5 sm:flex">
@@ -119,16 +111,6 @@ export function TopNav({ onUploadClick, onMenuClick }: TopNavProps) {
               <span className="hidden sm:inline">Upload</span>
             </Button>
           </div>
-        </div>
-
-        <div className="mt-3 hidden items-center gap-3 md:flex">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs uppercase tracking-[0.24em] text-primary/80">
-            <Workflow className="h-3.5 w-3.5" />
-            Collaboration-ready
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Mission control for documents, approvals, teams, and search.
-          </p>
         </div>
       </header>
 

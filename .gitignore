@@ -4,3 +4,4 @@ AWS-DEPLOYMENT-GUIDE.md
 *.env
 backend.env
 frontend.env
+PLAN.md

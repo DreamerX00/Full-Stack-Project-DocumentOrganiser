@@ -8,43 +8,30 @@ import { FileTypeChart } from '@/components/features/dashboard/FileTypeChart';
 import { ActivityFeed } from '@/components/features/dashboard/ActivityFeed';
 import {
   ArrowRight,
-  BrainCircuit,
+  Clock,
+  FileText,
   FolderPlus,
+  HardDrive,
   MessagesSquare,
+  Share2,
   Sparkles,
   Star,
   Upload,
-  Users2,
-  Clock,
-  Workflow,
 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { useAuthStore } from '@/lib/store/authStore';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
-const collaborationSignals = [
-  {
-    title: 'Review queue',
-    value: '3 waiting',
-    description: 'Approvals, version checkpoints, and unresolved comments.',
-    icon: Workflow,
-  },
-  {
-    title: 'Team pulse',
-    value: '7 online',
-    description: 'Live teammates across contracts, operations, and leadership.',
-    icon: Users2,
-  },
-  {
-    title: 'Knowledge seams',
-    value: 'AI-ready',
-    description: 'Surfaces prepared for semantic search, summaries, and extraction.',
-    icon: BrainCircuit,
-  },
-];
-
 export default function DashboardPage() {
   const { data: stats, isLoading } = useDashboardStats();
+  const user = useAuthStore((s) => s.user);
+
+  const signalCards = [
+    { label: 'Documents', value: stats?.totalDocuments ?? 0, icon: FileText },
+    { label: 'Favorites', value: stats?.favoriteCount ?? 0, icon: Star },
+    { label: 'Storage', value: `${stats?.storageUsedPercentage ?? 0}%`, icon: HardDrive },
+    { label: 'Shared', value: stats?.sharedWithMeCount ?? 0, icon: Share2 },
+  ];
 
   return (
     <div className="space-y-8 p-4 sm:p-6 lg:p-8">
@@ -62,30 +49,37 @@ export default function DashboardPage() {
             </div>
             <div>
               <h1 className="max-w-3xl text-4xl font-semibold leading-tight sm:text-5xl">
-                Collaborate across documents, decisions, and shared knowledge.
+                Welcome back{user?.name ? `, ${user.name}` : ''}.
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-8 text-muted-foreground">
-                The dashboard is now your premium workspace overview: quick actions, live activity,
-                search context, and the next layer of collaboration-ready experiences.
+                {isLoading
+                  ? 'Loading your workspace...'
+                  : `${stats?.totalDocuments ?? 0} documents · ${stats?.totalFolders ?? 0} folders · ${stats?.storageUsedPercentage ?? 0}% storage used`}
               </p>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
-              {collaborationSignals.map((signal) => (
-                <div key={signal.title} className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
-                  <signal.icon className="mb-5 h-5 w-5 text-primary" />
-                  <p className="text-sm text-muted-foreground">{signal.title}</p>
-                  <p className="mt-1 text-2xl font-semibold">{signal.value}</p>
-                  <p className="mt-3 text-sm leading-6 text-muted-foreground">{signal.description}</p>
-                </div>
-              ))}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {isLoading
+                ? Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="h-20 animate-pulse rounded-2xl border border-white/10 bg-white/5" />
+                  ))
+                : signalCards.map((card) => (
+                    <div
+                      key={card.label}
+                      className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
+                    >
+                      <card.icon className="mb-2 h-4 w-4 text-primary" />
+                      <p className="text-2xl font-semibold">{card.value}</p>
+                      <p className="text-xs text-muted-foreground">{card.label}</p>
+                    </div>
+                  ))}
             </div>
           </div>
 
           <div className="space-y-4 rounded-[1.7rem] border border-white/10 bg-background/50 p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Quick workspace actions</p>
+                <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Quick actions</p>
                 <h2 className="mt-2 text-xl font-semibold">Keep work moving</h2>
               </div>
               <MessagesSquare className="h-5 w-5 text-primary" />
@@ -137,28 +131,6 @@ export default function DashboardPage() {
             quota={stats?.storageLimitBytes ?? 104857600}
           />
           <ActivityFeed activities={stats?.recentActivity ?? []} />
-          <Card className="border-white/10">
-            <CardContent className="space-y-4 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Future layer</p>
-                  <h3 className="mt-2 text-xl font-semibold">Workspace expansion</h3>
-                </div>
-                <Users2 className="h-5 w-5 text-primary" />
-              </div>
-              <div className="space-y-3">
-                {[
-                  'Team switcher and scoped navigation',
-                  'Threads, mentions, and approvals',
-                  'Saved views and universal search',
-                ].map((item) => (
-                  <div key={item} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm">
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>
