@@ -85,17 +85,24 @@ pipeline {
 
                     echo "🐳 Building Docker image (version: ${env.VERSION})..."
 
-                    retry(2) {
-                        sh """
-                            set -e
+                    withCredentials([
+                        string(credentialsId: 'google-client-id',    variable: 'NEXT_PUBLIC_GOOGLE_CLIENT_ID'),
+                        string(credentialsId: 'backend-internal-url', variable: 'BACKEND_INTERNAL_URL')
+                    ]) {
+                        retry(2) {
+                            sh """
+                                set -e
 
-                            docker build \\
-                                --pull \\
-                                -t ${ECR_REPO_FE}:${VERSION} \\
-                                -t ${ECR_REPO_FE}:${COMMIT_SHA} \\
-                                -t ${ECR_REPO_FE}:latest \\
-                                -f ${APP_DIR}/Dockerfile ${APP_DIR}/
-                        """
+                                docker build \\
+                                    --pull \\
+                                    --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID} \\
+                                    --build-arg BACKEND_INTERNAL_URL=${BACKEND_INTERNAL_URL} \\
+                                    -t ${ECR_REPO_FE}:${VERSION} \\
+                                    -t ${ECR_REPO_FE}:${COMMIT_SHA} \\
+                                    -t ${ECR_REPO_FE}:latest \\
+                                    -f ${APP_DIR}/Dockerfile ${APP_DIR}/
+                            """
+                        }
                     }
 
                     echo "✅ Docker image built locally"
