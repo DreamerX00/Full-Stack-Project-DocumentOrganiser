@@ -33,7 +33,7 @@ export default function WorkspaceMembersPage({ params }: WorkspaceMembersPagePro
 
   if (workspaceError) {
     return (
-      <div className="container max-w-4xl py-8">
+      <div className="space-y-8 p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <p className="text-destructive mb-4">Failed to load workspace</p>
           <Button variant="outline" onClick={() => router.push('/workspaces')}>
@@ -46,7 +46,7 @@ export default function WorkspaceMembersPage({ params }: WorkspaceMembersPagePro
 
   if (workspaceLoading) {
     return (
-      <div className="container max-w-4xl py-8">
+      <div className="space-y-8 p-4 sm:p-6 lg:p-8">
         <div className="space-y-6">
           <div className="flex items-center gap-4">
             <Skeleton className="h-8 w-8" />
@@ -60,7 +60,7 @@ export default function WorkspaceMembersPage({ params }: WorkspaceMembersPagePro
 
   if (!workspace) {
     return (
-      <div className="container max-w-4xl py-8">
+      <div className="space-y-8 p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <p className="text-muted-foreground mb-4">Workspace not found</p>
           <Button variant="outline" onClick={() => router.push('/workspaces')}>
@@ -72,7 +72,7 @@ export default function WorkspaceMembersPage({ params }: WorkspaceMembersPagePro
   }
 
   return (
-    <div className="container max-w-4xl py-8">
+    <div className="space-y-8 p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">

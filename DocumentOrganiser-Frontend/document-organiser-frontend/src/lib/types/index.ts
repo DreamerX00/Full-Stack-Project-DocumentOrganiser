@@ -179,20 +179,20 @@ export interface Workspace {
 export interface WorkspaceResponse {
   id: string;
   name: string;
+  slug: string;
   description?: string;
+  avatarUrl?: string;
   ownerId: string;
   ownerEmail: string;
   ownerName: string;
   memberCount: number;
-  documentCount: number;
-  folderCount: number;
+  currentUserRole: WorkspaceRole;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface WorkspaceMemberResponse {
   id: string;
-  workspaceId: string;
   userId: string;
   email: string;
   name: string;

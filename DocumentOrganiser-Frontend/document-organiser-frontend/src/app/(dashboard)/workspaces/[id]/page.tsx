@@ -7,12 +7,9 @@ import {
   ArrowLeft,
   Settings,
   Users,
-  FileText,
-  Folder,
   Upload,
   FolderPlus,
-  Loader2,
-  MoreHorizontal,
+  FileText,
 } from 'lucide-react';
 import { useWorkspace, useWorkspaceMembers } from '@/lib/hooks/useWorkspaces';
 import { useWorkspacePermissions } from '@/lib/hooks/usePermissions';
@@ -56,7 +53,7 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
 
   if (error) {
     return (
-      <div className="container max-w-6xl py-8">
+      <div className="space-y-8 p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <p className="text-destructive mb-4">Failed to load workspace</p>
           <Button variant="outline" onClick={() => router.push('/workspaces')}>
@@ -69,14 +66,13 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
 
   if (workspaceLoading) {
     return (
-      <div className="container max-w-6xl py-8">
+      <div className="space-y-8 p-4 sm:p-6 lg:p-8">
         <div className="space-y-6">
           <div className="flex items-center gap-4">
             <Skeleton className="h-8 w-8" />
             <Skeleton className="h-8 w-48" />
           </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            <Skeleton className="h-24 rounded-lg" />
+          <div className="grid gap-4 md:grid-cols-2">
             <Skeleton className="h-24 rounded-lg" />
             <Skeleton className="h-24 rounded-lg" />
           </div>
@@ -88,7 +84,7 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
 
   if (!workspace) {
     return (
-      <div className="container max-w-6xl py-8">
+      <div className="space-y-8 p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <p className="text-muted-foreground mb-4">Workspace not found</p>
           <Button variant="outline" onClick={() => router.push('/workspaces')}>
@@ -100,7 +96,7 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
   }
 
   return (
-    <div className="container max-w-6xl py-8">
+    <div className="space-y-8 p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
@@ -139,7 +135,7 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4 mb-8">
+      <div className="grid gap-4 md:grid-cols-2 mb-8">
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Members</CardDescription>
@@ -163,24 +159,6 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Documents</CardDescription>
-            <CardTitle className="text-3xl">{workspace.documentCount}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <FileText className="h-5 w-5 text-muted-foreground" />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Folders</CardDescription>
-            <CardTitle className="text-3xl">{workspace.folderCount}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Folder className="h-5 w-5 text-muted-foreground" />
           </CardContent>
         </Card>
         <Card>

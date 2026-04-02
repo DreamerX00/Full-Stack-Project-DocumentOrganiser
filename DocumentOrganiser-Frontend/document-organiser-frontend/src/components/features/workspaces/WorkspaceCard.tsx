@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Users, FileText, Folder, MoreHorizontal, Settings, Trash2 } from 'lucide-react';
+import { Users, MoreHorizontal, Settings, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import type { WorkspaceResponse } from '@/lib/types';
 import { formatRelativeTime } from '@/lib/utils/format';
 
@@ -104,15 +104,7 @@ export function WorkspaceCard({ workspace, currentUserIsOwner, onDelete }: Works
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             <Users className="h-4 w-4" />
-            <span>{workspace.memberCount}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <FileText className="h-4 w-4" />
-            <span>{workspace.documentCount}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Folder className="h-4 w-4" />
-            <span>{workspace.folderCount}</span>
+            <span>{workspace.memberCount} members</span>
           </div>
         </div>
         <div className="mt-3 pt-3 border-t flex items-center justify-between">

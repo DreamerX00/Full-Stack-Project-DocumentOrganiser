@@ -207,8 +207,8 @@ export default function ShareLinksPage() {
   }
 
   return (
-    <div className="container max-w-4xl py-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="space-y-8 p-4 sm:p-6 lg:p-8">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Share Links</h1>
           <p className="text-muted-foreground mt-1">

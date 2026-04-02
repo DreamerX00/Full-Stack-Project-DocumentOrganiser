@@ -90,7 +90,7 @@ export default function WorkspaceSettingsPage({ params }: WorkspaceSettingsPageP
 
   if (error) {
     return (
-      <div className="container max-w-4xl py-8">
+      <div className="space-y-8 p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <p className="text-destructive mb-4">Failed to load workspace settings</p>
           <Button variant="outline" onClick={() => router.push('/workspaces')}>
@@ -103,7 +103,7 @@ export default function WorkspaceSettingsPage({ params }: WorkspaceSettingsPageP
 
   if (workspaceLoading) {
     return (
-      <div className="container max-w-4xl py-8">
+      <div className="space-y-8 p-4 sm:p-6 lg:p-8">
         <div className="space-y-6">
           <div className="flex items-center gap-4">
             <Skeleton className="h-8 w-8" />
@@ -118,7 +118,7 @@ export default function WorkspaceSettingsPage({ params }: WorkspaceSettingsPageP
 
   if (!workspace) {
     return (
-      <div className="container max-w-4xl py-8">
+      <div className="space-y-8 p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <p className="text-muted-foreground mb-4">Workspace not found</p>
           <Button variant="outline" onClick={() => router.push('/workspaces')}>
@@ -131,7 +131,7 @@ export default function WorkspaceSettingsPage({ params }: WorkspaceSettingsPageP
 
   if (!permissions.canUpdateSettings) {
     return (
-      <div className="container max-w-4xl py-8">
+      <div className="space-y-8 p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <p className="text-muted-foreground mb-4">
             You don&apos;t have permission to access workspace settings
@@ -145,7 +145,7 @@ export default function WorkspaceSettingsPage({ params }: WorkspaceSettingsPageP
   }
 
   return (
-    <div className="container max-w-4xl py-8">
+    <div className="space-y-8 p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
         <Button variant="ghost" size="icon" asChild>
