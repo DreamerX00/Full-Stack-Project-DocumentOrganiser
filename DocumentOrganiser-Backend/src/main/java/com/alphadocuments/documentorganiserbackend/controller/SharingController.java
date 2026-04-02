@@ -2,6 +2,7 @@ package com.alphadocuments.documentorganiserbackend.controller;
 
 import com.alphadocuments.documentorganiserbackend.dto.request.CreateShareLinkRequest;
 import com.alphadocuments.documentorganiserbackend.dto.request.ShareWithUserRequest;
+import com.alphadocuments.documentorganiserbackend.dto.request.UpdateShareLinkRequest;
 import com.alphadocuments.documentorganiserbackend.dto.response.*;
 import com.alphadocuments.documentorganiserbackend.security.CurrentUser;
 import com.alphadocuments.documentorganiserbackend.security.UserPrincipal;
@@ -165,6 +166,18 @@ public class SharingController {
 
         Page<ShareLinkResponse> page = sharingService.getMyShareLinks(userPrincipal.getId(), pageable);
         return ResponseEntity.ok(ApiResponse.success(toPagedResponse(page)));
+    }
+
+    @PatchMapping("/shares/links/{shareLinkId}")
+    @Operation(summary = "Update share link", description = "Update share link settings")
+    public ResponseEntity<ApiResponse<ShareLinkResponse>> updateShareLink(
+            @CurrentUser UserPrincipal userPrincipal,
+            @PathVariable UUID shareLinkId,
+            @Valid @RequestBody UpdateShareLinkRequest request) {
+
+        ShareLinkResponse response = sharingService.updateShareLink(
+                userPrincipal.getId(), shareLinkId, request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Share link updated"));
     }
 
     @DeleteMapping("/shares/links/{shareLinkId}")

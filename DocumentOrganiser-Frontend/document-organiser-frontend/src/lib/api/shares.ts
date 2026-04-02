@@ -6,6 +6,7 @@ import type {
   PagedResponse,
   ShareWithUserRequest,
   CreateShareLinkRequest,
+  UpdateShareLinkRequest,
   DocumentResponse,
   FolderResponse,
 } from '@/lib/types';
@@ -89,6 +90,14 @@ export const sharesApi = {
     const res = await apiClient.get<ApiResponse<PagedResponse<ShareLinkResponse>>>(
       '/shares/links',
       { params: { page, size } }
+    );
+    return res.data.data;
+  },
+
+  updateShareLink: async (linkId: string, data: UpdateShareLinkRequest) => {
+    const res = await apiClient.patch<ApiResponse<ShareLinkResponse>>(
+      `/shares/links/${linkId}`,
+      data
     );
     return res.data.data;
   },

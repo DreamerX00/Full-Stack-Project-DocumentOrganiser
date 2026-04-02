@@ -3,8 +3,10 @@ package com.alphadocuments.documentorganiserbackend.controller;
 import com.alphadocuments.documentorganiserbackend.security.CurrentUser;
 import com.alphadocuments.documentorganiserbackend.security.UserPrincipal;
 import com.alphadocuments.documentorganiserbackend.service.NotificationService;
+import com.alphadocuments.documentorganiserbackend.service.PresenceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -23,7 +25,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Server-Sent Events controller for real-time notifications.
+ * Server-Sent Events controller for real-time notifications and presence.
  */
 @Slf4j
 @RestController
@@ -33,9 +35,18 @@ import java.util.concurrent.TimeUnit;
 public class NotificationSseController {
 
     private final NotificationService notificationService;
+    private final PresenceService presenceService;
     private final Map<UUID, SseEmitter> emitters = new ConcurrentHashMap<>();
     private final Map<UUID, ScheduledFuture<?>> heartbeatTasks = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
+    @PostConstruct
+    public void init() {
+        // Wire up presence events to be pushed via SSE
+        presenceService.setPresenceChangeCallback((userId, event) -> 
+            pushToUser(userId, "presence", event)
+        );
+    }
 
     @GetMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Operation(summary = "Subscribe to notifications", description = "SSE stream for real-time notification updates")

@@ -1,6 +1,7 @@
 package com.alphadocuments.documentorganiserbackend.controller;
 
 import com.alphadocuments.documentorganiserbackend.dto.request.CreateCommentRequest;
+import com.alphadocuments.documentorganiserbackend.dto.request.UpdateCommentRequest;
 import com.alphadocuments.documentorganiserbackend.dto.response.ApiResponse;
 import com.alphadocuments.documentorganiserbackend.dto.response.CommentResponse;
 import com.alphadocuments.documentorganiserbackend.dto.response.PagedResponse;
@@ -25,6 +26,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -95,8 +97,32 @@ public class CommentController {
                 .body(ApiResponse.success(mapToResponse(comment), "Comment added"));
     }
 
+    @PatchMapping("/{commentId}")
+    @Operation(summary = "Edit comment", description = "Edit your own comment")
+    public ResponseEntity<ApiResponse<CommentResponse>> editComment(
+            @CurrentUser UserPrincipal userPrincipal,
+            @PathVariable UUID documentId,
+            @PathVariable UUID commentId,
+            @Valid @RequestBody UpdateCommentRequest request) {
+
+        DocumentComment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Comment", "id", commentId));
+
+        // Only the author can edit
+        if (!comment.getUser().getId().equals(userPrincipal.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("FORBIDDEN", "You can only edit your own comments"));
+        }
+
+        comment.setContent(request.getContent());
+        comment.setEditedAt(Instant.now());
+        commentRepository.save(comment);
+
+        return ResponseEntity.ok(ApiResponse.success(mapToResponse(comment), "Comment updated"));
+    }
+
     @DeleteMapping("/{commentId}")
-    @Operation(summary = "Delete comment", description = "Delete a comment")
+    @Operation(summary = "Delete comment", description = "Delete a comment and all its replies")
     public ResponseEntity<ApiResponse<Void>> deleteComment(
             @CurrentUser UserPrincipal userPrincipal,
             @PathVariable UUID documentId,
@@ -111,18 +137,25 @@ public class CommentController {
                     .body(ApiResponse.error("FORBIDDEN", "You can only delete your own comments"));
         }
 
+        // Cascade delete is handled by JPA due to orphanRemoval = true
         commentRepository.delete(comment);
         return ResponseEntity.ok(ApiResponse.success("Comment deleted"));
     }
 
     private CommentResponse mapToResponse(DocumentComment comment) {
+        int replyCount = commentRepository.countReplies(comment.getId());
+        
         return CommentResponse.builder()
                 .id(comment.getId())
                 .documentId(comment.getDocument().getId())
                 .content(comment.getContent())
                 .authorName(comment.getUser().getName())
                 .authorEmail(comment.getUser().getEmail())
+                .authorProfilePicture(comment.getUser().getProfilePicture())
                 .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
+                .replyCount(replyCount)
+                .isEdited(comment.isEdited())
+                .editedAt(comment.getEditedAt())
                 .createdAt(comment.getCreatedAt())
                 .build();
     }

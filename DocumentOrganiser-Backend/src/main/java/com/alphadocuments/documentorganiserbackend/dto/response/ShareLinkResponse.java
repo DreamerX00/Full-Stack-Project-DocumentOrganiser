@@ -30,5 +30,6 @@ public class ShareLinkResponse {
     private Long accessCount;
     private Long maxAccessCount;
     private Boolean isActive;
+    private Instant lastAccessedAt;
     private Instant createdAt;
 }

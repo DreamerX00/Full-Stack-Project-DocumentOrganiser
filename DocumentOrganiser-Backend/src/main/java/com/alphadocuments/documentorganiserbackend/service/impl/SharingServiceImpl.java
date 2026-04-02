@@ -2,6 +2,7 @@ package com.alphadocuments.documentorganiserbackend.service.impl;
 
 import com.alphadocuments.documentorganiserbackend.dto.request.CreateShareLinkRequest;
 import com.alphadocuments.documentorganiserbackend.dto.request.ShareWithUserRequest;
+import com.alphadocuments.documentorganiserbackend.dto.request.UpdateShareLinkRequest;
 import com.alphadocuments.documentorganiserbackend.dto.response.DocumentResponse;
 import com.alphadocuments.documentorganiserbackend.dto.response.FolderResponse;
 import com.alphadocuments.documentorganiserbackend.dto.response.ShareLinkResponse;
@@ -108,6 +109,22 @@ public class SharingServiceImpl implements SharingService {
             throw new ForbiddenException("You can only revoke shares you created");
         }
 
+        // Send notification to the user who lost access
+        notificationService.createNotification(
+                sharedDocument.getSharedWith().getId(),
+                NotificationType.SHARE_REVOKED,
+                "Document access revoked",
+                sharedDocument.getSharedBy().getName() + " revoked your access to \"" + 
+                        sharedDocument.getDocument().getName() + "\"",
+                "DOCUMENT",
+                sharedDocument.getDocument().getId(),
+                null,
+                Map.of(
+                        "revokedBy", sharedDocument.getSharedBy().getEmail(),
+                        "revokedByName", sharedDocument.getSharedBy().getName()
+                )
+        );
+
         sharedDocumentRepository.delete(sharedDocument);
         log.info("Unshared document share {}", shareId);
     }
@@ -179,6 +196,22 @@ public class SharingServiceImpl implements SharingService {
         if (!sharedFolder.getSharedBy().getId().equals(userId)) {
             throw new ForbiddenException("You can only revoke shares you created");
         }
+
+        // Send notification to the user who lost access
+        notificationService.createNotification(
+                sharedFolder.getSharedWith().getId(),
+                NotificationType.SHARE_REVOKED,
+                "Folder access revoked",
+                sharedFolder.getSharedBy().getName() + " revoked your access to folder \"" + 
+                        sharedFolder.getFolder().getName() + "\"",
+                "FOLDER",
+                sharedFolder.getFolder().getId(),
+                null,
+                Map.of(
+                        "revokedBy", sharedFolder.getSharedBy().getEmail(),
+                        "revokedByName", sharedFolder.getSharedBy().getName()
+                )
+        );
 
         sharedFolderRepository.delete(sharedFolder);
         log.info("Unshared folder share {}", shareId);
@@ -252,6 +285,48 @@ public class SharingServiceImpl implements SharingService {
 
         log.info("Created share link for folder {}", folderId);
         return mapToShareLinkResponse(shareLink, "FOLDER", folder.getName());
+    }
+
+    @Override
+    @Transactional
+    public ShareLinkResponse updateShareLink(UUID userId, UUID shareLinkId, UpdateShareLinkRequest request) {
+        ShareLink shareLink = shareLinkRepository.findById(shareLinkId)
+                .orElseThrow(() -> new ResourceNotFoundException("Share link", shareLinkId.toString()));
+
+        if (!shareLink.getCreatedBy().getId().equals(userId)) {
+            throw new ForbiddenException("You can only update links you created");
+        }
+
+        // Update fields if provided
+        if (request.getPermission() != null) {
+            shareLink.setPermission(request.getPermission());
+        }
+        if (request.getExpiresAt() != null) {
+            shareLink.setExpiresAt(request.getExpiresAt());
+        }
+        if (request.getPassword() != null) {
+            // Empty string means remove password, non-empty means set password
+            if (request.getPassword().isEmpty()) {
+                shareLink.setPasswordHash(null);
+            } else {
+                shareLink.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+            }
+        }
+        if (request.getIsActive() != null) {
+            shareLink.setIsActive(request.getIsActive());
+        }
+        if (request.getMaxAccessCount() != null) {
+            shareLink.setMaxAccessCount(request.getMaxAccessCount());
+        }
+
+        shareLink = shareLinkRepository.save(shareLink);
+
+        String itemType = shareLink.getDocument() != null ? "DOCUMENT" : "FOLDER";
+        String itemName = shareLink.getDocument() != null ?
+                shareLink.getDocument().getName() : shareLink.getFolder().getName();
+
+        log.info("Updated share link {}", shareLinkId);
+        return mapToShareLinkResponse(shareLink, itemType, itemName);
     }
 
     @Override
@@ -475,6 +550,7 @@ public class SharingServiceImpl implements SharingService {
                 .accessCount(sl.getAccessCount())
                 .maxAccessCount(sl.getMaxAccessCount())
                 .isActive(sl.getIsActive())
+                .lastAccessedAt(sl.getLastAccessedAt())
                 .createdAt(sl.getCreatedAt())
                 .build();
     }

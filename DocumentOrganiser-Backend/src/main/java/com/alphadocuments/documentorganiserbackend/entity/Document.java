@@ -17,7 +17,8 @@ import java.util.Set;
     @Index(name = "idx_documents_folder_id", columnList = "folder_id"),
     @Index(name = "idx_documents_category", columnList = "category"),
     @Index(name = "idx_documents_deleted", columnList = "is_deleted"),
-    @Index(name = "idx_documents_name", columnList = "name")
+    @Index(name = "idx_documents_name", columnList = "name"),
+    @Index(name = "idx_documents_workspace_id", columnList = "workspace_id")
 })
 @Getter
 @Setter
@@ -83,6 +84,10 @@ public class Document extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "folder_id")
     private Folder folder;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "workspace_id")
+    private Workspace workspace;
 
     @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

@@ -55,6 +55,7 @@ export enum NotificationType {
   DOCUMENT_SHARED = 'DOCUMENT_SHARED',
   FOLDER_SHARED = 'FOLDER_SHARED',
   SHARE_LINK_ACCESSED = 'SHARE_LINK_ACCESSED',
+  SHARE_REVOKED = 'SHARE_REVOKED',
   STORAGE_WARNING = 'STORAGE_WARNING',
   STORAGE_FULL = 'STORAGE_FULL',
   DOCUMENT_COMMENT = 'DOCUMENT_COMMENT',
@@ -68,7 +69,7 @@ export type SortField = 'name' | 'date' | 'size' | 'type';
 export type SortDirection = 'asc' | 'desc';
 export type Theme = 'light' | 'dark';
 export type ItemType = 'DOCUMENT' | 'FOLDER';
-export type WorkspaceRole = 'OWNER' | 'ADMIN' | 'EDITOR' | 'COMMENTER' | 'VIEWER';
+export type WorkspaceRole = 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER';
 export type TaskStatus = 'open' | 'in_review' | 'approved' | 'blocked';
 
 // ============================================================
@@ -172,6 +173,51 @@ export interface Workspace {
   storageLimitBytes?: number;
   accent?: string;
   visibility?: 'private' | 'shared' | 'public';
+}
+
+// Workspace API Response types
+export interface WorkspaceResponse {
+  id: string;
+  name: string;
+  description?: string;
+  ownerId: string;
+  ownerEmail: string;
+  ownerName: string;
+  memberCount: number;
+  documentCount: number;
+  folderCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkspaceMemberResponse {
+  id: string;
+  workspaceId: string;
+  userId: string;
+  email: string;
+  name: string;
+  profilePicture?: string;
+  role: WorkspaceRole;
+  joinedAt: string;
+}
+
+export interface CreateWorkspaceRequest {
+  name: string;
+  description?: string;
+}
+
+export interface UpdateWorkspaceRequest {
+  name?: string;
+  description?: string;
+}
+
+export interface InviteWorkspaceMemberRequest {
+  email: string;
+  role: WorkspaceRole;
+}
+
+export interface UpdateMemberRoleRequest {
+  role: WorkspaceRole;
 }
 
 export interface Member {
@@ -364,6 +410,15 @@ export interface ShareLinkResponse {
   maxAccessCount?: number;
   isActive: boolean;
   createdAt: string;
+  lastAccessedAt?: string;
+}
+
+export interface UpdateShareLinkRequest {
+  permission?: SharePermission;
+  password?: string;
+  expiresAt?: string | null;
+  maxAccessCount?: number | null;
+  isActive?: boolean;
 }
 
 // ============================================================

@@ -12,3 +12,6 @@ export { usersApi } from './users';
 export { adminApi } from './admin';
 export { aiApi } from './ai';
 export { commentsApi } from './comments';
+export { presenceApi } from './presence';
+export { workspacesApi } from './workspaces';
+export type { ViewerSummary, PresenceEvent } from './presence';

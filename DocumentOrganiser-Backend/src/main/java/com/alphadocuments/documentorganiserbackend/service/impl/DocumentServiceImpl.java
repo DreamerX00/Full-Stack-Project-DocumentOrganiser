@@ -25,6 +25,7 @@ import com.alphadocuments.documentorganiserbackend.service.StorageService;
 import com.alphadocuments.documentorganiserbackend.service.UserService;
 import com.alphadocuments.documentorganiserbackend.entity.enums.ActivityType;
 import com.alphadocuments.documentorganiserbackend.util.FileTypeUtil;
+import com.alphadocuments.documentorganiserbackend.util.FileSecurityValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
@@ -65,13 +66,13 @@ public class DocumentServiceImpl implements DocumentService {
     private final UserService userService;
     private final ActivityService activityService;
     private final FileTypeUtil fileTypeUtil;
+    private final FileSecurityValidator fileSecurityValidator;
 
     @Override
     @Transactional
     public DocumentResponse uploadDocument(UUID userId, UUID folderId, MultipartFile file, String conflictResolution) {
-        if (file.isEmpty()) {
-            throw new ValidationException("File is empty");
-        }
+        // Security validation - check for malicious files using magic bytes
+        fileSecurityValidator.validateFile(file);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId.toString()));

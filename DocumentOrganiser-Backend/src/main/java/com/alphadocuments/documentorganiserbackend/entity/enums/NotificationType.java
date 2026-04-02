@@ -6,6 +6,7 @@ package com.alphadocuments.documentorganiserbackend.entity.enums;
 public enum NotificationType {
     DOCUMENT_SHARED,
     FOLDER_SHARED,
+    SHARE_REVOKED,
     SHARE_LINK_ACCESSED,
     STORAGE_WARNING,
     STORAGE_FULL,

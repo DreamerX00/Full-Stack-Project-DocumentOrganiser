@@ -15,6 +15,10 @@ public class CommentResponse {
     private String content;
     private String authorName;
     private String authorEmail;
+    private String authorProfilePicture;
     private UUID parentId;
+    private Integer replyCount;
+    private Boolean isEdited;
+    private Instant editedAt;
     private Instant createdAt;
 }

@@ -2,6 +2,7 @@ package com.alphadocuments.documentorganiserbackend.service;
 
 import com.alphadocuments.documentorganiserbackend.dto.request.CreateShareLinkRequest;
 import com.alphadocuments.documentorganiserbackend.dto.request.ShareWithUserRequest;
+import com.alphadocuments.documentorganiserbackend.dto.request.UpdateShareLinkRequest;
 import com.alphadocuments.documentorganiserbackend.dto.response.DocumentResponse;
 import com.alphadocuments.documentorganiserbackend.dto.response.FolderResponse;
 import com.alphadocuments.documentorganiserbackend.dto.response.ShareLinkResponse;
@@ -40,6 +41,8 @@ public interface SharingService {
     ShareLinkResponse createDocumentShareLink(UUID userId, UUID documentId, CreateShareLinkRequest request);
 
     ShareLinkResponse createFolderShareLink(UUID userId, UUID folderId, CreateShareLinkRequest request);
+
+    ShareLinkResponse updateShareLink(UUID userId, UUID shareLinkId, UpdateShareLinkRequest request);
 
     void deactivateShareLink(UUID userId, UUID shareLinkId);
 

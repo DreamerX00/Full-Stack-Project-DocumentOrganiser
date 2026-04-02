@@ -7,8 +7,16 @@ export interface CommentResponse {
   content: string;
   authorName: string;
   authorEmail: string;
+  authorProfilePicture?: string;
   parentId: string | null;
+  replyCount: number;
+  isEdited: boolean;
+  editedAt?: string;
   createdAt: string;
+}
+
+export interface UpdateCommentRequest {
+  content: string;
 }
 
 export const commentsApi = {
@@ -24,6 +32,14 @@ export const commentsApi = {
     const res = await apiClient.post<ApiResponse<CommentResponse>>(
       `/documents/${documentId}/comments`,
       { content, parentId }
+    );
+    return res.data.data;
+  },
+
+  update: async (documentId: string, commentId: string, content: string) => {
+    const res = await apiClient.patch<ApiResponse<CommentResponse>>(
+      `/documents/${documentId}/comments/${commentId}`,
+      { content } as UpdateCommentRequest
     );
     return res.data.data;
   },

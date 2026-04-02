@@ -60,6 +60,9 @@ public class ShareLink extends BaseEntity {
     @Builder.Default
     private Boolean isActive = true;
 
+    @Column(name = "last_accessed_at")
+    private Instant lastAccessedAt;
+
     public boolean isExpired() {
         return expiresAt != null && Instant.now().isAfter(expiresAt);
     }
@@ -74,5 +77,6 @@ public class ShareLink extends BaseEntity {
 
     public void incrementAccessCount() {
         this.accessCount++;
+        this.lastAccessedAt = Instant.now();
     }
 }
