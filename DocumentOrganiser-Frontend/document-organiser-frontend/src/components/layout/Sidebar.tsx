@@ -17,6 +17,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Upload,
+  Building2,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -42,6 +44,8 @@ const navItems = [
 
 const navItems2 = [
   { href: '/dashboard/shared', label: 'Shared with me', icon: Share2 },
+  { href: '/shares', label: 'Share Links', icon: LinkIcon },
+  { href: '/workspaces', label: 'Workspaces', icon: Building2 },
   { href: '/dashboard/trash', label: 'Trash', icon: Trash2 },
 ];
 

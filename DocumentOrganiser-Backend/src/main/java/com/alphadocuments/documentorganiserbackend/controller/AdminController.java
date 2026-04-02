@@ -4,6 +4,7 @@ import com.alphadocuments.documentorganiserbackend.dto.response.ApiResponse;
 import com.alphadocuments.documentorganiserbackend.dto.response.PagedResponse;
 import com.alphadocuments.documentorganiserbackend.dto.response.UserResponse;
 import com.alphadocuments.documentorganiserbackend.entity.User;
+import com.alphadocuments.documentorganiserbackend.entity.enums.ActivityType;
 import com.alphadocuments.documentorganiserbackend.entity.enums.Role;
 import com.alphadocuments.documentorganiserbackend.exception.ResourceNotFoundException;
 import com.alphadocuments.documentorganiserbackend.repository.DocumentRepository;
@@ -11,8 +12,10 @@ import com.alphadocuments.documentorganiserbackend.repository.FolderRepository;
 import com.alphadocuments.documentorganiserbackend.repository.UserRepository;
 import com.alphadocuments.documentorganiserbackend.security.CurrentUser;
 import com.alphadocuments.documentorganiserbackend.security.UserPrincipal;
+import com.alphadocuments.documentorganiserbackend.service.ActivityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,6 +42,7 @@ public class AdminController {
     private final UserRepository userRepository;
     private final DocumentRepository documentRepository;
     private final FolderRepository folderRepository;
+    private final ActivityService activityService;
 
     @GetMapping("/users")
     @Operation(summary = "List all users", description = "Admin: Get all users with pagination")
@@ -85,12 +89,27 @@ public class AdminController {
     public ResponseEntity<ApiResponse<UserResponse>> changeUserRole(
             @CurrentUser UserPrincipal userPrincipal,
             @PathVariable UUID userId,
-            @RequestParam Role role) {
+            @RequestParam Role role,
+            HttpServletRequest request) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+        Role previousRole = user.getRole();
         user.setRole(role);
         userRepository.save(user);
+
+        // Log admin action
+        activityService.logActivity(
+                userPrincipal.getId(),
+                ActivityType.ADMIN_USER_ROLE_CHANGED,
+                "USER",
+                userId,
+                user.getName(),
+                String.format("Changed role from %s to %s for user %s", previousRole, role, user.getEmail()),
+                Map.of("previousRole", previousRole.name(), "newRole", role.name(), "targetUserEmail", user.getEmail()),
+                getClientIp(request),
+                request.getHeader("User-Agent")
+        );
 
         return ResponseEntity.ok(ApiResponse.success(mapToResponse(user), "Role updated successfully"));
     }
@@ -99,7 +118,8 @@ public class AdminController {
     @Operation(summary = "Delete user", description = "Admin: Delete a user account")
     public ResponseEntity<ApiResponse<Void>> deleteUser(
             @CurrentUser UserPrincipal userPrincipal,
-            @PathVariable UUID userId) {
+            @PathVariable UUID userId,
+            HttpServletRequest request) {
 
         // Prevent self-deletion
         if (userPrincipal.getId().equals(userId)) {
@@ -109,9 +129,38 @@ public class AdminController {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+        
+        String userEmail = user.getEmail();
+        String userName = user.getName();
+        
         userRepository.delete(user);
 
+        // Log admin action
+        activityService.logActivity(
+                userPrincipal.getId(),
+                ActivityType.ADMIN_USER_DELETED,
+                "USER",
+                userId,
+                userName,
+                String.format("Deleted user account: %s", userEmail),
+                Map.of("deletedUserEmail", userEmail, "deletedUserName", userName),
+                getClientIp(request),
+                request.getHeader("User-Agent")
+        );
+
         return ResponseEntity.ok(ApiResponse.success("User deleted successfully"));
+    }
+
+    private String getClientIp(HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+            return xForwardedFor.split(",")[0].trim();
+        }
+        String xRealIp = request.getHeader("X-Real-IP");
+        if (xRealIp != null && !xRealIp.isEmpty()) {
+            return xRealIp;
+        }
+        return request.getRemoteAddr();
     }
 
     private UserResponse mapToResponse(User user) {

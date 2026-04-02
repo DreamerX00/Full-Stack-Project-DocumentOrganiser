@@ -39,6 +39,10 @@ public enum ActivityType {
     USER_PROFILE_UPDATED,
     USER_SETTINGS_UPDATED,
 
+    // Admin activities
+    ADMIN_USER_ROLE_CHANGED,
+    ADMIN_USER_DELETED,
+
     // Trash activities
     ITEM_TRASHED,
     ITEM_RESTORED,

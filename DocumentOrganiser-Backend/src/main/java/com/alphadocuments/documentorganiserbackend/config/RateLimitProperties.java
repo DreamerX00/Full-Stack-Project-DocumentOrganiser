@@ -16,6 +16,7 @@ public class RateLimitProperties {
     private Storage storage = Storage.IN_MEMORY;
     private int authLimit = 20;
     private int uploadLimit = 30;
+    private int shareLimit = 10;
     private int generalLimit = 120;
     private long windowMs = 60_000;
     private long cleanupIntervalMs = 300_000;

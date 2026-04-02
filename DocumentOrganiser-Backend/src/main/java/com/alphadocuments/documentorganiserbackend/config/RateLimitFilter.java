@@ -86,6 +86,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if (path.startsWith("/auth/")) {
             return rateLimitProperties.getAuthLimit();
         }
+        if (path.startsWith("/share/")) {
+            return rateLimitProperties.getShareLimit();
+        }
         if (path.contains("/documents") && "POST".equalsIgnoreCase(method)) {
             return rateLimitProperties.getUploadLimit();
         }
@@ -95,6 +98,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private String getBucketName(String path, String method) {
         if (path.startsWith("/auth/")) {
             return "auth";
+        }
+        if (path.startsWith("/share/")) {
+            return "share";
         }
         if (path.contains("/documents") && "POST".equalsIgnoreCase(method)) {
             return "upload";

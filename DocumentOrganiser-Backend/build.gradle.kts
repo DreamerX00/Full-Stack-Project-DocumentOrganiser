@@ -38,7 +38,8 @@ val versions = mapOf(
     "tika" to "3.2.3",
     "springdocOpenapi" to "2.8.16",
     "lombok" to "1.18.42",
-    "mapstruct" to "1.6.3"
+    "mapstruct" to "1.6.3",
+    "logstashEncoder" to "8.0"
 )
 
 dependencyManagement {
@@ -103,6 +104,11 @@ dependencies {
     // MapStruct - DTO mapping
     implementation("org.mapstruct:mapstruct:${versions["mapstruct"]}")
     annotationProcessor("org.mapstruct:mapstruct-processor:${versions["mapstruct"]}")
+
+    // =========================================================================
+    // Logging
+    // =========================================================================
+    implementation("net.logstash.logback:logstash-logback-encoder:${versions["logstashEncoder"]}")
 
     // =========================================================================
     // Development Tools

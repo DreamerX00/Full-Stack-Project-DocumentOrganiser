@@ -29,6 +29,7 @@ import {
   Loader2,
   AlertCircle,
   FileWarning,
+  Users,
 } from 'lucide-react';
 import { formatFileSize, formatDate, getCategoryInfo, copyToClipboard } from '@/lib/utils/format';
 import {
@@ -40,6 +41,8 @@ import {
   type PreviewType,
 } from '@/lib/utils/preview';
 import { documentsApi } from '@/lib/api/documents';
+import { usePresence } from '@/lib/hooks/usePresence';
+import { ViewerAvatars } from '@/components/features/presence';
 import type { DocumentResponse } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -78,6 +81,9 @@ export function FilePreview({
   const [showDetails, setShowDetails] = useState(false);
   const [zoom, setZoom] = useState(1);
   const hasFetchedUrl = useRef(false);
+
+  // ── Presence tracking ─────────────────────────────────────────────────
+  const { viewers } = usePresence(doc?.id, { enabled: open && !!doc });
 
   // Derived
   const previewType: PreviewType = doc ? getPreviewType(doc.mimeType, doc.name) : 'fallback';
@@ -199,15 +205,24 @@ export function FilePreview({
       <DialogContent className="sm:max-w-5xl max-h-[92vh] overflow-hidden flex flex-col p-0">
         {/* ── Header ─────────────────────────────────────────────────── */}
         <DialogHeader className="px-6 pt-6 pb-0">
-          <DialogTitle className="flex items-center gap-2 truncate pr-8">
-            {CategoryIcon && (
-              <CategoryIcon className={cn('h-5 w-5 shrink-0', categoryInfo?.color)} />
+          <div className="flex items-center justify-between gap-4">
+            <DialogTitle className="flex items-center gap-2 truncate pr-8">
+              {CategoryIcon && (
+                <CategoryIcon className={cn('h-5 w-5 shrink-0', categoryInfo?.color)} />
+              )}
+              <span className="truncate">{doc.name}</span>
+              <Badge variant="outline" className="ml-2 text-[10px] shrink-0">
+                {formatFileSize(doc.fileSize)}
+              </Badge>
+            </DialogTitle>
+            {/* Presence Avatars - show who else is viewing */}
+            {viewers.length > 0 && (
+              <div className="flex items-center gap-2 shrink-0">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <ViewerAvatars viewers={viewers} size="sm" maxVisible={3} />
+              </div>
             )}
-            <span className="truncate">{doc.name}</span>
-            <Badge variant="outline" className="ml-2 text-[10px] shrink-0">
-              {formatFileSize(doc.fileSize)}
-            </Badge>
-          </DialogTitle>
+          </div>
         </DialogHeader>
 
         {/* ── Toolbar ────────────────────────────────────────────────── */}
