@@ -1,6 +1,6 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -14,6 +14,7 @@ import {
 import { useWorkspace, useWorkspaceMembers } from '@/lib/hooks/useWorkspaces';
 import { useWorkspacePermissions } from '@/lib/hooks/usePermissions';
 import { useAuthStore } from '@/lib/store/authStore';
+import { useCreateFolder } from '@/lib/hooks/useFolders';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,6 +22,8 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { InviteMemberDialog, MemberList } from '@/components/features/workspaces';
+import { CreateFolderDialog } from '@/components/features/folders/CreateFolderDialog';
+import { FileUploadDialog } from '@/components/features/files/FileUploadDialog';
 import type { WorkspaceRole } from '@/lib/types';
 
 interface WorkspaceDetailPageProps {
@@ -32,8 +35,15 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
   const router = useRouter();
   const { user } = useAuthStore();
   
+  // Dialog states
+  const [createFolderOpen, setCreateFolderOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  
   const { data: workspace, isLoading: workspaceLoading, error } = useWorkspace(id);
   const { data: membersData, isLoading: membersLoading } = useWorkspaceMembers(id);
+  
+  // Mutations
+  const createFolder = useCreateFolder();
 
   // Find current user's role in this workspace
   const currentMember = membersData?.content.find((m) => m.userId === user?.id);
@@ -49,6 +59,17 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
       .join('')
       .toUpperCase()
       .slice(0, 2);
+  };
+  
+  const handleCreateFolder = (data: { name: string; description?: string; color?: string }) => {
+    createFolder.mutate(
+      { name: data.name, description: data.description, color: data.color },
+      {
+        onSuccess: () => {
+          setCreateFolderOpen(false);
+        },
+      }
+    );
   };
 
   if (error) {
@@ -191,11 +212,11 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
             <h2 className="text-lg font-semibold">Workspace Files</h2>
             {permissions.canEdit && (
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => setCreateFolderOpen(true)}>
                   <FolderPlus className="mr-2 h-4 w-4" />
                   New Folder
                 </Button>
-                <Button size="sm">
+                <Button size="sm" onClick={() => setUploadOpen(true)}>
                   <Upload className="mr-2 h-4 w-4" />
                   Upload
                 </Button>
@@ -211,7 +232,7 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
                   Upload documents or create folders to get started
                 </p>
                 {permissions.canEdit && (
-                  <Button>
+                  <Button onClick={() => setUploadOpen(true)}>
                     <Upload className="mr-2 h-4 w-4" />
                     Upload Files
                   </Button>
@@ -251,6 +272,15 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
           </Card>
         </TabsContent>
       </Tabs>
+      
+      {/* Dialogs */}
+      <CreateFolderDialog
+        open={createFolderOpen}
+        onOpenChange={setCreateFolderOpen}
+        onSubmit={handleCreateFolder}
+        isLoading={createFolder.isPending}
+      />
+      <FileUploadDialog open={uploadOpen} onOpenChange={setUploadOpen} />
     </div>
   );
 }
