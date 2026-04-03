@@ -133,6 +133,10 @@ pipeline {
                 stage('Build & Push Images') {
                     parallel {
                         stage('Backend Image') {
+                            when {
+                                beforeAgent true
+                                expression { env.BACKEND_CHANGED == 'true' }
+                            }
                             steps {
                                 dir('DocumentOrganiser-Backend') {
                                     sh 'chmod +x gradlew && ./gradlew bootJar --no-daemon -x test'
@@ -152,6 +156,10 @@ pipeline {
                         }
 
                         stage('Frontend Image') {
+                            when {
+                                beforeAgent true
+                                expression { env.FRONTEND_CHANGED == 'true' }
+                            }
                             steps {
                                 withCredentials([
                                     string(credentialsId: 'google-client-id',    variable: 'NEXT_PUBLIC_GOOGLE_CLIENT_ID'),
@@ -175,6 +183,44 @@ pipeline {
                                         echo "Frontend pushed: ${REGISTRY}/${ECR_REPO_FE}:${VERSION}"
                                     }
                                 }
+                            }
+                        }
+                    }
+                }
+
+                stage('Deploy to ECS') {
+                    parallel {
+                        stage('Deploy Backend') {
+                            when {
+                                beforeAgent true
+                                expression { env.BACKEND_CHANGED == 'true' }
+                            }
+                            steps {
+                                sh """
+                                    aws ecs update-service \
+                                        --cluster document-organiser-cluster \
+                                        --service backend-service \
+                                        --force-new-deployment \
+                                        --region ${AWS_REGION}
+                                """
+                                echo "Backend ECS service updated"
+                            }
+                        }
+
+                        stage('Deploy Frontend') {
+                            when {
+                                beforeAgent true
+                                expression { env.FRONTEND_CHANGED == 'true' }
+                            }
+                            steps {
+                                sh """
+                                    aws ecs update-service \
+                                        --cluster document-organiser-cluster \
+                                        --service frontend-service \
+                                        --force-new-deployment \
+                                        --region ${AWS_REGION}
+                                """
+                                echo "Frontend ECS service updated"
                             }
                         }
                     }

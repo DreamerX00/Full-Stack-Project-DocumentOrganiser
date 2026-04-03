@@ -4,6 +4,7 @@ pipeline {
     parameters {
         string(name: 'GIT_REPO', defaultValue: 'https://github.com/DreamerX00/Full-Stack-Project-DocumentOrganiser', description: 'Git repo URL')
         string(name: 'GIT_BRANCH', defaultValue: 'master', description: 'Branch name')
+        booleanParam(name: 'FORCE_BUILD', defaultValue: false, description: 'Force build even if no frontend changes detected')
     }
 
     environment {
@@ -43,10 +44,41 @@ pipeline {
             }
         }
 
-
+        // ───────────── DETECT CHANGES ─────────────
+        stage('Detect Changes') {
+            steps {
+                script {
+                    def hasParent = sh(script: 'git rev-parse --verify HEAD~1 >/dev/null 2>&1', returnStatus: true) == 0
+                    
+                    if (params.FORCE_BUILD) {
+                        env.FRONTEND_CHANGED = 'true'
+                        echo "⚡ Force build enabled"
+                    } else if (hasParent) {
+                        env.FRONTEND_CHANGED = sh(
+                            script: "git diff --name-only HEAD~1 HEAD | grep -q '^DocumentOrganiser-Frontend/' && echo true || echo false",
+                            returnStdout: true
+                        ).trim()
+                    } else {
+                        env.FRONTEND_CHANGED = 'true'
+                        echo "📦 First commit - building"
+                    }
+                    
+                    echo "🔍 Frontend changed: ${env.FRONTEND_CHANGED}"
+                    
+                    if (env.FRONTEND_CHANGED == 'false') {
+                        currentBuild.result = 'NOT_BUILT'
+                        currentBuild.description = 'Skipped - no frontend changes'
+                        echo "⏭️ No frontend changes detected. Skipping build."
+                    }
+                }
+            }
+        }
 
         // ───────────── VALIDATION ─────────────
         stage('Validate Docker Context') {
+            when {
+                expression { env.FRONTEND_CHANGED == 'true' }
+            }
             steps {
                 script {
                     sh """
@@ -72,6 +104,9 @@ pipeline {
 
         // ───────────── BUILD IMAGE ─────────────
         stage('Build Docker Image') {
+            when {
+                expression { env.FRONTEND_CHANGED == 'true' }
+            }
             steps {
                 script {
                     env.COMMIT_SHA = sh(
@@ -112,6 +147,9 @@ pipeline {
 
         // ───────────── ECR LOGIN ─────────────
         stage('Login to ECR') {
+            when {
+                expression { env.FRONTEND_CHANGED == 'true' }
+            }
             steps {
                 script {
                     def accountId = sh(
@@ -137,6 +175,9 @@ pipeline {
 
         // ───────────── TAG + PUSH ─────────────
         stage('Tag & Push Image') {
+            when {
+                expression { env.FRONTEND_CHANGED == 'true' }
+            }
             steps {
                 script {
                     echo "📤 Tagging & pushing image..."
@@ -160,6 +201,9 @@ pipeline {
 
         // ───────────── DEPLOY TO ECS ─────────────
         stage('Deploy Frontend to ECS') {
+            when {
+                expression { env.FRONTEND_CHANGED == 'true' }
+            }
             steps {
                 script {
                     def cluster = "full-stack-doc-organiser"
