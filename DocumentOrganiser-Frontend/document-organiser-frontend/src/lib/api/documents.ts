@@ -159,4 +159,48 @@ export const documentsApi = {
     );
     return res.data.data;
   },
+
+  // Workspace document operations
+  uploadToWorkspace: async (
+    workspaceId: string,
+    file: File,
+    folderId?: string,
+    onProgress?: (percent: number) => void
+  ) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (folderId) formData.append('folderId', folderId);
+
+    const res = await apiClient.post<ApiResponse<DocumentResponse>>(
+      `/documents/workspace/${workspaceId}`,
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          if (onProgress && progressEvent.total) {
+            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            onProgress(percent);
+          }
+        },
+      }
+    );
+    return res.data.data;
+  },
+
+  listWorkspaceDocuments: async (
+    workspaceId: string,
+    folderId?: string,
+    page = 0,
+    size = 20,
+    sortBy = 'updatedAt',
+    sortDir = 'desc'
+  ) => {
+    const res = await apiClient.get<ApiResponse<PagedResponse<DocumentResponse>>>(
+      `/documents/workspace/${workspaceId}`,
+      {
+        params: { folderId, page, size, sort: `${mapSortField(sortBy)},${sortDir}` },
+      }
+    );
+    return res.data.data;
+  },
 };

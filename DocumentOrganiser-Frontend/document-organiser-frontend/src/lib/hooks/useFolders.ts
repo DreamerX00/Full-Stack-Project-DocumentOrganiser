@@ -15,6 +15,11 @@ export const folderKeys = {
   tree: () => [...folderKeys.all, 'tree'] as const,
   details: () => [...folderKeys.all, 'detail'] as const,
   detail: (id: string) => [...folderKeys.details(), id] as const,
+  // Workspace folder keys
+  workspaceRoot: (workspaceId: string) => [...folderKeys.lists(), 'workspace', workspaceId, 'root'] as const,
+  workspaceSubfolders: (workspaceId: string, parentId: string) =>
+    [...folderKeys.lists(), 'workspace', workspaceId, 'sub', parentId] as const,
+  workspaceTree: (workspaceId: string) => [...folderKeys.all, 'workspace', workspaceId, 'tree'] as const,
 };
 
 // ── Queries ─────────────────────────────────────────────────
@@ -48,15 +53,49 @@ export function useFolder(id: string) {
   });
 }
 
+// ── Workspace folder queries ────────────────────────────────
+export function useWorkspaceRootFolders(workspaceId: string) {
+  return useQuery({
+    queryKey: folderKeys.workspaceRoot(workspaceId),
+    queryFn: () => foldersApi.listWorkspaceRootFolders(workspaceId),
+    enabled: !!workspaceId,
+  });
+}
+
+export function useWorkspaceSubfolders(workspaceId: string, parentId: string) {
+  return useQuery({
+    queryKey: folderKeys.workspaceSubfolders(workspaceId, parentId),
+    queryFn: () => foldersApi.listWorkspaceSubfolders(workspaceId, parentId),
+    enabled: !!workspaceId && !!parentId,
+  });
+}
+
+export function useWorkspaceFolderTree(workspaceId: string) {
+  return useQuery({
+    queryKey: folderKeys.workspaceTree(workspaceId),
+    queryFn: () => foldersApi.getWorkspaceFolderTree(workspaceId),
+    enabled: !!workspaceId,
+  });
+}
+
 // ── Mutations ───────────────────────────────────────────────
 export function useCreateFolder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: CreateFolderRequest) => foldersApi.create(data),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: folderKeys.lists() });
       qc.invalidateQueries({ queryKey: folderKeys.tree() });
       qc.invalidateQueries({ queryKey: dashboardKeys.stats() });
+      // Also invalidate workspace folders if this was a workspace folder
+      if (variables.workspaceId) {
+        qc.invalidateQueries({
+          queryKey: folderKeys.workspaceRoot(variables.workspaceId),
+        });
+        qc.invalidateQueries({
+          queryKey: folderKeys.workspaceTree(variables.workspaceId),
+        });
+      }
       toast.success('Folder created');
     },
     onError: () => toast.error('Failed to create folder'),

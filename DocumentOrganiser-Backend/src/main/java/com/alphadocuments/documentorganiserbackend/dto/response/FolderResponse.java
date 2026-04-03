@@ -26,6 +26,7 @@ public class FolderResponse {
     private String description;
     private Boolean isRoot;
     private UUID parentFolderId;
+    private UUID workspaceId;
     private Instant createdAt;
     private Instant updatedAt;
 

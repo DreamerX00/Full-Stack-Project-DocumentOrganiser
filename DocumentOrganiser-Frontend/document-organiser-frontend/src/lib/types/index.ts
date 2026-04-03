@@ -328,6 +328,7 @@ export interface FolderResponse {
   description?: string;
   isRoot: boolean;
   parentFolderId?: string;
+  workspaceId?: string;
   createdAt: string;
   updatedAt: string;
   subFolders: FolderResponse[];
@@ -350,6 +351,7 @@ export interface CreateFolderRequest {
   parentFolderId?: string | null;
   description?: string;
   color?: string;
+  workspaceId?: string;
 }
 
 export interface UpdateFolderRequest {

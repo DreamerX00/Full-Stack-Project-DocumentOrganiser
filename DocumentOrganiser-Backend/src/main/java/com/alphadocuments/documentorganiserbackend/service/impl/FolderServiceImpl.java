@@ -8,6 +8,7 @@ import com.alphadocuments.documentorganiserbackend.entity.DeletedItem;
 import com.alphadocuments.documentorganiserbackend.entity.Document;
 import com.alphadocuments.documentorganiserbackend.entity.Folder;
 import com.alphadocuments.documentorganiserbackend.entity.User;
+import com.alphadocuments.documentorganiserbackend.entity.Workspace;
 import com.alphadocuments.documentorganiserbackend.entity.enums.ActivityType;
 import com.alphadocuments.documentorganiserbackend.exception.DuplicateResourceException;
 import com.alphadocuments.documentorganiserbackend.exception.ForbiddenException;
@@ -16,6 +17,8 @@ import com.alphadocuments.documentorganiserbackend.exception.ValidationException
 import com.alphadocuments.documentorganiserbackend.repository.DeletedItemRepository;
 import com.alphadocuments.documentorganiserbackend.repository.FolderRepository;
 import com.alphadocuments.documentorganiserbackend.repository.UserRepository;
+import com.alphadocuments.documentorganiserbackend.repository.WorkspaceMemberRepository;
+import com.alphadocuments.documentorganiserbackend.repository.WorkspaceRepository;
 import com.alphadocuments.documentorganiserbackend.service.ActivityService;
 import com.alphadocuments.documentorganiserbackend.service.FolderService;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +47,8 @@ public class FolderServiceImpl implements FolderService {
     private final UserRepository userRepository;
     private final DeletedItemRepository deletedItemRepository;
     private final ActivityService activityService;
+    private final WorkspaceRepository workspaceRepository;
+    private final WorkspaceMemberRepository workspaceMemberRepository;
 
     @Override
     @Transactional
@@ -51,6 +56,21 @@ public class FolderServiceImpl implements FolderService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId.toString()));
 
+        Workspace workspace = null;
+        if (request.getWorkspaceId() != null) {
+            // Creating folder in a workspace
+            workspace = workspaceRepository.findById(request.getWorkspaceId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Workspace", request.getWorkspaceId().toString()));
+
+            // Verify user is a member of the workspace
+            if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(request.getWorkspaceId(), userId)) {
+                throw new ForbiddenException("You are not a member of this workspace");
+            }
+
+            return createWorkspaceFolder(user, workspace, request);
+        }
+
+        // Creating personal folder
         Folder parentFolder = null;
         if (request.getParentFolderId() != null) {
             parentFolder = folderRepository.findByIdAndUserIdAndIsDeletedFalse(request.getParentFolderId(), userId)
@@ -82,6 +102,50 @@ public class FolderServiceImpl implements FolderService {
                 null, null, null);
 
         log.info("Created folder '{}' for user {}", request.getName(), userId);
+        return mapToFolderResponse(folder);
+    }
+
+    private FolderResponse createWorkspaceFolder(User user, Workspace workspace, CreateFolderRequest request) {
+        Folder parentFolder = null;
+        if (request.getParentFolderId() != null) {
+            parentFolder = folderRepository.findByIdAndWorkspaceId(request.getParentFolderId(), workspace.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Parent folder", request.getParentFolderId().toString()));
+        }
+
+        // Check for duplicate name in workspace
+        boolean duplicateExists;
+        if (request.getParentFolderId() == null) {
+            duplicateExists = folderRepository.existsByWorkspaceIdAndRootAndName(workspace.getId(), request.getName());
+        } else {
+            duplicateExists = folderRepository.existsByWorkspaceIdAndParentFolderIdAndName(
+                    workspace.getId(), request.getParentFolderId(), request.getName());
+        }
+
+        if (duplicateExists) {
+            throw new DuplicateResourceException("Folder", request.getName());
+        }
+
+        Folder folder = Folder.builder()
+                .name(request.getName())
+                .color(request.getColor())
+                .description(request.getDescription())
+                .user(user)
+                .workspace(workspace)
+                .parentFolder(parentFolder)
+                .isRoot(false)
+                .isDeleted(false)
+                .build();
+
+        folder.updatePath();
+        folder = folderRepository.save(folder);
+
+        // Log activity
+        activityService.logActivity(user.getId(), ActivityType.FOLDER_CREATED, "FOLDER",
+                folder.getId(), folder.getName(),
+                "Created folder: " + folder.getName() + " in workspace: " + workspace.getName(),
+                null, null, null);
+
+        log.info("Created folder '{}' in workspace '{}' for user {}", request.getName(), workspace.getName(), user.getId());
         return mapToFolderResponse(folder);
     }
 
@@ -387,6 +451,65 @@ public class FolderServiceImpl implements FolderService {
                         (int) folder.getDocuments().stream().filter(d -> !d.getIsDeleted()).count() : 0)
                 .subFolderCount(folder.getSubFolders() != null ?
                         (int) folder.getSubFolders().stream().filter(f -> !f.getIsDeleted()).count() : 0)
+                .workspaceId(folder.getWorkspace() != null ? folder.getWorkspace().getId() : null)
                 .build();
+    }
+
+    // ── Workspace folder operations ──────────────────────────────────────
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FolderResponse> getWorkspaceRootFolders(UUID userId, UUID workspaceId) {
+        // Verify user is a member of the workspace
+        if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, userId)) {
+            throw new ForbiddenException("You are not a member of this workspace");
+        }
+
+        List<Folder> folders = folderRepository.findWorkspaceRootFolders(workspaceId);
+        return folders.stream()
+                .map(this::mapToFolderResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FolderResponse> getWorkspaceSubFolders(UUID userId, UUID workspaceId, UUID parentFolderId) {
+        // Verify user is a member of the workspace
+        if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, userId)) {
+            throw new ForbiddenException("You are not a member of this workspace");
+        }
+
+        List<Folder> folders = folderRepository.findWorkspaceSubfolders(workspaceId, parentFolderId);
+        return folders.stream()
+                .map(this::mapToFolderResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public FolderTreeResponse getWorkspaceFolderTree(UUID userId, UUID workspaceId) {
+        // Verify user is a member of the workspace
+        if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, userId)) {
+            throw new ForbiddenException("You are not a member of this workspace");
+        }
+
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Workspace", workspaceId.toString()));
+
+        // Build tree from root-level workspace folders
+        List<Folder> rootFolders = folderRepository.findWorkspaceRootFolders(workspaceId);
+
+        FolderTreeResponse virtualRoot = FolderTreeResponse.builder()
+                .id(null)
+                .name(workspace.getName())
+                .path("/")
+                .isRoot(true)
+                .children(rootFolders.stream()
+                        .map(this::buildFolderTree)
+                        .collect(Collectors.toList()))
+                .documentCount(0)
+                .build();
+
+        return virtualRoot;
     }
 }

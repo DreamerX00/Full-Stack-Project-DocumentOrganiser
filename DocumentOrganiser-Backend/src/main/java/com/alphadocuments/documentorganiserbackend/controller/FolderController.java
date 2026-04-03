@@ -37,7 +37,7 @@ public class FolderController {
     private final FolderService folderService;
 
     @PostMapping
-    @Operation(summary = "Create folder", description = "Create a new folder")
+    @Operation(summary = "Create folder", description = "Create a new folder. Pass workspaceId in request body to create within a workspace.")
     public ResponseEntity<ApiResponse<FolderResponse>> createFolder(
             @CurrentUser UserPrincipal userPrincipal,
             @Valid @RequestBody CreateFolderRequest request) {
@@ -101,7 +101,7 @@ public class FolderController {
     }
 
     @GetMapping("/root")
-    @Operation(summary = "Get root folders", description = "Get all root-level folders")
+    @Operation(summary = "Get root folders", description = "Get all root-level folders for user's personal area")
     public ResponseEntity<ApiResponse<List<FolderResponse>>> getRootFolders(
             @CurrentUser UserPrincipal userPrincipal) {
 
@@ -140,5 +140,38 @@ public class FolderController {
                 .build();
 
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    // ── Workspace folder endpoints ───────────────────────────────────────
+
+    @GetMapping("/workspace/{workspaceId}/root")
+    @Operation(summary = "Get workspace root folders", description = "Get all root-level folders within a workspace")
+    public ResponseEntity<ApiResponse<List<FolderResponse>>> getWorkspaceRootFolders(
+            @CurrentUser UserPrincipal userPrincipal,
+            @PathVariable UUID workspaceId) {
+
+        List<FolderResponse> folders = folderService.getWorkspaceRootFolders(userPrincipal.getId(), workspaceId);
+        return ResponseEntity.ok(ApiResponse.success(folders));
+    }
+
+    @GetMapping("/workspace/{workspaceId}/{folderId}/children")
+    @Operation(summary = "Get workspace sub-folders", description = "Get all sub-folders of a folder within a workspace")
+    public ResponseEntity<ApiResponse<List<FolderResponse>>> getWorkspaceSubFolders(
+            @CurrentUser UserPrincipal userPrincipal,
+            @PathVariable UUID workspaceId,
+            @PathVariable UUID folderId) {
+
+        List<FolderResponse> folders = folderService.getWorkspaceSubFolders(userPrincipal.getId(), workspaceId, folderId);
+        return ResponseEntity.ok(ApiResponse.success(folders));
+    }
+
+    @GetMapping("/workspace/{workspaceId}/tree")
+    @Operation(summary = "Get workspace folder tree", description = "Get the complete folder tree structure for a workspace")
+    public ResponseEntity<ApiResponse<FolderTreeResponse>> getWorkspaceFolderTree(
+            @CurrentUser UserPrincipal userPrincipal,
+            @PathVariable UUID workspaceId) {
+
+        FolderTreeResponse tree = folderService.getWorkspaceFolderTree(userPrincipal.getId(), workspaceId);
+        return ResponseEntity.ok(ApiResponse.success(tree));
     }
 }

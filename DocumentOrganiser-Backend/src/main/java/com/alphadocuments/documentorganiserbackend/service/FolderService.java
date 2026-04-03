@@ -36,4 +36,21 @@ public interface FolderService {
     FolderResponse getOrCreateRootFolder(UUID userId);
 
     void restoreFolder(UUID userId, UUID folderId);
+
+    // ── Workspace folder operations ──────────────────────────────────────
+
+    /**
+     * Get root folders within a workspace.
+     */
+    List<FolderResponse> getWorkspaceRootFolders(UUID userId, UUID workspaceId);
+
+    /**
+     * Get subfolders within a workspace folder.
+     */
+    List<FolderResponse> getWorkspaceSubFolders(UUID userId, UUID workspaceId, UUID parentFolderId);
+
+    /**
+     * Get folder tree for a workspace.
+     */
+    FolderTreeResponse getWorkspaceFolderTree(UUID userId, UUID workspaceId);
 }

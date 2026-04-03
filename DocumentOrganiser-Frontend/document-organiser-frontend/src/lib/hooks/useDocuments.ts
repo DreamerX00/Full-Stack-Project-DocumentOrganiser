@@ -34,6 +34,9 @@ export const documentKeys = {
   details: () => [...documentKeys.all, 'detail'] as const,
   detail: (id: string) => [...documentKeys.details(), id] as const,
   tags: () => [...documentKeys.all, 'tags'] as const,
+  // Workspace document keys
+  workspaceDocuments: (workspaceId: string, folderId?: string, page?: number) =>
+    [...documentKeys.lists(), 'workspace', workspaceId, { folderId, page }] as const,
 };
 
 // ── Queries ─────────────────────────────────────────────────
@@ -101,6 +104,22 @@ export function useAllTags() {
   return useQuery({
     queryKey: documentKeys.tags(),
     queryFn: () => documentsApi.getAllTags(),
+  });
+}
+
+// ── Workspace document queries ──────────────────────────────
+export function useWorkspaceDocuments(
+  workspaceId: string,
+  folderId?: string,
+  page = 0,
+  size = 20,
+  sortBy = 'updatedAt',
+  sortDir = 'desc'
+) {
+  return useQuery({
+    queryKey: documentKeys.workspaceDocuments(workspaceId, folderId, page),
+    queryFn: () => documentsApi.listWorkspaceDocuments(workspaceId, folderId, page, size, sortBy, sortDir),
+    enabled: !!workspaceId,
   });
 }
 
@@ -269,5 +288,31 @@ export function useRemoveTag() {
       toast.success('Tag removed');
     },
     onError: () => toast.error('Failed to remove tag'),
+  });
+}
+
+// ── Workspace upload mutation ───────────────────────────────
+export function useUploadWorkspaceDocument() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      workspaceId,
+      file,
+      folderId,
+      onProgress,
+    }: {
+      workspaceId: string;
+      file: File;
+      folderId?: string;
+      onProgress?: (percent: number) => void;
+    }) => documentsApi.uploadToWorkspace(workspaceId, file, folderId, onProgress),
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({
+        queryKey: documentKeys.workspaceDocuments(variables.workspaceId, variables.folderId),
+      });
+      qc.invalidateQueries({ queryKey: dashboardKeys.stats() });
+      toast.success('Document uploaded');
+    },
+    onError: () => toast.error('Failed to upload document'),
   });
 }

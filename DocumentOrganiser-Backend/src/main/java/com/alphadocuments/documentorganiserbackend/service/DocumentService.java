@@ -59,4 +59,16 @@ public interface DocumentService {
     List<DocumentVersionResponse> getVersions(UUID userId, UUID documentId);
 
     DocumentResponse restoreVersion(UUID userId, UUID documentId, Integer versionNumber);
+
+    // ── Workspace document operations ──────────────────────────
+
+    /**
+     * Upload document to a workspace.
+     */
+    DocumentResponse uploadWorkspaceDocument(UUID userId, UUID workspaceId, UUID folderId, MultipartFile file, String conflictResolution);
+
+    /**
+     * Get documents in a workspace folder.
+     */
+    Page<DocumentResponse> getWorkspaceDocuments(UUID userId, UUID workspaceId, UUID folderId, Pageable pageable);
 }

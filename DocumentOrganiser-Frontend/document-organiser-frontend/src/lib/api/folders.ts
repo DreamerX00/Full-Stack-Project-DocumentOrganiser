@@ -56,4 +56,26 @@ export const foldersApi = {
     });
     return res.data.data;
   },
+
+  // Workspace folder operations
+  listWorkspaceRootFolders: async (workspaceId: string) => {
+    const res = await apiClient.get<ApiResponse<FolderResponse[]>>(
+      `/folders/workspace/${workspaceId}/root`
+    );
+    return res.data.data;
+  },
+
+  listWorkspaceSubfolders: async (workspaceId: string, parentId: string) => {
+    const res = await apiClient.get<ApiResponse<FolderResponse[]>>(
+      `/folders/workspace/${workspaceId}/${parentId}/children`
+    );
+    return res.data.data;
+  },
+
+  getWorkspaceFolderTree: async (workspaceId: string) => {
+    const res = await apiClient.get<ApiResponse<FolderTreeResponse>>(
+      `/folders/workspace/${workspaceId}/tree`
+    );
+    return res.data.data;
+  },
 };

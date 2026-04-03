@@ -10,6 +10,7 @@ import com.alphadocuments.documentorganiserbackend.entity.DocumentTag;
 import com.alphadocuments.documentorganiserbackend.entity.DocumentVersion;
 import com.alphadocuments.documentorganiserbackend.entity.Folder;
 import com.alphadocuments.documentorganiserbackend.entity.User;
+import com.alphadocuments.documentorganiserbackend.entity.Workspace;
 import com.alphadocuments.documentorganiserbackend.entity.enums.DocumentCategory;
 import com.alphadocuments.documentorganiserbackend.exception.*;
 import org.springframework.security.access.AccessDeniedException;
@@ -19,6 +20,8 @@ import com.alphadocuments.documentorganiserbackend.repository.DocumentTagReposit
 import com.alphadocuments.documentorganiserbackend.repository.DocumentVersionRepository;
 import com.alphadocuments.documentorganiserbackend.repository.FolderRepository;
 import com.alphadocuments.documentorganiserbackend.repository.UserRepository;
+import com.alphadocuments.documentorganiserbackend.repository.WorkspaceMemberRepository;
+import com.alphadocuments.documentorganiserbackend.repository.WorkspaceRepository;
 import com.alphadocuments.documentorganiserbackend.service.ActivityService;
 import com.alphadocuments.documentorganiserbackend.service.DocumentService;
 import com.alphadocuments.documentorganiserbackend.service.StorageService;
@@ -67,6 +70,8 @@ public class DocumentServiceImpl implements DocumentService {
     private final ActivityService activityService;
     private final FileTypeUtil fileTypeUtil;
     private final FileSecurityValidator fileSecurityValidator;
+    private final WorkspaceRepository workspaceRepository;
+    private final WorkspaceMemberRepository workspaceMemberRepository;
 
     @Override
     @Transactional
@@ -570,6 +575,150 @@ public class DocumentServiceImpl implements DocumentService {
                 "Restored to version " + versionNumber, null, null, null);
 
         return mapToDocumentResponse(document);
+    }
+
+    // ── Workspace document operations ────────────────────────────────────
+
+    @Override
+    @Transactional
+    public DocumentResponse uploadWorkspaceDocument(UUID userId, UUID workspaceId, UUID folderId,
+                                                     MultipartFile file, String conflictResolution) {
+        // Verify user is a member of the workspace
+        if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, userId)) {
+            throw new ForbiddenException("You are not a member of this workspace");
+        }
+
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Workspace", workspaceId.toString()));
+
+        // Security validation - check for malicious files using magic bytes
+        fileSecurityValidator.validateFile(file);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId.toString()));
+
+        // Check storage quota
+        if (!userService.hasEnoughStorage(userId, file.getSize())) {
+            throw new StorageQuotaExceededException(
+                    userService.getAvailableStorage(userId), file.getSize());
+        }
+
+        Folder folder = null;
+        if (folderId != null) {
+            folder = folderRepository.findByIdAndWorkspaceId(folderId, workspaceId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Folder", folderId.toString()));
+        }
+
+        try {
+            String originalName = file.getOriginalFilename();
+            String mimeType = fileTypeUtil.detectMimeType(file);
+            String extension = fileTypeUtil.getFileExtension(originalName);
+            DocumentCategory category = fileTypeUtil.categorizeDocument(originalName, mimeType);
+            String baseName = fileTypeUtil.getFileNameWithoutExtension(originalName);
+
+            // Conflict detection for workspace
+            boolean nameConflict = (folderId != null)
+                    ? documentRepository.existsByWorkspaceIdAndFolderIdAndName(workspaceId, folderId, baseName)
+                    : documentRepository.existsByWorkspaceIdAndRootAndName(workspaceId, baseName);
+
+            if (nameConflict) {
+                String resolution = conflictResolution == null ? "error" : conflictResolution.toLowerCase();
+                switch (resolution) {
+                    case "replace" -> {
+                        java.util.Optional<Document> existing = (folderId != null)
+                                ? documentRepository.findFirstByWorkspaceIdAndFolderIdAndName(workspaceId, folderId, baseName)
+                                : documentRepository.findFirstByWorkspaceIdAndRootAndName(workspaceId, baseName);
+                        existing.ifPresent(doc -> {
+                            doc.setIsDeleted(true);
+                            doc.setDeletedAt(Instant.now());
+                            documentRepository.save(doc);
+                        });
+                    }
+                    case "keepboth" -> {
+                        int counter = 1;
+                        String candidate = baseName + " (" + counter + ")";
+                        while ((folderId != null)
+                                ? documentRepository.existsByWorkspaceIdAndFolderIdAndName(workspaceId, folderId, candidate)
+                                : documentRepository.existsByWorkspaceIdAndRootAndName(workspaceId, candidate)) {
+                            counter++;
+                            candidate = baseName + " (" + counter + ")";
+                        }
+                        baseName = candidate;
+                    }
+                    default -> throw new DuplicateResourceException(
+                            "A file named '" + baseName + "' already exists in this location");
+                }
+            }
+
+            // Generate unique storage key
+            String storageKey = generateStorageKey(userId, originalName);
+
+            // Read file bytes once
+            byte[] fileBytes = file.getBytes();
+
+            // Calculate checksum
+            String checksum = calculateChecksumFromBytes(fileBytes);
+
+            // Upload to storage
+            storageService.uploadFile(storageKey, new java.io.ByteArrayInputStream(fileBytes), fileBytes.length, mimeType);
+            final String resolvedName = baseName;
+
+            // Create document entity with workspace
+            Document document = Document.builder()
+                    .name(resolvedName)
+                    .originalName(originalName)
+                    .fileSize(file.getSize())
+                    .fileType(extension)
+                    .mimeType(mimeType)
+                    .storageKey(storageKey)
+                    .category(category)
+                    .version(1)
+                    .checksum(checksum)
+                    .user(user)
+                    .folder(folder)
+                    .workspace(workspace)
+                    .isDeleted(false)
+                    .isFavorite(false)
+                    .downloadCount(0L)
+                    .build();
+
+            document = documentRepository.save(document);
+
+            // Update user storage
+            userService.updateStorageUsed(userId, file.getSize());
+
+            // Log activity
+            activityService.logActivity(userId, ActivityType.DOCUMENT_UPLOADED, "DOCUMENT",
+                    document.getId(), originalName,
+                    "Uploaded document: " + originalName + " to workspace: " + workspace.getName(),
+                    Map.of("fileSize", file.getSize(), "category", category.name(), "workspace", workspace.getName()),
+                    null, null);
+
+            log.info("Uploaded document '{}' to workspace '{}' for user {}", originalName, workspace.getName(), userId);
+            return mapToDocumentResponse(document);
+
+        } catch (IOException e) {
+            log.error("Failed to upload document to workspace", e);
+            throw new FileOperationException("Failed to upload document", e);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<DocumentResponse> getWorkspaceDocuments(UUID userId, UUID workspaceId, UUID folderId, Pageable pageable) {
+        // Verify user is a member of the workspace
+        if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, userId)) {
+            throw new ForbiddenException("You are not a member of this workspace");
+        }
+
+        Page<Document> documents;
+        if (folderId != null) {
+            documents = documentRepository.findByWorkspaceIdAndFolderId(workspaceId, folderId, pageable);
+        } else {
+            documents = documentRepository.findByWorkspaceIdAndFolderIsNull(workspaceId, pageable);
+        }
+
+        return documents.map(this::mapToDocumentResponse);
     }
 
     private DocumentVersionResponse mapToVersionResponse(DocumentVersion version) {

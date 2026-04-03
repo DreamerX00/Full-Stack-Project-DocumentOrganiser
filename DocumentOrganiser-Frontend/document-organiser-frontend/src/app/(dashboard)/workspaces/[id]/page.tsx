@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -10,11 +10,17 @@ import {
   Upload,
   FolderPlus,
   FileText,
+  Folder,
+  File,
+  MoreVertical,
+  Download,
+  Trash2,
 } from 'lucide-react';
 import { useWorkspace, useWorkspaceMembers } from '@/lib/hooks/useWorkspaces';
 import { useWorkspacePermissions } from '@/lib/hooks/usePermissions';
 import { useAuthStore } from '@/lib/store/authStore';
-import { useCreateFolder } from '@/lib/hooks/useFolders';
+import { useCreateFolder, useWorkspaceRootFolders } from '@/lib/hooks/useFolders';
+import { useWorkspaceDocuments, useUploadWorkspaceDocument, useDownloadDocument, useDeleteDocument } from '@/lib/hooks/useDocuments';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,8 +29,23 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { InviteMemberDialog, MemberList } from '@/components/features/workspaces';
 import { CreateFolderDialog } from '@/components/features/folders/CreateFolderDialog';
-import { FileUploadDialog } from '@/components/features/files/FileUploadDialog';
-import type { WorkspaceRole } from '@/lib/types';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
+import { formatFileSize, formatDate } from '@/lib/utils/format';
+import type { WorkspaceRole, DocumentResponse } from '@/lib/types';
 
 interface WorkspaceDetailPageProps {
   params: Promise<{ id: string }>;
@@ -38,12 +59,19 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
   // Dialog states
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadingFiles, setUploadingFiles] = useState<File[]>([]);
   
   const { data: workspace, isLoading: workspaceLoading, error } = useWorkspace(id);
   const { data: membersData, isLoading: membersLoading } = useWorkspaceMembers(id);
+  const { data: folders, isLoading: foldersLoading } = useWorkspaceRootFolders(id);
+  const { data: documentsData, isLoading: documentsLoading } = useWorkspaceDocuments(id, undefined);
   
   // Mutations
   const createFolder = useCreateFolder();
+  const uploadDocument = useUploadWorkspaceDocument();
+  const downloadDocument = useDownloadDocument();
+  const deleteDocument = useDeleteDocument();
 
   // Find current user's role in this workspace
   const currentMember = membersData?.content.find((m) => m.userId === user?.id);
@@ -51,6 +79,7 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
   const permissions = useWorkspacePermissions(userRole);
 
   const members = membersData?.content ?? [];
+  const documents = documentsData?.content ?? [];
 
   const getInitials = (name: string) => {
     return name
@@ -63,13 +92,51 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
   
   const handleCreateFolder = (data: { name: string; description?: string; color?: string }) => {
     createFolder.mutate(
-      { name: data.name, description: data.description, color: data.color },
+      { name: data.name, description: data.description, color: data.color, workspaceId: id },
       {
         onSuccess: () => {
           setCreateFolderOpen(false);
         },
       }
     );
+  };
+
+  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingFiles(Array.from(files));
+    
+    for (const file of Array.from(files)) {
+      await uploadDocument.mutateAsync({
+        workspaceId: id,
+        file,
+        onProgress: setUploadProgress,
+      });
+    }
+    
+    setUploadingFiles([]);
+    setUploadProgress(0);
+    setUploadOpen(false);
+  }, [id, uploadDocument]);
+
+  const handleDownload = (doc: DocumentResponse) => {
+    downloadDocument.mutate(doc);
+  };
+
+  const handleDelete = (docId: string) => {
+    deleteDocument.mutate(docId);
+  };
+
+  const getFileIcon = (mimeType: string) => {
+    if (mimeType.startsWith('image/')) return '🖼️';
+    if (mimeType.startsWith('video/')) return '🎬';
+    if (mimeType.startsWith('audio/')) return '🎵';
+    if (mimeType.includes('pdf')) return '📕';
+    if (mimeType.includes('word') || mimeType.includes('document')) return '📘';
+    if (mimeType.includes('sheet') || mimeType.includes('excel')) return '📗';
+    if (mimeType.includes('presentation') || mimeType.includes('powerpoint')) return '📙';
+    return '📄';
   };
 
   if (error) {
@@ -116,6 +183,8 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
     );
   }
 
+  const hasFiles = (folders && folders.length > 0) || documents.length > 0;
+
   return (
     <div className="space-y-8 p-4 sm:p-6 lg:p-8">
       {/* Header */}
@@ -156,7 +225,7 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-2 mb-8">
+      <div className="grid gap-4 md:grid-cols-3 mb-8">
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Members</CardDescription>
@@ -198,6 +267,19 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
             </Badge>
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Files & Folders</CardDescription>
+            <CardTitle className="text-3xl">
+              {(folders?.length ?? 0) + documents.length}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              {folders?.length ?? 0} folders, {documents.length} files
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Tabs */}
@@ -223,23 +305,111 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
               </div>
             )}
           </div>
-          <Card>
-            <CardContent className="py-12">
-              <div className="flex flex-col items-center justify-center text-center">
-                <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="font-medium mb-1">No files yet</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Upload documents or create folders to get started
-                </p>
-                {permissions.canEdit && (
-                  <Button onClick={() => setUploadOpen(true)}>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload Files
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+
+          {(foldersLoading || documentsLoading) ? (
+            <Card>
+              <CardContent className="py-8">
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-16 w-full" />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ) : !hasFiles ? (
+            <Card>
+              <CardContent className="py-12">
+                <div className="flex flex-col items-center justify-center text-center">
+                  <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="font-medium mb-1">No files yet</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Upload documents or create folders to get started
+                  </p>
+                  {permissions.canEdit && (
+                    <Button onClick={() => setUploadOpen(true)}>
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload Files
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="py-4">
+                <div className="space-y-2">
+                  {/* Folders */}
+                  {folders?.map((folder) => (
+                    <div
+                      key={folder.id}
+                      className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="h-10 w-10 rounded-lg flex items-center justify-center"
+                          style={{ backgroundColor: folder.color || '#6366f1' + '20' }}
+                        >
+                          <Folder className="h-5 w-5" style={{ color: folder.color || '#6366f1' }} />
+                        </div>
+                        <div>
+                          <p className="font-medium">{folder.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {folder.documentCount} files, {folder.subFolderCount} folders
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant="outline">Folder</Badge>
+                    </div>
+                  ))}
+
+                  {/* Documents */}
+                  {documents.map((doc) => (
+                    <div
+                      key={doc.id}
+                      className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-lg">
+                          {getFileIcon(doc.mimeType)}
+                        </div>
+                        <div>
+                          <p className="font-medium">{doc.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatFileSize(doc.fileSize)} • {formatDate(doc.updatedAt)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{doc.category}</Badge>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleDownload(doc)}>
+                              <Download className="mr-2 h-4 w-4" />
+                              Download
+                            </DropdownMenuItem>
+                            {permissions.canEdit && (
+                              <DropdownMenuItem
+                                onClick={() => handleDelete(doc.id)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="members" className="space-y-4">
@@ -280,7 +450,51 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
         onSubmit={handleCreateFolder}
         isLoading={createFolder.isPending}
       />
-      <FileUploadDialog open={uploadOpen} onOpenChange={setUploadOpen} />
+
+      {/* Upload Dialog */}
+      <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upload Files</DialogTitle>
+            <DialogDescription>
+              Upload files to this workspace. All members will be able to access them.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {uploadingFiles.length > 0 ? (
+              <div className="space-y-3">
+                {uploadingFiles.map((file, i) => (
+                  <div key={i} className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="truncate">{file.name}</span>
+                      <span>{uploadProgress}%</span>
+                    </div>
+                    <Progress value={uploadProgress} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
+                <Input
+                  type="file"
+                  multiple
+                  className="hidden"
+                  id="workspace-file-upload"
+                  onChange={handleFileSelect}
+                />
+                <label
+                  htmlFor="workspace-file-upload"
+                  className="cursor-pointer flex flex-col items-center gap-2"
+                >
+                  <Upload className="h-8 w-8 text-muted-foreground" />
+                  <p className="font-medium">Click to select files</p>
+                  <p className="text-sm text-muted-foreground">or drag and drop</p>
+                </label>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

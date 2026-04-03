@@ -21,6 +21,7 @@ import java.util.UUID;
 @Repository
 public interface DocumentRepository extends JpaRepository<Document, UUID>, JpaSpecificationExecutor<Document> {
 
+    // ── Personal documents (no workspace) ────────────────────────────────
     List<Document> findByUserIdAndIsDeletedFalse(UUID userId);
 
     List<Document> findByUserIdAndFolderIdAndIsDeletedFalse(UUID userId, UUID folderId);
@@ -75,4 +76,63 @@ public interface DocumentRepository extends JpaRepository<Document, UUID>, JpaSp
      * Find existing document with same checksum for deduplication.
      */
     Optional<Document> findFirstByUserIdAndChecksumAndIsDeletedFalse(UUID userId, String checksum);
+
+    // ── Workspace documents ──────────────────────────────────────────────
+
+    /**
+     * Find documents in a workspace folder.
+     */
+    @Query("SELECT d FROM Document d WHERE d.workspace.id = :workspaceId AND d.folder.id = :folderId AND d.isDeleted = false")
+    Page<Document> findByWorkspaceIdAndFolderId(@Param("workspaceId") UUID workspaceId, @Param("folderId") UUID folderId, Pageable pageable);
+
+    /**
+     * Find root-level documents in a workspace (no folder).
+     */
+    @Query("SELECT d FROM Document d WHERE d.workspace.id = :workspaceId AND d.folder IS NULL AND d.isDeleted = false")
+    Page<Document> findByWorkspaceIdAndFolderIsNull(@Param("workspaceId") UUID workspaceId, Pageable pageable);
+
+    /**
+     * Find all documents in a workspace.
+     */
+    @Query("SELECT d FROM Document d WHERE d.workspace.id = :workspaceId AND d.isDeleted = false")
+    Page<Document> findByWorkspaceId(@Param("workspaceId") UUID workspaceId, Pageable pageable);
+
+    /**
+     * Check if a document with same name exists in a workspace folder.
+     */
+    @Query("SELECT CASE WHEN COUNT(d) > 0 THEN true ELSE false END FROM Document d " +
+           "WHERE d.workspace.id = :workspaceId AND d.folder.id = :folderId AND d.name = :name AND d.isDeleted = false")
+    boolean existsByWorkspaceIdAndFolderIdAndName(@Param("workspaceId") UUID workspaceId, @Param("folderId") UUID folderId, @Param("name") String name);
+
+    /**
+     * Check if a root-level document with same name exists in a workspace.
+     */
+    @Query("SELECT CASE WHEN COUNT(d) > 0 THEN true ELSE false END FROM Document d " +
+           "WHERE d.workspace.id = :workspaceId AND d.folder IS NULL AND d.name = :name AND d.isDeleted = false")
+    boolean existsByWorkspaceIdAndRootAndName(@Param("workspaceId") UUID workspaceId, @Param("name") String name);
+
+    /**
+     * Find a document by ID within a workspace.
+     */
+    @Query("SELECT d FROM Document d WHERE d.id = :documentId AND d.workspace.id = :workspaceId AND d.isDeleted = false")
+    Optional<Document> findByIdAndWorkspaceId(@Param("documentId") UUID documentId, @Param("workspaceId") UUID workspaceId);
+
+    /**
+     * Find first document with same name in workspace folder (for conflict resolution).
+     */
+    @Query("SELECT d FROM Document d WHERE d.workspace.id = :workspaceId AND d.folder.id = :folderId AND d.name = :name AND d.isDeleted = false")
+    Optional<Document> findFirstByWorkspaceIdAndFolderIdAndName(@Param("workspaceId") UUID workspaceId, @Param("folderId") UUID folderId, @Param("name") String name);
+
+    /**
+     * Find first root-level document with same name in workspace (for conflict resolution).
+     */
+    @Query("SELECT d FROM Document d WHERE d.workspace.id = :workspaceId AND d.folder IS NULL AND d.name = :name AND d.isDeleted = false")
+    Optional<Document> findFirstByWorkspaceIdAndRootAndName(@Param("workspaceId") UUID workspaceId, @Param("name") String name);
+
+    /**
+     * Search documents within a workspace.
+     */
+    @Query("SELECT d FROM Document d WHERE d.workspace.id = :workspaceId AND d.isDeleted = false AND " +
+           "(LOWER(d.name) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(d.originalName) LIKE LOWER(CONCAT('%', :query, '%')))")
+    Page<Document> searchByWorkspaceAndName(@Param("workspaceId") UUID workspaceId, @Param("query") String query, Pageable pageable);
 }

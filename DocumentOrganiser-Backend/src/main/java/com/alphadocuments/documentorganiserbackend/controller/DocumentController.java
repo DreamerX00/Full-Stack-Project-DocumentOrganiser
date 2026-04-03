@@ -267,4 +267,38 @@ public class DocumentController {
         DocumentResponse document = documentService.restoreVersion(userPrincipal.getId(), documentId, versionNumber);
         return ResponseEntity.ok(ApiResponse.success(document, "Version restored successfully"));
     }
+
+    // ── Workspace document endpoints ───────────────────────
+
+    @PostMapping(value = "/workspace/{workspaceId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload document to workspace",
+            description = "Upload a document to a workspace. On name conflict, the default is to return 409. "
+                    + "Pass conflictResolution=replace to overwrite the existing file, "
+                    + "or conflictResolution=keepBoth to rename the upload with a numeric suffix.")
+    public ResponseEntity<ApiResponse<DocumentResponse>> uploadWorkspaceDocument(
+            @CurrentUser UserPrincipal userPrincipal,
+            @PathVariable UUID workspaceId,
+            @RequestParam(value = "folderId", required = false) UUID folderId,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "conflictResolution", required = false, defaultValue = "error")
+                    String conflictResolution) {
+
+        DocumentResponse document = documentService.uploadWorkspaceDocument(
+                userPrincipal.getId(), workspaceId, folderId, file, conflictResolution);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(document, "Document uploaded successfully"));
+    }
+
+    @GetMapping("/workspace/{workspaceId}")
+    @Operation(summary = "Get workspace documents", description = "Get all documents in a workspace folder")
+    public ResponseEntity<ApiResponse<PagedResponse<DocumentResponse>>> getWorkspaceDocuments(
+            @CurrentUser UserPrincipal userPrincipal,
+            @PathVariable UUID workspaceId,
+            @RequestParam(value = "folderId", required = false) UUID folderId,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        Page<DocumentResponse> page = documentService.getWorkspaceDocuments(
+                userPrincipal.getId(), workspaceId, folderId, pageable);
+        return ResponseEntity.ok(ApiResponse.success(toPagedResponse(page)));
+    }
 }

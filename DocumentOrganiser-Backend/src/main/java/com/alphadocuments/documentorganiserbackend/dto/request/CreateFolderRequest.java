@@ -27,4 +27,10 @@ public class CreateFolderRequest {
     private String color;
 
     private String description;
+
+    /**
+     * Optional workspace ID. When provided, the folder will be created
+     * within the specified workspace rather than in the user's personal area.
+     */
+    private UUID workspaceId;
 }
