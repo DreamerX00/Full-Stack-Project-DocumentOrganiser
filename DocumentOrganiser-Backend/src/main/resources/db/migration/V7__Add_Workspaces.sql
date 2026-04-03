@@ -39,4 +39,4 @@ CREATE INDEX idx_folders_workspace_id ON folders(workspace_id);
 
 -- Add composite indexes for workspace scoped queries
 CREATE INDEX idx_documents_workspace_folder ON documents(workspace_id, folder_id) WHERE workspace_id IS NOT NULL;
-CREATE INDEX idx_folders_workspace_parent ON folders(workspace_id, parent_id) WHERE workspace_id IS NOT NULL;
+CREATE INDEX idx_folders_workspace_parent ON folders(workspace_id, parent_folder_id) WHERE workspace_id IS NOT NULL;
