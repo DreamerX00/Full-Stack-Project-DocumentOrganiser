@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState, useCallback } from 'react';
+import { use, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -11,15 +11,27 @@ import {
   FolderPlus,
   FileText,
   Folder,
-  File,
   MoreVertical,
   Download,
   Trash2,
+  ChevronRight,
+  Home,
+  Search,
+  Grid,
+  List,
+  SortAsc,
+  SortDesc,
+  Eye,
+  FolderOpen,
+  RefreshCw,
+  Copy,
+  Pencil,
+  Share2,
 } from 'lucide-react';
 import { useWorkspace, useWorkspaceMembers } from '@/lib/hooks/useWorkspaces';
 import { useWorkspacePermissions } from '@/lib/hooks/usePermissions';
 import { useAuthStore } from '@/lib/store/authStore';
-import { useCreateFolder, useWorkspaceRootFolders } from '@/lib/hooks/useFolders';
+import { useCreateFolder, useWorkspaceRootFolders, useWorkspaceSubfolders, useDeleteFolder } from '@/lib/hooks/useFolders';
 import { useWorkspaceDocuments, useUploadWorkspaceDocument, useDownloadDocument, useDeleteDocument } from '@/lib/hooks/useDocuments';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -33,6 +45,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -42,36 +55,81 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatFileSize, formatDate } from '@/lib/utils/format';
-import type { WorkspaceRole, DocumentResponse } from '@/lib/types';
+import type { WorkspaceRole, DocumentResponse, FolderResponse } from '@/lib/types';
 
 interface WorkspaceDetailPageProps {
   params: Promise<{ id: string }>;
 }
+
+// Breadcrumb item type
+interface BreadcrumbItem {
+  id: string | null;
+  name: string;
+}
+
+type ViewMode = 'grid' | 'list';
+type SortField = 'name' | 'date' | 'size';
+type SortOrder = 'asc' | 'desc';
 
 export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps) {
   const { id } = use(params);
   const router = useRouter();
   const { user } = useAuthStore();
   
+  // Navigation state
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([{ id: null, name: 'Root' }]);
+  
+  // View and sort state
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+  const [searchQuery, setSearchQuery] = useState('');
+  
   // Dialog states
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadingFiles, setUploadingFiles] = useState<File[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ type: 'folder' | 'document'; id: string; name: string } | null>(null);
   
-  const { data: workspace, isLoading: workspaceLoading, error } = useWorkspace(id);
+  const { data: workspace, isLoading: workspaceLoading, error, refetch: refetchWorkspace } = useWorkspace(id);
   const { data: membersData, isLoading: membersLoading } = useWorkspaceMembers(id);
-  const { data: folders, isLoading: foldersLoading } = useWorkspaceRootFolders(id);
-  const { data: documentsData, isLoading: documentsLoading } = useWorkspaceDocuments(id, undefined);
+  
+  // Conditional folder fetching based on current location
+  const { data: rootFolders, isLoading: rootFoldersLoading, refetch: refetchRootFolders } = useWorkspaceRootFolders(id);
+  const { data: subFolders, isLoading: subFoldersLoading, refetch: refetchSubFolders } = useWorkspaceSubfolders(
+    id,
+    currentFolderId || ''
+  );
+  
+  // Get documents for current folder
+  const { data: documentsData, isLoading: documentsLoading, refetch: refetchDocuments } = useWorkspaceDocuments(
+    id,
+    currentFolderId || undefined
+  );
   
   // Mutations
   const createFolder = useCreateFolder();
   const uploadDocument = useUploadWorkspaceDocument();
   const downloadDocument = useDownloadDocument();
   const deleteDocument = useDeleteDocument();
+  const deleteFolder = useDeleteFolder();
 
   // Find current user's role in this workspace
   const currentMember = membersData?.content.find((m) => m.userId === user?.id);
@@ -80,6 +138,57 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
 
   const members = membersData?.content ?? [];
   const documents = documentsData?.content ?? [];
+  
+  // Get the correct folders based on current location
+  const folders = currentFolderId ? (subFolders || []) : (rootFolders || []);
+  const foldersLoading = currentFolderId ? subFoldersLoading : rootFoldersLoading;
+  
+  // Filter and sort items
+  const filteredAndSortedItems = useMemo(() => {
+    let filteredFolders = folders.filter(f => 
+      f.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    let filteredDocs = documents.filter(d => 
+      d.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    
+    // Sort folders
+    filteredFolders = [...filteredFolders].sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'date':
+          comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+          break;
+        default:
+          comparison = a.name.localeCompare(b.name);
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+    
+    // Sort documents
+    filteredDocs = [...filteredDocs].sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'date':
+          comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+          break;
+        case 'size':
+          comparison = a.fileSize - b.fileSize;
+          break;
+        default:
+          comparison = a.name.localeCompare(b.name);
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+    
+    return { folders: filteredFolders, documents: filteredDocs };
+  }, [folders, documents, searchQuery, sortField, sortOrder]);
 
   const getInitials = (name: string) => {
     return name
@@ -92,13 +201,35 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
   
   const handleCreateFolder = (data: { name: string; description?: string; color?: string }) => {
     createFolder.mutate(
-      { name: data.name, description: data.description, color: data.color, workspaceId: id },
+      { 
+        name: data.name, 
+        description: data.description, 
+        color: data.color, 
+        workspaceId: id,
+        parentFolderId: currentFolderId || undefined,
+      },
       {
         onSuccess: () => {
           setCreateFolderOpen(false);
+          if (currentFolderId) {
+            refetchSubFolders();
+          } else {
+            refetchRootFolders();
+          }
         },
       }
     );
+  };
+  
+  const handleOpenFolder = (folder: FolderResponse) => {
+    setBreadcrumbs(prev => [...prev, { id: folder.id, name: folder.name }]);
+    setCurrentFolderId(folder.id);
+  };
+  
+  const handleNavigateToBreadcrumb = (index: number) => {
+    const newBreadcrumbs = breadcrumbs.slice(0, index + 1);
+    setBreadcrumbs(newBreadcrumbs);
+    setCurrentFolderId(newBreadcrumbs[newBreadcrumbs.length - 1].id);
   };
 
   const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,6 +241,7 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
     for (const file of Array.from(files)) {
       await uploadDocument.mutateAsync({
         workspaceId: id,
+        folderId: currentFolderId || undefined,
         file,
         onProgress: setUploadProgress,
       });
@@ -118,14 +250,52 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
     setUploadingFiles([]);
     setUploadProgress(0);
     setUploadOpen(false);
-  }, [id, uploadDocument]);
+    refetchDocuments();
+  }, [id, currentFolderId, uploadDocument, refetchDocuments]);
 
   const handleDownload = (doc: DocumentResponse) => {
     downloadDocument.mutate(doc);
   };
 
-  const handleDelete = (docId: string) => {
-    deleteDocument.mutate(docId);
+  const confirmDelete = (type: 'folder' | 'document', id: string, name: string) => {
+    setItemToDelete({ type, id, name });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = () => {
+    if (!itemToDelete) return;
+    
+    if (itemToDelete.type === 'document') {
+      deleteDocument.mutate(itemToDelete.id, {
+        onSuccess: () => {
+          setDeleteDialogOpen(false);
+          setItemToDelete(null);
+          refetchDocuments();
+        },
+      });
+    } else {
+      deleteFolder.mutate(itemToDelete.id, {
+        onSuccess: () => {
+          setDeleteDialogOpen(false);
+          setItemToDelete(null);
+          if (currentFolderId) {
+            refetchSubFolders();
+          } else {
+            refetchRootFolders();
+          }
+        },
+      });
+    }
+  };
+  
+  const handleRefresh = () => {
+    refetchWorkspace();
+    refetchDocuments();
+    if (currentFolderId) {
+      refetchSubFolders();
+    } else {
+      refetchRootFolders();
+    }
   };
 
   const getFileIcon = (mimeType: string) => {
@@ -136,7 +306,13 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
     if (mimeType.includes('word') || mimeType.includes('document')) return '📘';
     if (mimeType.includes('sheet') || mimeType.includes('excel')) return '📗';
     if (mimeType.includes('presentation') || mimeType.includes('powerpoint')) return '📙';
+    if (mimeType.includes('zip') || mimeType.includes('archive') || mimeType.includes('compressed')) return '📦';
+    if (mimeType.includes('text') || mimeType.includes('code')) return '📝';
     return '📄';
+  };
+  
+  const toggleSortOrder = () => {
+    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
   };
 
   if (error) {
@@ -290,97 +466,337 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
         </TabsList>
 
         <TabsContent value="files" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Workspace Files</h2>
-            {permissions.canEdit && (
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setCreateFolderOpen(true)}>
-                  <FolderPlus className="mr-2 h-4 w-4" />
-                  New Folder
+          {/* Toolbar */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold">Files</h2>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRefresh}>
+                      <RefreshCw className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Refresh</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Search */}
+              <div className="relative flex-1 min-w-[200px] sm:flex-none">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search files..."
+                  className="pl-8 h-9"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              
+              {/* Sort */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1">
+                    {sortOrder === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
+                    <span className="hidden sm:inline">Sort</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setSortField('name')}>
+                    Name {sortField === 'name' && '✓'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortField('date')}>
+                    Date {sortField === 'date' && '✓'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortField('size')}>
+                    Size {sortField === 'size' && '✓'}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={toggleSortOrder}>
+                    {sortOrder === 'asc' ? 'Descending' : 'Ascending'}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              {/* View mode */}
+              <div className="flex rounded-md border">
+                <Button
+                  variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                  size="icon"
+                  className="h-8 w-8 rounded-r-none"
+                  onClick={() => setViewMode('list')}
+                >
+                  <List className="h-4 w-4" />
                 </Button>
-                <Button size="sm" onClick={() => setUploadOpen(true)}>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Upload
+                <Button
+                  variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                  size="icon"
+                  className="h-8 w-8 rounded-l-none"
+                  onClick={() => setViewMode('grid')}
+                >
+                  <Grid className="h-4 w-4" />
                 </Button>
               </div>
-            )}
+              
+              {/* Actions */}
+              {permissions.canEdit && (
+                <>
+                  <Button variant="outline" size="sm" onClick={() => setCreateFolderOpen(true)}>
+                    <FolderPlus className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">New Folder</span>
+                  </Button>
+                  <Button size="sm" onClick={() => setUploadOpen(true)}>
+                    <Upload className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Upload</span>
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
+          
+          {/* Breadcrumbs */}
+          <nav className="flex items-center gap-1 text-sm text-muted-foreground overflow-x-auto py-2">
+            {breadcrumbs.map((crumb, index) => (
+              <div key={index} className="flex items-center gap-1 shrink-0">
+                {index > 0 && <ChevronRight className="h-4 w-4" />}
+                <button
+                  onClick={() => handleNavigateToBreadcrumb(index)}
+                  className={`flex items-center gap-1 hover:text-foreground transition-colors ${
+                    index === breadcrumbs.length - 1 ? 'text-foreground font-medium' : ''
+                  }`}
+                >
+                  {index === 0 ? (
+                    <Home className="h-4 w-4" />
+                  ) : (
+                    <FolderOpen className="h-4 w-4" />
+                  )}
+                  <span>{crumb.name}</span>
+                </button>
+              </div>
+            ))}
+          </nav>
 
           {(foldersLoading || documentsLoading) ? (
             <Card>
               <CardContent className="py-8">
-                <div className="space-y-3">
-                  {[1, 2, 3].map((i) => (
-                    <Skeleton key={i} className="h-16 w-full" />
+                <div className={viewMode === 'grid' ? 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4' : 'space-y-3'}>
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <Skeleton key={i} className={viewMode === 'grid' ? 'h-32 w-full' : 'h-16 w-full'} />
                   ))}
                 </div>
               </CardContent>
             </Card>
-          ) : !hasFiles ? (
+          ) : filteredAndSortedItems.folders.length === 0 && filteredAndSortedItems.documents.length === 0 ? (
             <Card>
               <CardContent className="py-12">
                 <div className="flex flex-col items-center justify-center text-center">
-                  <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="font-medium mb-1">No files yet</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Upload documents or create folders to get started
-                  </p>
-                  {permissions.canEdit && (
-                    <Button onClick={() => setUploadOpen(true)}>
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload Files
-                    </Button>
+                  {searchQuery ? (
+                    <>
+                      <Search className="h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="font-medium mb-1">No results found</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        No files or folders match "{searchQuery}"
+                      </p>
+                      <Button variant="outline" onClick={() => setSearchQuery('')}>
+                        Clear search
+                      </Button>
+                    </>
+                  ) : currentFolderId ? (
+                    <>
+                      <FolderOpen className="h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="font-medium mb-1">This folder is empty</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Upload files or create subfolders
+                      </p>
+                      {permissions.canEdit && (
+                        <div className="flex gap-2">
+                          <Button variant="outline" onClick={() => setCreateFolderOpen(true)}>
+                            <FolderPlus className="mr-2 h-4 w-4" />
+                            New Folder
+                          </Button>
+                          <Button onClick={() => setUploadOpen(true)}>
+                            <Upload className="mr-2 h-4 w-4" />
+                            Upload Files
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="font-medium mb-1">No files yet</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Upload documents or create folders to get started
+                      </p>
+                      {permissions.canEdit && (
+                        <Button onClick={() => setUploadOpen(true)}>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload Files
+                        </Button>
+                      )}
+                    </>
                   )}
                 </div>
               </CardContent>
             </Card>
+          ) : viewMode === 'grid' ? (
+            /* Grid View */
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {/* Folders */}
+              {filteredAndSortedItems.folders.map((folder) => (
+                <Card
+                  key={folder.id}
+                  className="group cursor-pointer hover:shadow-md transition-all"
+                  onClick={() => handleOpenFolder(folder)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex flex-col items-center text-center">
+                      <div
+                        className="h-16 w-16 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-105"
+                        style={{ backgroundColor: (folder.color || '#6366f1') + '20' }}
+                      >
+                        <Folder className="h-8 w-8" style={{ color: folder.color || '#6366f1' }} />
+                      </div>
+                      <p className="font-medium text-sm truncate w-full">{folder.name}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {folder.documentCount} files
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {/* Documents */}
+              {filteredAndSortedItems.documents.map((doc) => (
+                <Card
+                  key={doc.id}
+                  className="group cursor-pointer hover:shadow-md transition-all relative"
+                >
+                  <CardContent className="p-4">
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => router.push(`/documents/${doc.id}`)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Preview
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDownload(doc)}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Download
+                          </DropdownMenuItem>
+                          {permissions.canEdit && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => confirmDelete('document', doc.id, doc.name)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <div className="flex flex-col items-center text-center">
+                      <div className="h-16 w-16 rounded-xl bg-muted flex items-center justify-center mb-3 text-2xl">
+                        {getFileIcon(doc.mimeType)}
+                      </div>
+                      <p className="font-medium text-sm truncate w-full">{doc.name}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {formatFileSize(doc.fileSize)}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           ) : (
+            /* List View */
             <Card>
-              <CardContent className="py-4">
-                <div className="space-y-2">
+              <CardContent className="py-2">
+                <div className="divide-y">
                   {/* Folders */}
-                  {folders?.map((folder) => (
+                  {filteredAndSortedItems.folders.map((folder) => (
                     <div
                       key={folder.id}
-                      className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                      className="flex items-center justify-between py-3 px-2 hover:bg-muted/50 rounded-lg transition-colors cursor-pointer group"
+                      onClick={() => handleOpenFolder(folder)}
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
                         <div
-                          className="h-10 w-10 rounded-lg flex items-center justify-center"
-                          style={{ backgroundColor: folder.color || '#6366f1' + '20' }}
+                          className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0"
+                          style={{ backgroundColor: (folder.color || '#6366f1') + '20' }}
                         >
                           <Folder className="h-5 w-5" style={{ color: folder.color || '#6366f1' }} />
                         </div>
-                        <div>
-                          <p className="font-medium">{folder.name}</p>
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{folder.name}</p>
                           <p className="text-xs text-muted-foreground">
                             {folder.documentCount} files, {folder.subFolderCount} folders
                           </p>
                         </div>
                       </div>
-                      <Badge variant="outline">Folder</Badge>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs text-muted-foreground hidden sm:inline">
+                          {formatDate(folder.updatedAt)}
+                        </span>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleOpenFolder(folder); }}>
+                              <FolderOpen className="mr-2 h-4 w-4" />
+                              Open
+                            </DropdownMenuItem>
+                            {permissions.canEdit && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={(e) => { e.stopPropagation(); confirmDelete('folder', folder.id, folder.name); }}
+                                  className="text-destructive"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
                   ))}
 
                   {/* Documents */}
-                  {documents.map((doc) => (
+                  {filteredAndSortedItems.documents.map((doc) => (
                     <div
                       key={doc.id}
-                      className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                      className="flex items-center justify-between py-3 px-2 hover:bg-muted/50 rounded-lg transition-colors group"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-lg">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-lg shrink-0">
                           {getFileIcon(doc.mimeType)}
                         </div>
-                        <div>
-                          <p className="font-medium">{doc.name}</p>
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{doc.name}</p>
                           <p className="text-xs text-muted-foreground">
                             {formatFileSize(doc.fileSize)} • {formatDate(doc.updatedAt)}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">{doc.category}</Badge>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Badge variant="outline" className="hidden sm:inline-flex">{doc.category}</Badge>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -388,18 +804,25 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => router.push(`/documents/${doc.id}`)}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              Preview
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleDownload(doc)}>
                               <Download className="mr-2 h-4 w-4" />
                               Download
                             </DropdownMenuItem>
                             {permissions.canEdit && (
-                              <DropdownMenuItem
-                                onClick={() => handleDelete(doc.id)}
-                                className="text-destructive"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => confirmDelete('document', doc.id, doc.name)}
+                                  className="text-destructive"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </>
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -457,10 +880,18 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
           <DialogHeader>
             <DialogTitle>Upload Files</DialogTitle>
             <DialogDescription>
-              Upload files to this workspace. All members will be able to access them.
+              {currentFolderId 
+                ? `Upload files to "${breadcrumbs[breadcrumbs.length - 1]?.name}". All workspace members will be able to access them.`
+                : "Upload files to workspace root. All members will be able to access them."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {currentFolderId && (
+              <div className="flex items-center gap-2 p-2 bg-muted rounded-md text-sm">
+                <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                <span>Uploading to: <strong>{breadcrumbs[breadcrumbs.length - 1]?.name}</strong></span>
+              </div>
+            )}
             {uploadingFiles.length > 0 ? (
               <div className="space-y-3">
                 {uploadingFiles.map((file, i) => (
@@ -495,6 +926,29 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {itemToDelete?.type === 'folder' ? 'Folder' : 'File'}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>"{itemToDelete?.name}"</strong>?
+              {itemToDelete?.type === 'folder' && ' This will also delete all files and subfolders inside it.'}
+              {' '}This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
