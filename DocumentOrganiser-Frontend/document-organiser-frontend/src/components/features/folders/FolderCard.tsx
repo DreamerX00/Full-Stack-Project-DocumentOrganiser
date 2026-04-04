@@ -67,7 +67,7 @@ export function FolderCard({
 
   return (
     <motion.div
-      whileHover={{ y: -2, scale: 1.01 }}
+      whileHover={{ y: -2 }}
       transition={{ duration: 0.2 }}
     >
       <Card
@@ -75,9 +75,9 @@ export function FolderCard({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          'group relative transition-all duration-300 border-white/10 bg-card/60 backdrop-blur-sm hover:shadow-xl hover:shadow-amber-500/10 hover:border-white/20',
+          'group relative transition-all duration-300 border-white/10 bg-card/60 backdrop-blur-sm hover:shadow-lg hover:shadow-amber-500/10 hover:border-white/20',
           isSelected && 'ring-2 ring-violet-500 border-violet-500/50',
-          isDragOver && 'ring-2 ring-emerald-500 bg-emerald-500/10 scale-[1.02] border-emerald-500/50'
+          isDragOver && 'ring-2 ring-emerald-500 bg-emerald-500/10 border-emerald-500/50'
         )}
       >
         <div className="absolute left-2 top-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">

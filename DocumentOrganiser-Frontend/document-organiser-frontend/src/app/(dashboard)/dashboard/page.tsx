@@ -123,7 +123,7 @@ export default function DashboardPage() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.4 + index * 0.1, duration: 0.5 }}
-                        whileHover={{ scale: 1.02, y: -2 }}
+                        whileHover={{ y: -2 }}
                         className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10"
                       >
                         <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-br ${card.color} blur-xl`} style={{ opacity: 0.1 }} />
@@ -168,7 +168,7 @@ export default function DashboardPage() {
                 ].map((action, index) => (
                   <motion.div
                     key={action.label}
-                    whileHover={{ scale: 1.01, x: 4 }}
+                    whileHover={{ x: 2 }}
                     whileTap={{ scale: 0.99 }}
                   >
                     <Link href={action.href}>

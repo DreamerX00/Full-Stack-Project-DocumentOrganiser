@@ -93,7 +93,7 @@ export function FileCard({
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <motion.div
-          whileHover={{ y: -4, scale: 1.02 }}
+          whileHover={{ y: -2 }}
           transition={{ duration: 0.2 }}
         >
           <Card
@@ -102,7 +102,7 @@ export function FileCard({
             onMouseEnter={onMouseEnter}
             tabIndex={0}
             className={cn(
-              'group relative cursor-pointer transition-all duration-300 border-white/10 bg-card/60 backdrop-blur-sm hover:shadow-xl hover:shadow-violet-500/10 hover:border-white/20',
+              'group relative cursor-pointer transition-all duration-300 border-white/10 bg-card/60 backdrop-blur-sm hover:shadow-lg hover:shadow-violet-500/10 hover:border-white/20',
               isSelected && 'ring-2 ring-violet-500 border-violet-500/50',
               isFocused && !isSelected && 'ring-2 ring-violet-500/50'
             )}

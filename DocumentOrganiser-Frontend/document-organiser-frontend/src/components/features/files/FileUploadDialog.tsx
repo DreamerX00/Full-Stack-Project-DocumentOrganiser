@@ -59,25 +59,25 @@ export function FileUploadDialog({ open, onOpenChange }: FileUploadDialogProps) 
           <div
             {...getRootProps()}
             className={cn(
-              'flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-10 transition-all duration-300 cursor-pointer',
+              'flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 transition-all duration-300 cursor-pointer w-full box-border',
               isDragActive
-                ? 'border-violet-500 bg-gradient-to-br from-violet-500/10 to-purple-600/10 scale-[1.02]'
+                ? 'border-violet-500 bg-gradient-to-br from-violet-500/10 to-purple-600/10'
                 : 'border-white/20 hover:border-violet-500/50 hover:bg-gradient-to-br hover:from-violet-500/5 hover:to-purple-600/5'
             )}
           >
             <input {...getInputProps()} />
             <div className={cn(
-              'rounded-2xl p-4 mb-4 transition-all duration-300',
+              'rounded-xl p-3 mb-3 transition-all duration-300',
               isDragActive
                 ? 'bg-gradient-to-br from-violet-500/30 to-purple-600/30'
                 : 'bg-gradient-to-br from-violet-500/10 to-purple-600/10'
             )}>
               <Upload className={cn(
-                'h-8 w-8 transition-all duration-300',
-                isDragActive ? 'text-violet-400 scale-110' : 'text-violet-500'
+                'h-6 w-6 transition-all duration-300',
+                isDragActive ? 'text-violet-400' : 'text-violet-500'
               )} />
             </div>
-            <p className="text-sm font-medium">
+            <p className="text-sm font-medium text-center">
               {isDragActive ? 'Drop files here...' : 'Drag & drop files here, or click to browse'}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">Maximum file size: 100MB</p>

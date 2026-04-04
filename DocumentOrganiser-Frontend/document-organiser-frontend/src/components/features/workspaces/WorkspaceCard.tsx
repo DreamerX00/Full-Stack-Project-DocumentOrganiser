@@ -47,10 +47,10 @@ export function WorkspaceCard({ workspace, currentUserIsOwner, onDelete }: Works
 
   return (
     <motion.div
-      whileHover={{ y: -4, scale: 1.02 }}
+      whileHover={{ y: -2 }}
       transition={{ duration: 0.2 }}
     >
-      <Card className="group relative overflow-hidden hover:shadow-xl hover:shadow-violet-500/10 transition-all duration-300 hover:border-white/20">
+      <Card className="group relative overflow-hidden hover:shadow-lg hover:shadow-violet-500/10 transition-all duration-300 hover:border-white/20">
         <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-50`} />
         <Link href={`/workspaces/${workspace.id}`} className="absolute inset-0 z-0" />
         <CardHeader className="pb-3 relative">

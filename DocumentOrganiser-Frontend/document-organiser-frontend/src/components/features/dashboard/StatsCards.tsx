@@ -65,10 +65,10 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: index * 0.05 }}
-          whileHover={{ y: -4, scale: 1.02 }}
+          whileHover={{ y: -2 }}
           className="group"
         >
-          <Card className={`relative overflow-hidden border-white/10 bg-card/80 backdrop-blur-sm transition-all duration-300 ${card.bgGlow} group-hover:shadow-xl group-hover:border-white/20`}>
+          <Card className={`relative overflow-hidden border-white/10 bg-card/80 backdrop-blur-sm transition-all duration-300 ${card.bgGlow} group-hover:shadow-lg group-hover:border-white/20`}>
             {/* Gradient accent line */}
             <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${card.gradient}`} />
             
