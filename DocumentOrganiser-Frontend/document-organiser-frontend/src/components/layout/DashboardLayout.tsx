@@ -133,13 +133,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <div className="app-shell flex min-h-screen overflow-hidden bg-transparent">
           {/* Desktop Sidebar */}
           <div className="hidden md:block">
-            <AppSidebar />
+            <AppSidebar onUploadClick={handleUploadClick} />
           </div>
 
           {/* Mobile Sidebar Sheet */}
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetContent side="left" className="w-64 p-0">
-              <AppSidebar />
+              <AppSidebar onUploadClick={handleUploadClick} />
             </SheetContent>
           </Sheet>
 

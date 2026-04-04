@@ -905,8 +905,8 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
                 ))}
               </div>
             ) : (
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
-                <Input
+              <div className="border-2 border-dashed border-white/20 rounded-xl p-8 text-center hover:border-violet-500/50 hover:bg-violet-500/5 transition-all cursor-pointer">
+                <input
                   type="file"
                   multiple
                   className="hidden"
@@ -917,7 +917,9 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
                   htmlFor="workspace-file-upload"
                   className="cursor-pointer flex flex-col items-center gap-2"
                 >
-                  <Upload className="h-8 w-8 text-muted-foreground" />
+                  <div className="rounded-xl p-3 bg-gradient-to-br from-violet-500/10 to-purple-600/10 mb-2">
+                    <Upload className="h-6 w-6 text-violet-500" />
+                  </div>
                   <p className="font-medium">Click to select files</p>
                   <p className="text-sm text-muted-foreground">or drag and drop</p>
                 </label>

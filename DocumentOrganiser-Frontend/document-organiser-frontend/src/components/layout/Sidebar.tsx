@@ -57,9 +57,10 @@ const navItems3 = [
 
 interface SidebarProps {
   className?: string;
+  onUploadClick?: () => void;
 }
 
-export function AppSidebar({ className }: SidebarProps) {
+export function AppSidebar({ className, onUploadClick }: SidebarProps) {
   const pathname = usePathname();
   const { sidebarCollapsed, setSidebarCollapsed } = useNavigationStore();
   const user = useAuthStore((s) => s.user);
@@ -172,12 +173,13 @@ export function AppSidebar({ className }: SidebarProps) {
 
       {/* Upload Button */}
       <div className="p-3">
-        <Link href="/dashboard/documents">
-          <Button className={cn('w-full gap-2', sidebarCollapsed && 'px-2')}>
-            <Upload className="h-4 w-4" />
-            {!sidebarCollapsed && 'Upload document'}
-          </Button>
-        </Link>
+        <Button 
+          onClick={onUploadClick} 
+          className={cn('w-full gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 shadow-lg shadow-violet-500/25', sidebarCollapsed && 'px-2')}
+        >
+          <Upload className="h-4 w-4" />
+          {!sidebarCollapsed && 'Upload document'}
+        </Button>
       </div>
 
       {/* Navigation */}
