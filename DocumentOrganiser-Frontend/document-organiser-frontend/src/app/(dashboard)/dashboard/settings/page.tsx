@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { motion, Variants } from 'framer-motion';
 import { usersApi } from '@/lib/api/users';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,10 +30,30 @@ import {
 } from '@/components/ui/alert-dialog';
 import { UserAvatar } from '@/components/features/auth/UserAvatar';
 import { useAuthStore } from '@/lib/store/authStore';
-import { User, Shield, Bell, Palette, Trash2 } from 'lucide-react';
+import { User, Shield, Bell, Palette, Trash2, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTheme } from 'next-themes';
 import { signOut } from 'next-auth/react';
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.05,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4 },
+  },
+};
 
 export default function SettingsPage() {
   const user = useAuthStore((s) => s.user);
@@ -91,180 +112,202 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-6 p-6 max-w-3xl">
-      <div>
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-muted-foreground">Manage your account settings and preferences</p>
-      </div>
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6 p-6 max-w-3xl"
+    >
+      <motion.div variants={itemVariants} className="flex items-center gap-3">
+        <div className="rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-600/20 p-3 border border-white/10">
+          <Settings className="h-6 w-6 text-violet-500" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-violet-500 to-purple-600 bg-clip-text text-transparent">
+            Settings
+          </h1>
+          <p className="text-muted-foreground">Manage your account settings and preferences</p>
+        </div>
+      </motion.div>
 
-      <Tabs defaultValue="profile">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="profile" className="gap-2">
-            <User className="h-4 w-4" /> Profile
-          </TabsTrigger>
-          <TabsTrigger value="appearance" className="gap-2">
-            <Palette className="h-4 w-4" /> Appearance
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="gap-2">
-            <Bell className="h-4 w-4" /> Notifications
-          </TabsTrigger>
-          <TabsTrigger value="security" className="gap-2">
-            <Shield className="h-4 w-4" /> Security
-          </TabsTrigger>
-        </TabsList>
+      <motion.div variants={itemVariants}>
+        <Tabs defaultValue="profile">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="profile" className="gap-2">
+              <User className="h-4 w-4" /> Profile
+            </TabsTrigger>
+            <TabsTrigger value="appearance" className="gap-2">
+              <Palette className="h-4 w-4" /> Appearance
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="gap-2">
+              <Bell className="h-4 w-4" /> Notifications
+            </TabsTrigger>
+            <TabsTrigger value="security" className="gap-2">
+              <Shield className="h-4 w-4" /> Security
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Profile Tab */}
-        <TabsContent value="profile">
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
-              <CardDescription>Update your account profile information</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center gap-4">
-                <UserAvatar size="lg" />
-                <div>
-                  <p className="font-medium">{user?.name}</p>
-                  <p className="text-sm text-muted-foreground">{user?.email}</p>
+          {/* Profile Tab */}
+          <TabsContent value="profile">
+            <Card>
+              <CardHeader>
+                <CardTitle>Profile Information</CardTitle>
+                <CardDescription>Update your account profile information</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <UserAvatar size="lg" />
+                  <div>
+                    <p className="font-medium">{user?.name}</p>
+                    <p className="text-sm text-muted-foreground">{user?.email}</p>
+                  </div>
                 </div>
-              </div>
 
-              <Separator />
+                <Separator className="bg-white/10" />
 
-              <div className="grid gap-4">
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="name">Name</Label>
+                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input id="email" value={email} disabled className="bg-muted/50" />
+                    <p className="text-xs text-muted-foreground">
+                      Email is managed by your Google account
+                    </p>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleSaveProfile}
+                  disabled={isSaving}
+                  className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 shadow-lg shadow-violet-500/25"
+                >
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Appearance Tab */}
+          <TabsContent value="appearance">
+            <Card>
+              <CardHeader>
+                <CardTitle>Appearance</CardTitle>
+                <CardDescription>Customize the look and feel</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
                 <div className="grid gap-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+                  <Label>Theme</Label>
+                  <Select value={theme} onValueChange={setTheme}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="light">Light</SelectItem>
+                      <SelectItem value="dark">Dark</SelectItem>
+                      <SelectItem value="system">System</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" value={email} disabled />
-                  <p className="text-xs text-muted-foreground">
-                    Email is managed by your Google account
-                  </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Notifications Tab */}
+          <TabsContent value="notifications">
+            <Card>
+              <CardHeader>
+                <CardTitle>Notification Preferences</CardTitle>
+                <CardDescription>Choose what notifications you receive</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Push Notifications</p>
+                    <p className="text-sm text-muted-foreground">
+                      Receive in-app notifications for important updates
+                    </p>
+                  </div>
+                  <Switch checked={notificationsEnabled} onCheckedChange={setNotificationsEnabled} />
                 </div>
-              </div>
+                <Separator className="bg-white/10" />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Email Notifications</p>
+                    <p className="text-sm text-muted-foreground">
+                      Receive email notifications for important updates
+                    </p>
+                  </div>
+                  <Switch checked={emailNotifications} onCheckedChange={setEmailNotifications} />
+                </div>
 
-              <Button onClick={handleSaveProfile} disabled={isSaving}>
-                {isSaving ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                <Button
+                  onClick={handleSaveNotifications}
+                  disabled={isSavingNotifications}
+                  className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 shadow-lg shadow-violet-500/25"
+                >
+                  {isSavingNotifications ? 'Saving...' : 'Save Preferences'}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {/* Appearance Tab */}
-        <TabsContent value="appearance">
-          <Card>
-            <CardHeader>
-              <CardTitle>Appearance</CardTitle>
-              <CardDescription>Customize the look and feel</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-2">
-                <Label>Theme</Label>
-                <Select value={theme} onValueChange={setTheme}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="dark">Dark</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Notifications Tab */}
-        <TabsContent value="notifications">
-          <Card>
-            <CardHeader>
-              <CardTitle>Notification Preferences</CardTitle>
-              <CardDescription>Choose what notifications you receive</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
+          {/* Security Tab */}
+          <TabsContent value="security">
+            <Card>
+              <CardHeader>
+                <CardTitle>Security</CardTitle>
+                <CardDescription>Manage your account security</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
                 <div>
-                  <p className="font-medium">Push Notifications</p>
-                  <p className="text-sm text-muted-foreground">
-                    Receive in-app notifications for important updates
+                  <p className="font-medium">Authentication</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    You&apos;re signed in with Google OAuth. Your password is managed by Google.
                   </p>
                 </div>
-                <Switch checked={notificationsEnabled} onCheckedChange={setNotificationsEnabled} />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
+
+                <Separator className="bg-white/10" />
+
                 <div>
-                  <p className="font-medium">Email Notifications</p>
-                  <p className="text-sm text-muted-foreground">
-                    Receive email notifications for important updates
+                  <p className="font-medium text-rose-500">Danger Zone</p>
+                  <p className="text-sm text-muted-foreground mt-1 mb-4">
+                    Permanently delete your account and all associated data. This action cannot be
+                    undone.
                   </p>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button className="gap-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 shadow-lg shadow-rose-500/25">
+                        <Trash2 className="h-4 w-4" /> Delete Account
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete your account, all
+                          your documents, folders, and shared links.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleDeleteAccount}
+                          className="bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500"
+                        >
+                          Delete Account
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
-                <Switch checked={emailNotifications} onCheckedChange={setEmailNotifications} />
-              </div>
-
-              <Button onClick={handleSaveNotifications} disabled={isSavingNotifications}>
-                {isSavingNotifications ? 'Saving...' : 'Save Preferences'}
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Security Tab */}
-        <TabsContent value="security">
-          <Card>
-            <CardHeader>
-              <CardTitle>Security</CardTitle>
-              <CardDescription>Manage your account security</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <p className="font-medium">Authentication</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  You&apos;re signed in with Google OAuth. Your password is managed by Google.
-                </p>
-              </div>
-
-              <Separator />
-
-              <div>
-                <p className="font-medium text-destructive">Danger Zone</p>
-                <p className="text-sm text-muted-foreground mt-1 mb-4">
-                  Permanently delete your account and all associated data. This action cannot be
-                  undone.
-                </p>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" className="gap-2">
-                      <Trash2 className="h-4 w-4" /> Delete Account
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete your account, all
-                        your documents, folders, and shared links.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleDeleteAccount}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        Delete Account
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </motion.div>
+    </motion.div>
   );
 }

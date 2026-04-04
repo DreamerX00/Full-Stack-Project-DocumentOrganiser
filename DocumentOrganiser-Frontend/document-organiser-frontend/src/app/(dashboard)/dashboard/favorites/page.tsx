@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { Star, Sparkles } from 'lucide-react';
+import { motion, Variants } from 'framer-motion';
 import {
   useFavoriteDocuments,
   useToggleFavorite,
@@ -20,6 +22,26 @@ import { RenameDialog } from '@/components/features/files/RenameDialog';
 import { MoveDialog } from '@/components/features/files/MoveDialog';
 import { useNavigationStore } from '@/lib/store/navigationStore';
 import type { DocumentResponse } from '@/lib/types';
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.05,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4 },
+  },
+};
 
 export default function FavoritesPage() {
   const { viewMode } = useNavigationStore();
@@ -47,41 +69,55 @@ export default function FavoritesPage() {
   const handleDownload = (doc: DocumentResponse) => downloadDoc.mutate(doc);
 
   return (
-    <div className="space-y-4 p-6">
-      <div>
-        <h1 className="text-2xl font-bold">Favorites</h1>
-        <p className="text-muted-foreground">Your starred documents</p>
-      </div>
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6 p-6"
+    >
+      <motion.div variants={itemVariants} className="flex items-center gap-3">
+        <div className="rounded-xl bg-gradient-to-br from-amber-500/20 to-yellow-600/20 p-3 border border-white/10">
+          <Star className="h-6 w-6 text-amber-500" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-500 to-yellow-600 bg-clip-text text-transparent">
+            Favorites
+          </h1>
+          <p className="text-muted-foreground">Your starred documents</p>
+        </div>
+      </motion.div>
 
-      {!isLoading && documents.length === 0 ? (
-        <EmptyState type="favorites" />
-      ) : viewMode === 'grid' ? (
-        <FileGrid
-          documents={documents}
-          isLoading={isLoading}
-          onPreview={(doc) => setPreviewDoc(doc)}
-          onDownload={handleDownload}
-          onToggleFavorite={handleToggleFavorite}
-          onDelete={(doc) => deleteDoc.mutate(doc.id)}
-          onRename={(doc) => setRenameDoc(doc)}
-          onShare={(doc) => setShareDoc(doc)}
-          onMove={(doc) => setMoveDoc(doc)}
-          onCopy={(doc) => setCopyDoc(doc)}
-        />
-      ) : (
-        <FileList
-          documents={documents}
-          isLoading={isLoading}
-          onPreview={(doc) => setPreviewDoc(doc)}
-          onDownload={handleDownload}
-          onToggleFavorite={handleToggleFavorite}
-          onDelete={(doc) => deleteDoc.mutate(doc.id)}
-          onRename={(doc) => setRenameDoc(doc)}
-          onShare={(doc) => setShareDoc(doc)}
-          onMove={(doc) => setMoveDoc(doc)}
-          onCopy={(doc) => setCopyDoc(doc)}
-        />
-      )}
+      <motion.div variants={itemVariants}>
+        {!isLoading && documents.length === 0 ? (
+          <EmptyState type="favorites" />
+        ) : viewMode === 'grid' ? (
+          <FileGrid
+            documents={documents}
+            isLoading={isLoading}
+            onPreview={(doc) => setPreviewDoc(doc)}
+            onDownload={handleDownload}
+            onToggleFavorite={handleToggleFavorite}
+            onDelete={(doc) => deleteDoc.mutate(doc.id)}
+            onRename={(doc) => setRenameDoc(doc)}
+            onShare={(doc) => setShareDoc(doc)}
+            onMove={(doc) => setMoveDoc(doc)}
+            onCopy={(doc) => setCopyDoc(doc)}
+          />
+        ) : (
+          <FileList
+            documents={documents}
+            isLoading={isLoading}
+            onPreview={(doc) => setPreviewDoc(doc)}
+            onDownload={handleDownload}
+            onToggleFavorite={handleToggleFavorite}
+            onDelete={(doc) => deleteDoc.mutate(doc.id)}
+            onRename={(doc) => setRenameDoc(doc)}
+            onShare={(doc) => setShareDoc(doc)}
+            onMove={(doc) => setMoveDoc(doc)}
+            onCopy={(doc) => setCopyDoc(doc)}
+          />
+        )}
+      </motion.div>
 
       <FilePreview
         document={previewDoc}
@@ -162,6 +198,6 @@ export default function FavoritesPage() {
         }}
         isLoading={copyDocument.isPending}
       />
-    </div>
+    </motion.div>
   );
 }

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, Plus } from 'lucide-react';
+import { Loader2, Plus, Building2, Sparkles } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -76,15 +76,22 @@ export function CreateWorkspaceDialog({ trigger, onSuccess }: CreateWorkspaceDia
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger ?? (
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
+          <Button className="gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 shadow-lg shadow-violet-500/25">
+            <Plus className="h-4 w-4" />
             New Workspace
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create Workspace</DialogTitle>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-600/20 p-3 border border-white/10">
+              <Building2 className="h-5 w-5 text-violet-500" />
+            </div>
+            <div>
+              <DialogTitle className="text-lg">Create Workspace</DialogTitle>
+            </div>
+          </div>
           <DialogDescription>
             Create a new workspace to organize your documents and collaborate with your team.
           </DialogDescription>
@@ -134,8 +141,16 @@ export function CreateWorkspaceDialog({ trigger, onSuccess }: CreateWorkspaceDia
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={create.isPending}>
-                {create.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button
+                type="submit"
+                disabled={create.isPending}
+                className="gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 shadow-lg shadow-violet-500/25"
+              >
+                {create.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
                 Create Workspace
               </Button>
             </DialogFooter>

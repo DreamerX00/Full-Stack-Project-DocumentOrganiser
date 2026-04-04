@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FolderPlus, Upload } from 'lucide-react';
+import { FolderPlus, Upload, Sparkles } from 'lucide-react';
+import { motion, Variants } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { FileGrid } from '@/components/features/files/FileGrid';
 import { FileList } from '@/components/features/files/FileList';
@@ -30,6 +31,26 @@ import {
 import { useRootFolders, useCreateFolder, useDeleteFolder } from '@/lib/hooks/useFolders';
 import { useShareDocumentWithUser, useCreateDocumentShareLink } from '@/lib/hooks/useShares';
 import type { DocumentResponse, FolderResponse } from '@/lib/types';
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.06,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4 },
+  },
+};
 
 export default function DocumentsPage() {
   const router = useRouter();
@@ -78,63 +99,93 @@ export default function DocumentsPage() {
   const isEmpty = !isLoading && documents.length === 0 && folders.length === 0;
 
   return (
-    <div className="space-y-4 p-6">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6 p-6"
+    >
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <motion.div variants={itemVariants} className="flex items-center justify-between">
         <div>
           <AppBreadcrumb
             items={[{ id: 'documents', name: 'My Documents', href: '/dashboard/documents' }]}
           />
-          <h1 className="mt-2 text-2xl font-bold">My Documents</h1>
+          <h1 className="mt-2 text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+            My Documents
+          </h1>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setCreateFolderOpen(true)} className="gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setCreateFolderOpen(true)}
+            className="gap-2 border-white/10 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all"
+          >
             <FolderPlus className="h-4 w-4" /> New Folder
           </Button>
-          <Button onClick={() => setUploadOpen(true)} className="gap-2">
+          <Button
+            onClick={() => setUploadOpen(true)}
+            className="gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 shadow-lg shadow-violet-500/25 transition-all"
+          >
             <Upload className="h-4 w-4" /> Upload
           </Button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Bulk Actions */}
-      <BulkActionsBar />
+      <motion.div variants={itemVariants}>
+        <BulkActionsBar />
+      </motion.div>
 
       {/* Content */}
       {isEmpty ? (
-        <EmptyState
-          type="documents"
-          onUpload={() => setUploadOpen(true)}
-          onCreateFolder={() => setCreateFolderOpen(true)}
-        />
+        <motion.div variants={itemVariants}>
+          <EmptyState
+            type="documents"
+            onUpload={() => setUploadOpen(true)}
+            onCreateFolder={() => setCreateFolderOpen(true)}
+          />
+        </motion.div>
       ) : (
         <>
           {/* Folders */}
           {folders.length > 0 && (
-            <div>
-              <h2 className="mb-3 text-sm font-medium text-muted-foreground">Folders</h2>
+            <motion.div variants={itemVariants}>
+              <h2 className="mb-3 text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                Folders
+              </h2>
               <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {folders.map((folder) => (
-                  <FolderCard
+                {folders.map((folder, idx) => (
+                  <motion.div
                     key={folder.id}
-                    folder={folder}
-                    onDelete={(f) => deleteFolder.mutate(f.id)}
-                    onDocumentDrop={(documentId, targetFolderId) => {
-                      moveDocument.mutate({
-                        id: documentId,
-                        data: { targetFolderId },
-                      });
-                    }}
-                  />
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: idx * 0.04 }}
+                  >
+                    <FolderCard
+                      folder={folder}
+                      onDelete={(f) => deleteFolder.mutate(f.id)}
+                      onDocumentDrop={(documentId, targetFolderId) => {
+                        moveDocument.mutate({
+                          id: documentId,
+                          data: { targetFolderId },
+                        });
+                      }}
+                    />
+                  </motion.div>
                 ))}
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* Documents */}
           {documents.length > 0 && (
-            <div>
-              <h2 className="mb-3 text-sm font-medium text-muted-foreground">Files</h2>
+            <motion.div variants={itemVariants}>
+              <h2 className="mb-3 text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
+                Files
+              </h2>
               {viewMode === 'grid' ? (
                 <FileGrid
                   documents={documents}
@@ -162,7 +213,7 @@ export default function DocumentsPage() {
                   onCopy={(doc) => setCopyDoc(doc)}
                 />
               )}
-            </div>
+            </motion.div>
           )}
         </>
       )}
@@ -260,6 +311,6 @@ export default function DocumentsPage() {
         }}
         isLoading={copyDocument.isPending}
       />
-    </div>
+    </motion.div>
   );
 }
