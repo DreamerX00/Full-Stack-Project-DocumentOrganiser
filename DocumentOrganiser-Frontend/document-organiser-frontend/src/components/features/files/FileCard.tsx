@@ -119,7 +119,7 @@ export function FileCard({
 
             {/* Favorite */}
             <button
-              className="absolute right-2 top-2 z-10 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
+              className="absolute right-2 top-2 z-10 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:brightness-125"
               onClick={(e) => {
                 e.stopPropagation();
                 onToggleFavorite?.(doc);

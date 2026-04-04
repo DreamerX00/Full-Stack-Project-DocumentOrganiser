@@ -76,7 +76,7 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
               <CardTitle className="text-xs font-medium text-muted-foreground">
                 {card.title}
               </CardTitle>
-              <div className={`rounded-xl bg-gradient-to-br ${card.gradient} p-2 shadow-lg transition-transform duration-300 group-hover:scale-110`}>
+              <div className={`rounded-xl bg-gradient-to-br ${card.gradient} p-2 shadow-lg transition-all duration-300 group-hover:shadow-xl group-hover:brightness-110`}>
                 <card.icon className="h-3.5 w-3.5 text-white" />
               </div>
             </CardHeader>

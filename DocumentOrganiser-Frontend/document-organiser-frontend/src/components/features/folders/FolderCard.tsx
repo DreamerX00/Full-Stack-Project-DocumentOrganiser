@@ -92,7 +92,7 @@ export function FolderCard({
         <Link href={`/dashboard/folder/${folder.id}`}>
           <CardContent className="flex items-center gap-3 p-3">
             <div
-              className="rounded-xl p-2.5 transition-transform duration-200 group-hover:scale-105"
+              className="rounded-xl p-2.5 transition-all duration-200 group-hover:brightness-110 group-hover:shadow-lg"
               style={{ 
                 backgroundColor: `${folderColor}20`,
                 boxShadow: `0 4px 12px ${folderColor}15`

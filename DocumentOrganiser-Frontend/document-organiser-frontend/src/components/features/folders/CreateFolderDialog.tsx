@@ -99,8 +99,8 @@ export function CreateFolderDialog({
                   type="button"
                   className={`h-8 w-8 rounded-xl bg-gradient-to-br ${c.gradient} border-2 transition-all duration-200 ${
                     selectedColor === c.color
-                      ? 'border-white scale-110 shadow-lg'
-                      : 'border-transparent hover:scale-105'
+                      ? 'border-white ring-2 ring-white/50 shadow-lg'
+                      : 'border-transparent hover:border-white/50 hover:shadow-md'
                   }`}
                   onClick={() => setSelectedColor(c.color)}
                 />

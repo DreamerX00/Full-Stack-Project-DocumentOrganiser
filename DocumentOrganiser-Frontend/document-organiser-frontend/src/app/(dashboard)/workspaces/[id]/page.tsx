@@ -654,7 +654,7 @@ export default function WorkspaceDetailPage({ params }: WorkspaceDetailPageProps
                   <CardContent className="p-4">
                     <div className="flex flex-col items-center text-center">
                       <div
-                        className="h-16 w-16 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-105"
+                        className="h-16 w-16 rounded-xl flex items-center justify-center mb-3 transition-all group-hover:shadow-lg group-hover:brightness-110"
                         style={{ backgroundColor: (folder.color || '#6366f1') + '20' }}
                       >
                         <Folder className="h-8 w-8" style={{ color: folder.color || '#6366f1' }} />
