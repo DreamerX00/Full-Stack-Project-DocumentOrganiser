@@ -73,8 +73,20 @@ pipeline {
                 script {
                     env.VERSION = "build-${env.BUILD_NUMBER}"
 
+                    // Fetch build-time secrets from AWS Secrets Manager
+                    sh """
+                        aws secretsmanager get-secret-value --secret-id docorganiser/frontend/prod --region ${AWS_REGION} --query SecretString --output text > frontend-secrets.json
+                    """
+                    
+                    env.NEXT_PUBLIC_GOOGLE_CLIENT_ID = sh(script: "jq -r .NEXT_PUBLIC_GOOGLE_CLIENT_ID frontend-secrets.json", returnStdout: true).trim()
+                    env.BACKEND_INTERNAL_URL = sh(script: "jq -r .BACKEND_INTERNAL_URL frontend-secrets.json", returnStdout: true).trim()
+                    
+                    sh "rm frontend-secrets.json"
+
                     sh """
                         docker build \
+                        --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID=${env.NEXT_PUBLIC_GOOGLE_CLIENT_ID} \
+                        --build-arg BACKEND_INTERNAL_URL=${env.BACKEND_INTERNAL_URL} \
                         -t ${ECR_REPO_FE}:${VERSION} \
                         -t ${ECR_REPO_FE}:${COMMIT_SHA} \
                         -t ${ECR_REPO_FE}:latest \
