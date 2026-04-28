@@ -24,7 +24,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'document-organiser-storage-point.s3.us-east-1.amazonaws.com',
+        hostname: 'document-organiser-storage-point.s3.ap-south-1.amazonaws.com',
       },
       {
         protocol: 'http',

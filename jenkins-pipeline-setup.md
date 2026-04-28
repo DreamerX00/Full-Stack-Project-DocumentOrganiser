@@ -180,8 +180,8 @@ Agents need ECR push access and Docker operations.
         "ecr:ListImages"
       ],
       "Resource": [
-        "arn:aws:ecr:us-east-1:<ACCOUNT_ID>:repository/full-stack-docker/doc-backend",
-        "arn:aws:ecr:us-east-1:<ACCOUNT_ID>:repository/full-stack-docker/doc-frontend"
+        "arn:aws:ecr:ap-south-1:<ACCOUNT_ID>:repository/full-stack-docker/doc-backend",
+        "arn:aws:ecr:ap-south-1:<ACCOUNT_ID>:repository/full-stack-docker/doc-frontend"
       ]
     }
   ]
@@ -235,8 +235,8 @@ If you prefer IAM user credentials (stored in Jenkins) instead of instance profi
         "ecr:ListImages"
       ],
       "Resource": [
-        "arn:aws:ecr:us-east-1:<ACCOUNT_ID>:repository/full-stack-docker/doc-backend",
-        "arn:aws:ecr:us-east-1:<ACCOUNT_ID>:repository/full-stack-docker/doc-frontend"
+        "arn:aws:ecr:ap-south-1:<ACCOUNT_ID>:repository/full-stack-docker/doc-backend",
+        "arn:aws:ecr:ap-south-1:<ACCOUNT_ID>:repository/full-stack-docker/doc-frontend"
       ]
     }
   ]
@@ -250,8 +250,8 @@ If you prefer IAM user credentials (stored in Jenkins) instead of instance profi
 Ensure the ECR repos exist:
 
 ```bash
-aws ecr create-repository --repository-name full-stack-docker/doc-backend --region us-east-1
-aws ecr create-repository --repository-name full-stack-docker/doc-frontend --region us-east-1
+aws ecr create-repository --repository-name full-stack-docker/doc-backend --region ap-south-1
+aws ecr create-repository --repository-name full-stack-docker/doc-frontend --region ap-south-1
 ```
 
 Optional: Add a lifecycle policy to keep only the last 20 images:
@@ -277,7 +277,7 @@ Optional: Add a lifecycle policy to keep only the last 20 images:
 aws ecr put-lifecycle-policy \
   --repository-name full-stack-docker/doc-backend \
   --lifecycle-policy-text file://ecr-lifecycle.json \
-  --region us-east-1
+  --region ap-south-1
 ```
 
 ---
@@ -549,7 +549,7 @@ Agents are launched on-demand and terminated after the build.
 | Setting | Value |
 |---|---|
 | Name | `aws-ec2-cloud` |
-| Region | `us-east-1` |
+| Region | `ap-south-1` |
 | EC2 Credentials | Use instance profile (master IAM role) or `aws-credentials` |
 | AMI | Custom AMI with tools pre-installed (from slave bootstrap script) |
 | Instance Type | `t3.large` |
@@ -770,7 +770,7 @@ pipeline {
     }
 
     environment {
-        AWS_REGION     = 'us-east-1'
+        AWS_REGION     = 'ap-south-1'
         ECR_REPOSITORY = 'full-stack-docker/doc-backend'
     }
 
@@ -896,7 +896,7 @@ pipeline {
     }
 
     environment {
-        AWS_REGION     = 'us-east-1'
+        AWS_REGION     = 'ap-south-1'
         ECR_REPOSITORY = 'full-stack-docker/doc-frontend'
     }
 
@@ -1019,7 +1019,7 @@ pipeline {
     }
 
     environment {
-        AWS_REGION  = 'us-east-1'
+        AWS_REGION  = 'ap-south-1'
         ECR_REPO_BE = 'full-stack-docker/doc-backend'
         ECR_REPO_FE = 'full-stack-docker/doc-frontend'
     }

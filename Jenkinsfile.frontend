@@ -1,15 +1,17 @@
+// based on your original :contentReference[oaicite:1]{index=1}
 pipeline {
-    agent { label 'ec2-static-agent' }
+    agent { label 'ec2-dynamic-agent' }
 
     parameters {
-        string(name: 'GIT_REPO', defaultValue: 'https://github.com/DreamerX00/Full-Stack-Project-DocumentOrganiser', description: 'Git repo URL')
-        string(name: 'GIT_BRANCH', defaultValue: 'master', description: 'Branch name')
-        booleanParam(name: 'FORCE_BUILD', defaultValue: false, description: 'Force build even if no frontend changes detected')
+        string(name: 'GIT_REPO', defaultValue: 'https://github.com/DreamerX00/Full-Stack-Project-DocumentOrganiser')
+        string(name: 'GIT_BRANCH', defaultValue: 'master')
+        booleanParam(name: 'FORCE_BUILD', defaultValue: false)
     }
 
     environment {
-        AWS_REGION  = 'us-east-1'
-        ECR_REPO_FE = 'full-stack-docker/doc-frontend'
+        AWS_REGION  = 'ap-south-1'
+        ACCOUNT_ID  = '817690546479'
+        ECR_REPO_FE = 'doc-organiser/frontend'
         APP_DIR     = 'DocumentOrganiser-Frontend/document-organiser-frontend'
     }
 
@@ -22,29 +24,12 @@ pipeline {
 
     stages {
 
-        // ───────────── CHECKOUT ─────────────
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
-                script {
-                    echo "📥 Cloning ${params.GIT_REPO} (${params.GIT_BRANCH})"
-
-                    checkout([
-                        $class: 'GitSCM',
-                        branches: [[name: "${params.GIT_BRANCH}"]],
-                        userRemoteConfigs: [[
-                            url: params.GIT_REPO,
-                            refspec: '+refs/heads/*:refs/remotes/origin/*'
-                        ]],
-                        extensions: [
-                            [$class: 'CleanBeforeCheckout'],
-                            [$class: 'CloneOption', shallow: true, depth: 2]
-                        ]
-                    ])
-                }
+                checkout scm
             }
         }
 
-        // ───────────── DETECT CHANGES ─────────────
         stage('Detect Changes') {
             steps {
                 script {
@@ -52,7 +37,6 @@ pipeline {
                     
                     if (params.FORCE_BUILD) {
                         env.FRONTEND_CHANGED = 'true'
-                        echo "⚡ Force build enabled"
                     } else if (hasParent) {
                         env.FRONTEND_CHANGED = sh(
                             script: "git diff --name-only HEAD~1 HEAD | grep -q '^DocumentOrganiser-Frontend/' && echo true || echo false",
@@ -60,185 +44,85 @@ pipeline {
                         ).trim()
                     } else {
                         env.FRONTEND_CHANGED = 'true'
-                        echo "📦 First commit - building"
-                    }
-                    
-                    echo "🔍 Frontend changed: ${env.FRONTEND_CHANGED}"
-                    
-                    if (env.FRONTEND_CHANGED == 'false') {
-                        currentBuild.result = 'NOT_BUILT'
-                        currentBuild.description = 'Skipped - no frontend changes'
-                        echo "⏭️ No frontend changes detected. Skipping build."
                     }
                 }
             }
         }
 
-        // ───────────── VALIDATION ─────────────
-        stage('Validate Docker Context') {
-            when {
-                expression { env.FRONTEND_CHANGED == 'true' }
-            }
+        stage('Build Image') {
+            when { expression { env.FRONTEND_CHANGED == 'true' } }
             steps {
                 script {
+                    env.COMMIT_SHA = sh(script: 'git rev-parse --short=8 HEAD', returnStdout: true).trim()
+                    env.VERSION = "build-${env.BUILD_NUMBER}"
+
                     sh """
-                        set -e
-                        echo "🔍 Validating Docker context..."
-
-                        if [ ! -d "${APP_DIR}" ]; then
-                            echo "❌ APP_DIR not found: ${APP_DIR}"
-                            ls -la
-                            exit 1
-                        fi
-
-                        if [ ! -f "${APP_DIR}/Dockerfile" ]; then
-                            echo "❌ Dockerfile missing in ${APP_DIR}"
-                            exit 1
-                        fi
-
-                        echo "✅ Docker context valid"
+                        docker build \
+                        -t ${ECR_REPO_FE}:${VERSION} \
+                        -t ${ECR_REPO_FE}:${COMMIT_SHA} \
+                        -t ${ECR_REPO_FE}:latest \
+                        -f ${APP_DIR}/Dockerfile ${APP_DIR}/
                     """
                 }
             }
         }
 
-        // ───────────── BUILD IMAGE ─────────────
-        stage('Build Docker Image') {
-            when {
-                expression { env.FRONTEND_CHANGED == 'true' }
-            }
+        stage('Login ECR') {
+            when { expression { env.FRONTEND_CHANGED == 'true' } }
             steps {
                 script {
-                    env.COMMIT_SHA = sh(
-                        script: 'git rev-parse --short=8 HEAD',
-                        returnStdout: true
-                    ).trim()
-
-                    env.VERSION = env.TAG_NAME ? 
-                        env.TAG_NAME.replaceFirst(/^v/, '') : 
-                        "build-${env.BUILD_NUMBER}"
-
-                    echo "🐳 Building Docker image (version: ${env.VERSION})..."
-
-                    withCredentials([
-                        string(credentialsId: 'google-client-id',    variable: 'NEXT_PUBLIC_GOOGLE_CLIENT_ID'),
-                        string(credentialsId: 'backend-internal-url', variable: 'BACKEND_INTERNAL_URL')
-                    ]) {
-                        retry(2) {
-                            sh """
-                                set -e
-
-                                docker build \
-                                    --pull \
-                                    --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID="\$NEXT_PUBLIC_GOOGLE_CLIENT_ID" \
-                                    --build-arg BACKEND_INTERNAL_URL="\$BACKEND_INTERNAL_URL" \
-                                    -t ${ECR_REPO_FE}:${VERSION} \
-                                    -t ${ECR_REPO_FE}:${COMMIT_SHA} \
-                                    -t ${ECR_REPO_FE}:latest \
-                                    -f ${APP_DIR}/Dockerfile ${APP_DIR}/
-                            """
-                        }
-                    }
-
-                    echo "✅ Docker image built locally"
-                }
-            }
-        }
-
-        // ───────────── ECR LOGIN ─────────────
-        stage('Login to ECR') {
-            when {
-                expression { env.FRONTEND_CHANGED == 'true' }
-            }
-            steps {
-                script {
-                    def accountId = sh(
-                        script: 'aws sts get-caller-identity --query Account --output text',
-                        returnStdout: true
-                    ).trim()
-
-                    env.REGISTRY = "${accountId}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-
-                    echo "🔐 Logging into ECR..."
-
-                    retry(3) {
-                        sh """
-                            aws ecr get-login-password --region ${AWS_REGION} \
-                            | docker login --username AWS --password-stdin ${REGISTRY}
-                        """
-                    }
-
-                    echo "✅ ECR login successful"
-                }
-            }
-        }
-
-        // ───────────── TAG + PUSH ─────────────
-        stage('Tag & Push Image') {
-            when {
-                expression { env.FRONTEND_CHANGED == 'true' }
-            }
-            steps {
-                script {
-                    echo "📤 Tagging & pushing image..."
+                    env.REGISTRY = "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 
                     sh """
-                        set -e
-
-                        docker tag ${ECR_REPO_FE}:${VERSION} ${REGISTRY}/${ECR_REPO_FE}:${VERSION}
-                        docker tag ${ECR_REPO_FE}:${COMMIT_SHA} ${REGISTRY}/${ECR_REPO_FE}:${COMMIT_SHA}
-                        docker tag ${ECR_REPO_FE}:latest ${REGISTRY}/${ECR_REPO_FE}:latest
-
-                        docker push ${REGISTRY}/${ECR_REPO_FE}:${VERSION}
-                        docker push ${REGISTRY}/${ECR_REPO_FE}:${COMMIT_SHA}
-                        docker push ${REGISTRY}/${ECR_REPO_FE}:latest
+                        aws ecr get-login-password --region ${AWS_REGION} \
+                        | docker login --username AWS --password-stdin ${REGISTRY}
                     """
-
-                    echo "✅ Image pushed to ECR"
                 }
             }
         }
 
-        // ───────────── DEPLOY TO ECS ─────────────
-        stage('Deploy Frontend to ECS') {
-            when {
-                expression { env.FRONTEND_CHANGED == 'true' }
+        stage('Push Image') {
+            when { expression { env.FRONTEND_CHANGED == 'true' } }
+            steps {
+                sh """
+                    docker tag ${ECR_REPO_FE}:${VERSION} ${REGISTRY}/${ECR_REPO_FE}:${VERSION}
+                    docker tag ${ECR_REPO_FE}:${COMMIT_SHA} ${REGISTRY}/${ECR_REPO_FE}:${COMMIT_SHA}
+                    docker tag ${ECR_REPO_FE}:latest ${REGISTRY}/${ECR_REPO_FE}:latest
+
+                    docker push ${REGISTRY}/${ECR_REPO_FE}:${VERSION}
+                    docker push ${REGISTRY}/${ECR_REPO_FE}:${COMMIT_SHA}
+                    docker push ${REGISTRY}/${ECR_REPO_FE}:latest
+                """
             }
+        }
+
+        stage('Deploy ECS') {
+            when { expression { env.FRONTEND_CHANGED == 'true' } }
             steps {
                 script {
-                    def cluster = "full-stack-doc-organiser"
-                    def service = "Frontend-TD-service"
-                    def taskDef = "Frontend-TD"
-
-                    echo "🚀 Deploying frontend to ECS..."
+                    def cluster = "DOC-Organiser-ECS-Cluster"
+                    def service = "doc-organiser-frontend-TD-service"
+                    def taskDef = "doc-organiser-frontend-TD"
 
                     sh """
                         aws ecs describe-task-definition \
-                            --task-definition ${taskDef} \
-                            --query 'taskDefinition' > task-def.json
-                    """
+                        --task-definition ${taskDef} \
+                        --query 'taskDefinition' > task.json
 
-                    sh """
-                        cat task-def.json | jq '
-                            .containerDefinitions[0].image = "${REGISTRY}/${ECR_REPO_FE}:${VERSION}" |
-                            del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)
-                        ' > new-task-def.json
-                    """
+                        cat task.json | jq '
+                        .containerDefinitions[0].image = "${REGISTRY}/${ECR_REPO_FE}:${VERSION}" |
+                        del(.taskDefinitionArn,.revision,.status,.requiresAttributes,.compatibilities,.registeredAt,.registeredBy)
+                        ' > new-task.json
 
-                    sh """
                         aws ecs register-task-definition \
-                            --cli-input-json file://new-task-def.json
-                    """
+                        --cli-input-json file://new-task.json
 
-                    sh """
                         aws ecs update-service \
-                            --cluster ${cluster} \
-                            --service ${service} \
-                            --task-definition ${taskDef} \
-                            --force-new-deployment
+                        --cluster ${cluster} \
+                        --service ${service} \
+                        --task-definition ${taskDef} \
+                        --force-new-deployment
                     """
-
-                    echo "✅ Frontend deployed"
                 }
             }
         }
@@ -246,15 +130,8 @@ pipeline {
 
     post {
         always {
-            echo "🧹 Cleaning up..."
             sh 'docker system prune -af || true'
             cleanWs()
-        }
-        success {
-            echo "✅ Pipeline completed successfully"
-        }
-        failure {
-            echo "❌ Pipeline failed"
         }
     }
 }

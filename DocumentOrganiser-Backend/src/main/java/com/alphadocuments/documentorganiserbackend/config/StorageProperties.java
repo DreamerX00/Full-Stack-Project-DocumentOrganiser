@@ -17,7 +17,7 @@ public class StorageProperties {
     private String accessKey;
     private String secretKey;
     private String bucketName = "documents";
-    private String region = "us-east-1";
+    private String region = "ap-south-1";
     private long defaultQuotaMb = 100; // Default storage quota in MB
     private boolean failFast = true;
 

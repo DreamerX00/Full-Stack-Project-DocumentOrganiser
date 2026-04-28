@@ -3,11 +3,11 @@ version: 0.2
 # ============================================================================
 # AWS CodeBuild — Backend (Spring Boot / Gradle)
 # ============================================================================
-# ECR repo: 154370341959.dkr.ecr.us-east-1.amazonaws.com/full-stack-docker/doc-backend
+# ECR repo: 154370341959.dkr.ecr.ap-south-1.amazonaws.com/full-stack-docker/doc-backend
 #
 # Required environment variables (set in CodeBuild project or as overrides):
 #   AWS_ACCOUNT_ID       – e.g. 154370341959
-#   AWS_DEFAULT_REGION   – e.g. us-east-1
+#   AWS_DEFAULT_REGION   – e.g. ap-south-1
 #   IMAGE_REPO           – e.g. full-stack-docker/doc-backend
 #
 # IMAGE_TAG is derived automatically from the git tag (e.g. v3.0.8 → 3.0.8).
@@ -16,7 +16,7 @@ version: 0.2
 
 env:
   variables:
-    AWS_DEFAULT_REGION: us-east-1
+    AWS_DEFAULT_REGION: ap-south-1
     AWS_ACCOUNT_ID: "154370341959"
     IMAGE_REPO: full-stack-docker/doc-backend
 

@@ -60,7 +60,7 @@ git clone --depth 1 --branch "$BRANCH" "$REPO_URL" "$WORK_DIR" >> "$LOG_FILE" 2>
 cd "$WORK_DIR/DocumentOrganiser-Frontend/document-organiser-frontend"
 
 # Load env vars from Secrets Manager (same as start-frontend.sh)
-REGION="us-east-1"
+REGION="ap-south-1"
 SECRET_NAME="docorganiser/frontend/prod"
 if aws secretsmanager get-secret-value --secret-id "$SECRET_NAME" --region "$REGION" --query 'SecretString' --output text > /dev/null 2>&1; then
   SECRET_JSON=$(aws secretsmanager get-secret-value \

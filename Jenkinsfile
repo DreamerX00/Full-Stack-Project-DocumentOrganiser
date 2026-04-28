@@ -2,7 +2,7 @@ pipeline {
     agent { label 'docker-agent' }
 
     environment {
-        AWS_REGION       = 'us-east-1'
+        AWS_REGION       = 'ap-south-1'
         ECR_REPO_BE      = 'full-stack-docker/doc-backend'
         ECR_REPO_FE      = 'full-stack-docker/doc-frontend'
         DOCKER_BUILDKIT  = '1'

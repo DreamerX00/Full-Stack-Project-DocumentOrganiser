@@ -1,0 +1,91 @@
+{
+    "family": "doc-backend-td",
+    "taskRoleArn": "arn:aws:iam::817690546479:role/doc-org-backend-task-role",
+    "executionRoleArn": "arn:aws:iam::817690546479:role/Doc-Organiser-Task-Execution",
+    "networkMode": "awsvpc",
+    "cpu": "1024",
+    "memory": "4096",
+    "requiresCompatibilities": [
+        "EC2",
+        "FARGATE"
+    ],
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    },
+    "containerDefinitions": [
+        {
+            "name": "doc-backend",
+            "image": "817690546479.dkr.ecr.ap-south-1.amazonaws.com/doc-organiser/backend:latest",
+            "cpu": 256,
+            "memory": 1024,
+            "memoryReservation": 512,
+            "portMappings": [
+                {
+                    "containerPort": 8080,
+                    "hostPort": 8080,
+                    "protocol": "tcp",
+                    "appProtocol": "http"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "SPRING_PROFILES_ACTIVE",
+                    "value": "prod"
+                }
+            ],
+            "secrets": [
+                {
+                    "name": "DATABASE_URL",
+                    "valueFrom": "arn:aws:secretsmanager:ap-south-1:817690546479:secret:docorganiser/backend/prod-yeomBf:DATABASE_URL::"
+                },
+                {
+                    "name": "DATABASE_USERNAME",
+                    "valueFrom": "arn:aws:secretsmanager:ap-south-1:817690546479:secret:rds!db-bbde911c-7789-488f-beb0-acb15368ec19-al9paB:username::"
+                },
+                {
+                    "name": "DATABASE_PASSWORD",
+                    "valueFrom": "arn:aws:secretsmanager:ap-south-1:817690546479:secret:rds!db-bbde911c-7789-488f-beb0-acb15368ec19-al9paB:password::"
+                },
+                {
+                    "name": "JWT_SECRET",
+                    "valueFrom": "arn:aws:secretsmanager:ap-south-1:817690546479:secret:docorganiser/backend/prod-yeomBf:JWT_SECRET::"
+                },
+                {
+                    "name": "GOOGLE_CLIENT_ID",
+                    "valueFrom": "arn:aws:secretsmanager:ap-south-1:817690546479:secret:docorganiser/backend/prod-yeomBf:GOOGLE_CLIENT_ID::"
+                },
+                {
+                    "name": "GOOGLE_CLIENT_SECRET",
+                    "valueFrom": "arn:aws:secretsmanager:ap-south-1:817690546479:secret:docorganiser/backend/prod-yeomBf:GOOGLE_CLIENT_SECRET::"
+                },
+                {
+                    "name": "AWS_S3_BUCKET",
+                    "valueFrom": "arn:aws:secretsmanager:ap-south-1:817690546479:secret:docorganiser/backend/prod-yeomBf:AWS_S3_BUCKET::"
+                },
+                {
+                    "name": "AWS_REGION",
+                    "valueFrom": "arn:aws:secretsmanager:ap-south-1:817690546479:secret:docorganiser/backend/prod-yeomBf:AWS_REGION::"
+                },
+                {
+                    "name": "APP_FRONTEND_URL",
+                    "valueFrom": "arn:aws:secretsmanager:ap-south-1:817690546479:secret:docorganiser/backend/prod-yeomBf:APP_FRONTEND_URL::"
+                },
+                {
+                    "name": "CORS_ALLOWED_ORIGINS",
+                    "valueFrom": "arn:aws:secretsmanager:ap-south-1:817690546479:secret:docorganiser/backend/prod-yeomBf:CORS_ALLOWED_ORIGINS::"
+                }
+            ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/doc-backend-td",
+                    "awslogs-create-group": "true",
+                    "awslogs-region": "ap-south-1",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            }
+        }
+    ]
+}

@@ -1,17 +1,19 @@
+// based on your original :contentReference[oaicite:0]{index=0}
 pipeline {
-    agent { label 'ec2-static-agent' }
+    agent { label 'ec2-dynamic-agent' }
 
     parameters {
         string(name: 'GIT_REPO', defaultValue: 'https://github.com/DreamerX00/Full-Stack-Project-DocumentOrganiser', description: 'Git repo URL')
         string(name: 'GIT_BRANCH', defaultValue: 'master', description: 'Branch name')
-        booleanParam(name: 'FORCE_BUILD', defaultValue: false, description: 'Force build even if no backend changes detected')
+        booleanParam(name: 'FORCE_BUILD', defaultValue: false, description: 'Force build')
     }
 
     environment {
-        AWS_REGION      = 'us-east-1'
-        ECR_REPO_BE     = 'full-stack-docker/doc-backend'
-        DOCKER_BUILDKIT = '1'
+        AWS_REGION      = 'ap-south-1'
+        ACCOUNT_ID      = '817690546479'
+        ECR_REPO_BE     = 'doc-organiser/backend'
         APP_DIR         = 'DocumentOrganiser-Backend'
+        DOCKER_BUILDKIT = '1'
     }
 
     options {
@@ -23,17 +25,19 @@ pipeline {
 
     stages {
 
-        // ───────────── DETECT CHANGES ─────────────
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
         stage('Detect Changes') {
             steps {
                 script {
-                    sh 'git fetch --depth=2 origin $(echo $GIT_BRANCH | sed "s|origin/||") || true'
-                    
                     def hasParent = sh(script: 'git rev-parse --verify HEAD~1 >/dev/null 2>&1', returnStatus: true) == 0
                     
                     if (params.FORCE_BUILD) {
                         env.BACKEND_CHANGED = 'true'
-                        echo "⚡ Force build enabled"
                     } else if (hasParent) {
                         env.BACKEND_CHANGED = sh(
                             script: "git diff --name-only HEAD~1 HEAD | grep -q '^DocumentOrganiser-Backend/' && echo true || echo false",
@@ -41,179 +45,85 @@ pipeline {
                         ).trim()
                     } else {
                         env.BACKEND_CHANGED = 'true'
-                        echo "📦 First commit - building"
-                    }
-                    
-                    echo "🔍 Backend changed: ${env.BACKEND_CHANGED}"
-                    
-                    if (env.BACKEND_CHANGED == 'false') {
-                        currentBuild.result = 'NOT_BUILT'
-                        currentBuild.description = 'Skipped - no backend changes'
-                        echo "⏭️ No backend changes detected. Skipping build."
                     }
                 }
             }
         }
 
-        // ───────────── VALIDATE ─────────────
-        stage('Validate Docker Context') {
-            when {
-                expression { env.BACKEND_CHANGED == 'true' }
+        stage('Build Image') {
+            when { expression { env.BACKEND_CHANGED == 'true' } }
+            steps {
+                script {
+                    env.COMMIT_SHA = sh(script: 'git rev-parse --short=8 HEAD', returnStdout: true).trim()
+                    env.VERSION = "build-${env.BUILD_NUMBER}"
+
+                    sh """
+                        docker build \
+                        -t ${ECR_REPO_BE}:${VERSION} \
+                        -t ${ECR_REPO_BE}:${COMMIT_SHA} \
+                        -t ${ECR_REPO_BE}:latest \
+                        -f ${APP_DIR}/Dockerfile ${APP_DIR}/
+                    """
+                }
             }
+        }
+
+        stage('Login ECR') {
+            when { expression { env.BACKEND_CHANGED == 'true' } }
+            steps {
+                script {
+                    env.REGISTRY = "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+
+                    sh """
+                        aws ecr get-login-password --region ${AWS_REGION} \
+                        | docker login --username AWS --password-stdin ${REGISTRY}
+                    """
+                }
+            }
+        }
+
+        stage('Push Image') {
+            when { expression { env.BACKEND_CHANGED == 'true' } }
             steps {
                 sh """
-                    set -e
-                    echo "🔍 Validating backend Docker context..."
+                    docker tag ${ECR_REPO_BE}:${VERSION} ${REGISTRY}/${ECR_REPO_BE}:${VERSION}
+                    docker tag ${ECR_REPO_BE}:${COMMIT_SHA} ${REGISTRY}/${ECR_REPO_BE}:${COMMIT_SHA}
+                    docker tag ${ECR_REPO_BE}:latest ${REGISTRY}/${ECR_REPO_BE}:latest
 
-                    if [ ! -d "${APP_DIR}" ]; then
-                        echo "❌ Backend directory missing"
-                        ls -la
-                        exit 1
-                    fi
-
-                    if [ ! -f "${APP_DIR}/Dockerfile" ]; then
-                        echo "❌ Dockerfile missing in backend"
-                        exit 1
-                    fi
-
-                    echo "✅ Backend context valid"
+                    docker push ${REGISTRY}/${ECR_REPO_BE}:${VERSION}
+                    docker push ${REGISTRY}/${ECR_REPO_BE}:${COMMIT_SHA}
+                    docker push ${REGISTRY}/${ECR_REPO_BE}:latest
                 """
             }
         }
 
-        // ───────────── BUILD IMAGE ─────────────
-        stage('Build Docker Image') {
-            when {
-                expression { env.BACKEND_CHANGED == 'true' }
-            }
+        stage('Deploy ECS') {
+            when { expression { env.BACKEND_CHANGED == 'true' } }
             steps {
                 script {
-                    env.COMMIT_SHA = sh(
-                        script: 'git rev-parse --short=8 HEAD',
-                        returnStdout: true
-                    ).trim()
+                    def cluster = "DOC-Organiser-ECS-Cluster"
+                    def service = "doc-organiser-backend-TD-service"
+                    def taskDef = "doc-organiser-backend-TD"
 
-                    env.VERSION = env.TAG_NAME ? 
-                        env.TAG_NAME.replaceFirst(/^v/, '') : 
-                        "build-${env.BUILD_NUMBER}"
-
-                    echo "🐳 Building backend Docker image (version: ${env.VERSION})..."
-
-                    retry(2) {
-                        sh """
-                            set -e
-
-                            docker build \\
-                                --pull \\
-                                -t ${ECR_REPO_BE}:${VERSION} \\
-                                -t ${ECR_REPO_BE}:${COMMIT_SHA} \\
-                                -t ${ECR_REPO_BE}:latest \\
-                                -f ${APP_DIR}/Dockerfile ${APP_DIR}/
-                        """
-                    }
-
-                    echo "✅ Backend image built"
-                }
-            }
-        }
-
-        // ───────────── ECR LOGIN ─────────────
-        stage('Login to ECR') {
-            when {
-                expression { env.BACKEND_CHANGED == 'true' }
-            }
-            steps {
-                script {
-                    def accountId = sh(
-                        script: 'aws sts get-caller-identity --query Account --output text',
-                        returnStdout: true
-                    ).trim()
-
-                    env.REGISTRY = "${accountId}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-
-                    echo "🔐 Logging into ECR..."
-
-                    retry(3) {
-                        sh """
-                            aws ecr get-login-password --region ${AWS_REGION} \
-                            | docker login --username AWS --password-stdin ${REGISTRY}
-                        """
-                    }
-
-                    echo "✅ ECR login success"
-                }
-            }
-        }
-
-        // ───────────── PUSH IMAGE ─────────────
-        stage('Push Backend Image') {
-            when {
-                expression { env.BACKEND_CHANGED == 'true' }
-            }
-            steps {
-                script {
-                    echo "📤 Pushing backend image..."
-
-                    sh """
-                        set -e
-
-                        docker tag ${ECR_REPO_BE}:${VERSION} ${REGISTRY}/${ECR_REPO_BE}:${VERSION}
-                        docker tag ${ECR_REPO_BE}:${COMMIT_SHA} ${REGISTRY}/${ECR_REPO_BE}:${COMMIT_SHA}
-                        docker tag ${ECR_REPO_BE}:latest ${REGISTRY}/${ECR_REPO_BE}:latest
-
-                        docker push ${REGISTRY}/${ECR_REPO_BE}:${VERSION}
-                        docker push ${REGISTRY}/${ECR_REPO_BE}:${COMMIT_SHA}
-                        docker push ${REGISTRY}/${ECR_REPO_BE}:latest
-                    """
-
-                    echo "✅ Backend image pushed"
-                }
-            }
-        }
-        // ───────────── DEPLOY TO ECS ─────────────
-        stage('Deploy Backend to ECS') {
-            when {
-                expression { env.BACKEND_CHANGED == 'true' }
-            }
-            steps {
-                script {
-                    def cluster = "full-stack-doc-organiser"
-                    def service = "Backedn-TD-service"
-                    def taskDef = "Backedn-TD"
-
-                    echo "🚀 Deploying backend to ECS..."
-
-                    // 1. Get current task definition
                     sh """
                         aws ecs describe-task-definition \
-                            --task-definition ${taskDef} \
-                            --query 'taskDefinition' > task-def.json
-                    """
+                        --task-definition ${taskDef} \
+                        --query 'taskDefinition' > task.json
 
-                    // 2. Replace image
-                    sh """
-                        cat task-def.json | jq '
-                            .containerDefinitions[0].image = "${REGISTRY}/${ECR_REPO_BE}:${VERSION}" |
-                            del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)
-                        ' > new-task-def.json
-                    """
+                        cat task.json | jq '
+                        .containerDefinitions[0].image = "${REGISTRY}/${ECR_REPO_BE}:${VERSION}" |
+                        del(.taskDefinitionArn,.revision,.status,.requiresAttributes,.compatibilities,.registeredAt,.registeredBy)
+                        ' > new-task.json
 
-                    // 3. Register new revision
-                    sh """
                         aws ecs register-task-definition \
-                            --cli-input-json file://new-task-def.json
-                    """
+                        --cli-input-json file://new-task.json
 
-                    // 4. Update service
-                    sh """
                         aws ecs update-service \
-                            --cluster ${cluster} \
-                            --service ${service} \
-                            --task-definition ${taskDef} \
-                            --force-new-deployment
+                        --cluster ${cluster} \
+                        --service ${service} \
+                        --task-definition ${taskDef} \
+                        --force-new-deployment
                     """
-
-                    echo "✅ Backend deployed"
                 }
             }
         }
@@ -221,15 +131,8 @@ pipeline {
 
     post {
         always {
-            echo "🧹 Cleaning workspace..."
             sh 'docker system prune -af || true'
             cleanWs()
-        }
-        success {
-            echo '✅ Backend pipeline completed successfully!'
-        }
-        failure {
-            echo '❌ Backend pipeline failed'
         }
     }
 }

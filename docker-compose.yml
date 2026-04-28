@@ -36,7 +36,7 @@ services:
       - AWS_ACCESS_KEY_ID=minioadmin
       - AWS_SECRET_ACCESS_KEY=minioadmin
       - AWS_S3_BUCKET=document-organiser-storage-point
-      - AWS_REGION=us-east-1
+      - AWS_REGION=ap-south-1
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - JWT_SECRET=${JWT_SECRET:-change-me-in-production-use-a-long-secret-key-at-least-256-bits}
@@ -47,7 +47,7 @@ services:
       minio:
         condition: service_started
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/actuator/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/api/v1/actuator/health" ]
       interval: 30s
       timeout: 10s
       start_period: 60s
@@ -66,7 +66,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -90,6 +90,7 @@ services:
 volumes:
   pgdata:
   miniodata:
+
 
 networks:
   app-network:
