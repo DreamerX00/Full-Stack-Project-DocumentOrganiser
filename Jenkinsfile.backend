@@ -34,6 +34,9 @@ pipeline {
         stage('Detect Changes') {
             steps {
                 script {
+                    env.COMMIT_SHA = sh(script: 'git rev-parse --short=8 HEAD', returnStdout: true).trim()
+                    env.REGISTRY = "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+                    
                     def hasParent = sh(script: 'git rev-parse --verify HEAD~1 >/dev/null 2>&1', returnStatus: true) == 0
                     
                     if (params.FORCE_BUILD) {
@@ -46,15 +49,29 @@ pipeline {
                     } else {
                         env.BACKEND_CHANGED = 'true'
                     }
+
+                    if (env.BACKEND_CHANGED == 'true') {
+                        env.IMAGE_EXISTS = sh(
+                            script: "aws ecr describe-images --repository-name ${ECR_REPO_BE} --image-ids imageTag=${COMMIT_SHA} --region ${AWS_REGION} >/dev/null 2>&1 && echo true || echo false",
+                            returnStdout: true
+                        ).trim()
+                        if (env.IMAGE_EXISTS == 'true') {
+                            echo "Image for commit ${COMMIT_SHA} already exists in ECR. Skipping build and push."
+                        }
+                    }
                 }
             }
         }
 
         stage('Build Image') {
-            when { expression { env.BACKEND_CHANGED == 'true' } }
+            when { 
+                allOf {
+                    expression { env.BACKEND_CHANGED == 'true' }
+                    expression { env.IMAGE_EXISTS != 'true' }
+                }
+            }
             steps {
                 script {
-                    env.COMMIT_SHA = sh(script: 'git rev-parse --short=8 HEAD', returnStdout: true).trim()
                     env.VERSION = "build-${env.BUILD_NUMBER}"
 
                     sh """
@@ -69,11 +86,14 @@ pipeline {
         }
 
         stage('Login ECR') {
-            when { expression { env.BACKEND_CHANGED == 'true' } }
+            when { 
+                allOf {
+                    expression { env.BACKEND_CHANGED == 'true' }
+                    expression { env.IMAGE_EXISTS != 'true' }
+                }
+            }
             steps {
                 script {
-                    env.REGISTRY = "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-
                     sh """
                         aws ecr get-login-password --region ${AWS_REGION} \
                         | docker login --username AWS --password-stdin ${REGISTRY}
@@ -83,7 +103,12 @@ pipeline {
         }
 
         stage('Push Image') {
-            when { expression { env.BACKEND_CHANGED == 'true' } }
+            when { 
+                allOf {
+                    expression { env.BACKEND_CHANGED == 'true' }
+                    expression { env.IMAGE_EXISTS != 'true' }
+                }
+            }
             steps {
                 sh """
                     docker tag ${ECR_REPO_BE}:${VERSION} ${REGISTRY}/${ECR_REPO_BE}:${VERSION}
@@ -111,7 +136,7 @@ pipeline {
                         --query 'taskDefinition' > task.json
 
                         cat task.json | jq '
-                        .containerDefinitions[0].image = "${REGISTRY}/${ECR_REPO_BE}:${VERSION}" |
+                        .containerDefinitions[0].image = "${REGISTRY}/${ECR_REPO_BE}:${COMMIT_SHA}" |
                         del(.taskDefinitionArn,.revision,.status,.requiresAttributes,.compatibilities,.registeredAt,.registeredBy)
                         ' > new-task.json
 
