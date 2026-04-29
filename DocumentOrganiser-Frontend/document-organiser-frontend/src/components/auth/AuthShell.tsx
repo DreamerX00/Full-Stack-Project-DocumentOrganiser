@@ -26,7 +26,7 @@ export function AuthShell({ title, description, eyebrow, children, footer }: Aut
     <div className="relative min-h-screen overflow-hidden bg-background">
       <AmbientBackdrop intensity="bold" />
 
-      <div className="relative mx-auto flex min-h-screen max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
+      <div className="relative mx-auto flex min-h-screen max-w-[1600px] flex-col px-4 py-6 sm:px-6 lg:px-10 xl:px-16">
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/20 bg-white/10 shadow-[var(--shadow-soft)] backdrop-blur">
@@ -45,7 +45,7 @@ export function AuthShell({ title, description, eyebrow, children, footer }: Aut
           </Link>
         </div>
 
-        <div className="grid flex-1 items-center gap-12 py-10 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="grid flex-1 items-center gap-12 py-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 xl:gap-24">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}

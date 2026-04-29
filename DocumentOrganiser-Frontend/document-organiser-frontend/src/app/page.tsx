@@ -76,7 +76,7 @@ export default function LandingPage() {
       <AmbientBackdrop intensity="bold" />
 
       <header className="sticky top-0 z-50 border-b border-white/10 bg-background/70 backdrop-blur-xl">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-20 max-w-[1600px] items-center justify-between px-4 sm:px-6 lg:px-10 xl:px-16">
           <Link href="/" className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/10">
               <Image src="/logo.svg" alt="DocOrganiser" width={24} height={24} className="h-6 w-6" />
@@ -106,8 +106,8 @@ export default function LandingPage() {
       </header>
 
       <main className="relative">
-        <section className="mx-auto max-w-7xl px-4 pb-20 pt-16 sm:px-6 lg:px-8 lg:pb-24 lg:pt-20">
-          <div className="grid gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+        <section className="mx-auto max-w-[1600px] px-4 pb-20 pt-16 sm:px-6 lg:px-10 xl:px-16 lg:pb-24 lg:pt-20">
+          <div className="grid gap-14 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-16 xl:gap-24">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -242,7 +242,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <section className="mx-auto max-w-[1600px] px-4 py-12 sm:px-6 lg:px-10 xl:px-16">
           <div className="glass-card rounded-[2rem] border border-white/10 px-6 py-5">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
@@ -262,7 +262,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="features" className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+        <section id="features" className="mx-auto max-w-[1600px] px-4 py-14 sm:px-6 lg:px-10 xl:px-16">
           <div className="mb-10 max-w-2xl">
             <p className="text-xs uppercase tracking-[0.32em] text-primary/80">Product pillars</p>
             <h2 className="mt-3 text-4xl font-semibold">Designed to feel elegant today and extensible tomorrow.</h2>
@@ -293,8 +293,8 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
-          <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+        <section className="mx-auto max-w-[1600px] px-4 py-14 sm:px-6 lg:px-10 xl:px-16">
+          <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:gap-12 xl:gap-16">
             <Card className="border-white/10">
               <CardContent className="space-y-6 p-7">
                 <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-2 text-xs uppercase tracking-[0.28em] text-primary/80">
